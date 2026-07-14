@@ -2,12 +2,10 @@
 Visuelles Fundament der App: Design-Tokens, CSS und ein zentrales
 Plotly-Template.
 
-Designsprache "Sonnenband": Trianel-Rot (Interaktion/Auswahl), Solar-
-Bernstein (Erzeugung/Erloese) und Tannengruen-Ink (Finanzen/Struktur)
-bilden eine feste Dreiklang-Palette; das schmale Verlaufband unter der
-Kopfzeile und an den KPI-Kacheln ist das wiedererkennbare Signaturelement.
-Display-Schrift: Space Grotesk (Ueberschriften, KPI-Werte, tabellarische
-Ziffern), Flusstext: Inter.
+Designsprache: Trianel-Rot als einziger Markenakzent (Interaktion,
+Auswahl, Kopfzeilen-Band) auf ruhigem Tannengruen-Ink; durchgaengig
+Inter (fixiert ueber .streamlit/config.toml), KPI-Werte mit
+tabellarischen Ziffern.
 
 Prinzip: Jede Farbe, jeder Abstand und jedes Diagramm bezieht seine
 Gestaltung aus DIESEM Modul. Views und Komponenten enthalten keine
@@ -26,12 +24,9 @@ import streamlit as st
 
 
 class Colors:
-    """Sonnenband-Palette: Rot = Interaktion, Bernstein = Erzeugung/Erloes,
-    Tannengruen = Finanzen/Struktur."""
+    """Farbpalette: Trianel-Rot als Markenakzent auf ruhigem Tannengruen-Ink."""
 
     BRAND = "#BE172B"          # Trianel-Rot - Akzent, Auswahl, Primary-Buttons
-    SOLAR = "#E8A23C"          # Solar-Bernstein - Erzeugung, Markterloese
-    SOLAR_DEEP = "#C77F1A"     # dunklere Bernstein-Stufe (Linien, Text auf hell)
     INK = "#143530"            # Tiefes Tannengruen - Ueberschriften, Linien
     INK_SOFT = "#2E5A52"       # hellere Ink-Stufe (Sekundaerserien)
     MUTED = "#5B6B66"          # Sekundaertext
@@ -43,9 +38,6 @@ class Colors:
     NEGATIVE = "#C0392B"       # Abfluesse, Unterdeckung
     NEUTRAL = "#8AA6A0"        # Sekundaere Serien (z.B. Tilgung, Varianten)
 
-    #: Signatur-Verlauf (Kopfzeile, KPI-Kacheln): Rot -> Bernstein -> Gruen.
-    SONNENBAND = f"linear-gradient(90deg, {BRAND} 0%, #E8A23C 45%, #2E7D32 100%)"
-
     #: Gestufte Warmtoene fuer gestapelte Kostenpositionen.
     OPEX_SCALE = [
         "#C0392B", "#E67E22", "#D68910", "#B9770E", "#A04000",
@@ -53,12 +45,12 @@ class Colors:
     ]
 
     #: Serienfarben fuer Szenario-/Mehrlinienvergleiche.
-    SERIES = ["#143530", "#BE172B", "#E8A23C", "#2E7D32", "#8AA6A0", "#6C3483"]
+    SERIES = ["#143530", "#BE172B", "#8AA6A0", "#2E7D32", "#2E5A52"]
 
-    #: Divergierende Skala fuer die IRR-Heatmap (rot -> sand -> gruen).
+    #: Divergierende Skala fuer die IRR-Heatmap (rot = unter Ziel,
+    #: gruen = ueber Ziel - semantisch, kein Dekor).
     HEAT_SCALE = [
-        [0.0, "#C0392B"], [0.35, "#E8A23C"], [0.55, "#F4E7C6"],
-        [0.75, "#8FBF9F"], [1.0, "#2E7D32"],
+        [0.0, "#C0392B"], [0.5, "#F2F1ED"], [1.0, "#2E7D32"],
     ]
 
 
@@ -75,7 +67,7 @@ def _register_plotly_template() -> None:
     pio.templates[_TEMPLATE_NAME] = go.layout.Template(
         layout=go.Layout(
             font=dict(family="Inter, sans-serif", color=Colors.INK, size=13),
-            title_font=dict(family="Space Grotesk, Inter, sans-serif", size=15),
+            title_font=dict(family="Inter, sans-serif", size=15),
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
             # Deutsche Zahlendarstellung in Achsen und Hovern:
@@ -109,20 +101,13 @@ def _register_plotly_template() -> None:
 
 _CSS = f"""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap');
-
     .block-container {{ padding-top: 1.4rem; max-width: 1280px; }}
 
     /* --- Typografie ------------------------------------------------------ */
-    h1, h2, h3 {{
-        font-family: "Space Grotesk", "Inter", sans-serif !important;
-        color: {Colors.INK};
-        letter-spacing: -0.015em;
-    }}
+    h1, h2, h3 {{ color: {Colors.INK}; letter-spacing: -0.01em; }}
 
     /* --- Kopfzeile / Hero ------------------------------------------------ */
     .app-hero-title {{
-        font-family: "Space Grotesk", "Inter", sans-serif;
         font-size: 2.05rem;
         font-weight: 700;
         color: {Colors.INK};
@@ -135,10 +120,10 @@ _CSS = f"""
         font-size: 0.95rem;
         margin-top: 2px;
     }}
-    .app-hero-sub b {{ color: {Colors.SOLAR_DEEP}; font-weight: 600; }}
     .app-header-rule {{
-        height: 4px;
-        background: {Colors.SONNENBAND};
+        height: 3px;
+        background: linear-gradient(90deg, {Colors.BRAND} 0, {Colors.BRAND} 96px,
+                                    {Colors.LINE} 96px, {Colors.LINE} 100%);
         border: none; border-radius: 2px;
         margin: 0.5rem 0 1.2rem 0;
     }}
@@ -172,10 +157,9 @@ _CSS = f"""
     .kpi-card::before {{
         content: "";
         position: absolute;
-        top: 0; left: 0; right: 0;
-        height: 3px;
-        background: {Colors.SONNENBAND};
-        opacity: 0.9;
+        top: 0; left: 0; bottom: 0;
+        width: 3px;
+        background: {Colors.BRAND};
     }}
     .kpi-card:hover {{
         transform: translateY(-2px);
@@ -193,7 +177,6 @@ _CSS = f"""
         text-overflow: ellipsis;
     }}
     .kpi-card .kpi-value {{
-        font-family: "Space Grotesk", "Inter", sans-serif;
         font-variant-numeric: tabular-nums;
         color: {Colors.INK};
         font-weight: 700;
@@ -232,12 +215,10 @@ _CSS = f"""
         box-shadow: 0 0 0 1px {Colors.BRAND};
     }}
     .project-card .card-title {{
-        font-family: "Space Grotesk", "Inter", sans-serif;
         font-weight: 600; color: {Colors.INK}; font-size: 1.02rem;
     }}
     .project-card .card-sub {{ color: {Colors.MUTED}; font-size: 0.84em; }}
     .project-card .card-kpi {{
-        font-family: "Space Grotesk", "Inter", sans-serif;
         font-variant-numeric: tabular-nums;
         font-size: 1.55em; font-weight: 700; color: {Colors.INK};
     }}
@@ -256,30 +237,9 @@ _CSS = f"""
     }}
     .badge-agri {{ background: #E7F2EA; color: {Colors.POSITIVE}; }}
     .badge-konv {{ background: #EEF1F0; color: {Colors.MUTED}; }}
-    .badge-warn {{ background: #FBEEE6; color: {Colors.SOLAR_DEEP}; }}
 
-    /* --- Tabs (Pill-Stil) --------------------------------------------------- */
-    .stTabs [data-baseweb="tab-list"] {{
-        gap: 6px;
-        border-bottom: none;
-        flex-wrap: wrap;
-    }}
-    .stTabs [data-baseweb="tab"] {{
-        font-weight: 500;
-        background: {Colors.WASH};
-        border: 1px solid {Colors.LINE};
-        border-radius: 999px;
-        padding: 4px 16px;
-        color: {Colors.MUTED};
-    }}
-    .stTabs [aria-selected="true"] {{
-        background: {Colors.INK};
-        border-color: {Colors.INK};
-        color: #FFFFFF !important;
-    }}
-    .stTabs [aria-selected="true"] p {{ color: #FFFFFF !important; }}
-    .stTabs [data-baseweb="tab-highlight"],
-    .stTabs [data-baseweb="tab-border"] {{ display: none; }}
+    /* --- Tabs (Streamlit-Standard, Akzent = primaryColor) ------------------- */
+    .stTabs [data-baseweb="tab"] {{ font-weight: 500; }}
 
     /* --- Sidebar ------------------------------------------------------------ */
     section[data-testid="stSidebar"] {{
@@ -293,22 +253,12 @@ _CSS = f"""
         border-radius: 10px;
     }}
 
-    /* --- Abschnittstitel mit Bernstein-Marker ---------------------------------- */
+    /* --- Abschnittstitel ------------------------------------------------------- */
     .section-title {{
-        font-family: "Space Grotesk", "Inter", sans-serif;
         font-weight: 600;
         color: {Colors.INK};
         font-size: 1.05rem;
         margin: 0.4rem 0 0.2rem 0;
-    }}
-    .section-title::before {{
-        content: "";
-        display: inline-block;
-        width: 8px; height: 8px;
-        border-radius: 2px;
-        background: {Colors.SOLAR};
-        margin-right: 8px;
-        transform: rotate(45deg) translateY(-1px);
     }}
 
     @media (prefers-reduced-motion: reduce) {{
@@ -329,7 +279,7 @@ def apply_theme() -> None:
 
 
 def section_title(text: str) -> None:
-    """Abschnittsueberschrift mit Bernstein-Marker (Signaturelement)."""
+    """Abschnittsueberschrift (schlicht, ohne Marker)."""
     st.markdown(f'<div class="section-title">{text}</div>', unsafe_allow_html=True)
 
 

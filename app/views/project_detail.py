@@ -51,7 +51,7 @@ def render_project_dashboard(
     )
 
     # --- Aktionen ----------------------------------------------------------
-    with st.expander("✏️ Projekt bearbeiten"):
+    with st.expander("Projekt bearbeiten"):
         updated = render_project_form(existing=project, form_key=f"edit_{project.id}")
         if updated is not None:
             # Bewusst file_path statt project.id verwenden: id und Dateiname
@@ -74,7 +74,7 @@ def render_project_dashboard(
             st.session_state[STATE_DELETE_CANDIDATE] = file_path.stem
     with col_export:
         st.download_button(
-            "⬇️ Cashflow als Excel",
+            "Cashflow als Excel",
             data=services.cashflow_to_excel(result),
             file_name=f"{project.id}_cashflow.xlsx",
             mime=_XLSX_MIME,
@@ -145,7 +145,7 @@ def render_project_dashboard(
 
     if kpis.dscr_min is not None and kpis.dscr_min < 1.0:
         st.warning(
-            f"⚠️ Der minimale DSCR liegt bei {fmt_dscr(kpis.dscr_min)} und damit "
+            f"Der minimale DSCR liegt bei {fmt_dscr(kpis.dscr_min)} und damit "
             f"unter 1,0x: Der operative Cashflow deckt den Schuldendienst in "
             f"mindestens einem Jahr der Kreditlaufzeit nicht vollständig. Mit den "
             f"aktuellen Annahmen müsste während der Fremdfinanzierungsphase "
@@ -156,8 +156,8 @@ def render_project_dashboard(
 
     tab_cf, tab_erloese, tab_fin, tab_sens, tab_mc, tab_szen, tab_annahmen = st.tabs(
         [
-            "📊 Cashflow", "☀️ Erlöse", "🏦 Finanzierung", "🌪️ Sensitivität",
-            "🎲 Monte Carlo", "⚖️ Szenarien", "📋 Annahmen",
+            "Cashflow", "Erlöse", "Finanzierung", "Sensitivität",
+            "Monte Carlo", "Szenarien", "Annahmen",
         ]
     )
 
@@ -400,7 +400,7 @@ def _render_sensitivity_tab(result, project, project_id: str) -> None:
         index=0, key=f"hm_y_{project_id}",
     )
     ziel_irr_pct = col_ziel.number_input(
-        "Ziel-IRR (%)", 0.0, 20.0, 6.5, 0.25, key=f"hm_ziel_{project_id}",
+        "Ziel-IRR (%)", 0.0, 20.0, 8.0, 0.25, key=f"hm_ziel_{project_id}",
     )
     with st.spinner("Berechne IRR-Raster (49 Bewertungsläufe) …"):
         grid = services.get_irr_heatmap(project_id, achse_x, achse_y)
@@ -422,7 +422,7 @@ def _render_sensitivity_tab(result, project, project_id: str) -> None:
     )
     col_be, col_res = st.columns([1, 2])
     ziel_gebot_pct = col_be.number_input(
-        "Ziel-EK-Rendite (%)", 0.0, 20.0, 6.5, 0.25, key=f"be_ziel_{project_id}",
+        "Ziel-EK-Rendite (%)", 0.0, 20.0, 8.0, 0.25, key=f"be_ziel_{project_id}",
     )
     break_even = services.get_break_even_zuschlag(project_id, ziel_gebot_pct / 100)
     with col_res:
@@ -510,7 +510,7 @@ def _render_monte_carlo_tab(project_id: str, diskontsatz: float) -> None:
     # Ergebnisse, solange sich Projekt/Annahmen/Parameter nicht aendern).
     start_key = f"mc_gestartet_{project_id}"
     if not st.session_state.get(start_key):
-        if st.button("🎲 Simulation starten", type="primary", key=f"mc_start_{project_id}"):
+        if st.button("Simulation starten", type="primary", key=f"mc_start_{project_id}"):
             st.session_state[start_key] = True
             st.rerun()
         return
@@ -529,7 +529,7 @@ def _render_monte_carlo_tab(project_id: str, diskontsatz: float) -> None:
 
     ziel_pct = st.slider(
         "Ziel-EK-Rendite für die Erfolgswahrscheinlichkeit (%)",
-        0.0, 15.0, 6.5, 0.25, key=f"mc_ziel_{project_id}",
+        0.0, 15.0, 8.0, 0.25, key=f"mc_ziel_{project_id}",
     )
     prob = mc.wahrscheinlichkeit_irr_ueber(ziel_pct / 100)
 

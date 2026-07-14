@@ -1,5 +1,20 @@
 # Changelog
 
+## v3.1 – Design-Korrekturen (2026-07)
+
+- Zurück zu Trianel-Rot als einzigem Markenakzent: Kopfzeilen-Band und
+  KPI-Kachel-Akzent wieder in Rot statt Farbverlauf; Bernstein-Töne aus
+  allen Diagrammen entfernt (Erlös-Split grün/neutral, Monte-Carlo-Fächer
+  in Ink-Tönung, Heatmap rot/neutral/grün).
+- Schriftart durchgängig Inter (fixiert über .streamlit/config.toml,
+  primaryColor #BE172B); Space Grotesk entfernt.
+- Tabs wieder im Streamlit-Standard (Akzentlinie in primaryColor) statt
+  dunkel hinterlegter Pills.
+- Abschnittstitel ohne Marker; sämtliche Icons/Emojis aus Navigation,
+  Tabs, Buttons und Hinweistexten entfernt (Trianel-Logo/-Favicon bleibt).
+- Standard-Zielrendite in Heatmap, Gebotsassistent und Monte-Carlo-
+  Erfolgswahrscheinlichkeit: 8,0 %.
+
 ## v3.0 – Analyse-Studio & Sonnenband-Design (2026-07)
 
 ### Neue Fachfunktionen (engine/analytics.py)

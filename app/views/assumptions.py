@@ -138,7 +138,7 @@ def render_assumptions() -> None:
             "Name des neuen Szenarios", key="neues_szenario_name",
             placeholder="z.B. Enervis 2026",
         )
-        if st.button("➕ Szenario hinzufügen") and neuer_szenario_name.strip():
+        if st.button("Szenario hinzufügen") and neuer_szenario_name.strip():
             if neuer_szenario_name in ga.szenario_namen:
                 st.error("Ein Szenario mit diesem Namen existiert bereits.")
             else:

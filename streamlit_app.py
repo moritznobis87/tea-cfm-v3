@@ -36,17 +36,17 @@ if LOGO_PATH.exists():
 col_title.markdown(
     f"""<div>
     <p class="app-hero-title">{APP_TITLE}</p>
-    <p class="app-hero-sub">Wirtschaftlichkeit · <b>Sensitivität</b> ·
-    Risiko — EAG-Marktprämienmodell, Österreich</p>
+    <p class="app-hero-sub">Wirtschaftlichkeit · Sensitivität · Risiko —
+    EAG-Marktprämienmodell, Österreich</p>
     </div>""",
     unsafe_allow_html=True,
 )
 st.markdown('<div class="app-header-rule"></div>', unsafe_allow_html=True)
 
 # --- Navigation ----------------------------------------------------------------
-_NAV_PORTFOLIO = "📁 Portfolio"
-_NAV_NEU = "➕ Neues Projekt"
-_NAV_ANNAHMEN = "🌐 Globale Annahmen"
+_NAV_PORTFOLIO = "Portfolio"
+_NAV_NEU = "Neues Projekt"
+_NAV_ANNAHMEN = "Globale Annahmen"
 nav = st.sidebar.radio(
     "Navigation",
     [_NAV_PORTFOLIO, _NAV_NEU, _NAV_ANNAHMEN],

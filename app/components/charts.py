@@ -268,14 +268,14 @@ def verguetung_chart(
     fig.add_scatter(
         x=betrieb["jahr"], y=betrieb["marktwert_nominal_ct_kwh"],
         name="Marktwert Solar (nominal)", mode="lines",
-        line=dict(color=Colors.SOLAR_DEEP, width=2),
+        line=dict(color=Colors.NEUTRAL, width=2),
         hovertemplate="%{y:,.2f} ct/kWh<extra>Marktwert nominal</extra>",
     )
     fig.add_scatter(
         x=betrieb["jahr"], y=betrieb["verguetungssatz_ct_kwh"],
         name="Vergütungssatz", mode="lines",
         line=dict(color=Colors.INK, width=2.5),
-        fill="tonexty", fillcolor="rgba(232, 162, 60, 0.18)",
+        fill="tonexty", fillcolor="rgba(138, 166, 160, 0.25)",
         hovertemplate="%{y:,.2f} ct/kWh<extra>Vergütungssatz</extra>",
     )
     fig.add_hline(
@@ -302,12 +302,12 @@ def revenue_split_chart(df: pd.DataFrame) -> go.Figure:
     fig = go.Figure()
     fig.add_bar(
         x=betrieb["jahr"], y=betrieb["erloes_markt_eur"], name="Markterlös",
-        marker_color=Colors.SOLAR,
+        marker_color=Colors.POSITIVE,
         hovertemplate=_EUR_HOVER + "<extra>Markterlös</extra>",
     )
     fig.add_bar(
         x=betrieb["jahr"], y=betrieb["erloes_praemie_eur"], name="Marktprämie (EAG)",
-        marker_color=Colors.INK_SOFT,
+        marker_color=Colors.NEUTRAL,
         hovertemplate=_EUR_HOVER + "<extra>Marktprämie</extra>",
     )
     fig.update_layout(
@@ -429,9 +429,9 @@ def irr_heatmap_chart(
         go.Heatmap(
             z=z, x=x_labels, y=y_labels,
             colorscale=Colors.HEAT_SCALE,
-            zmid=(ziel_irr or 0.065) * 100,
+            zmid=(ziel_irr or 0.08) * 100,
             texttemplate="%{z:.1f}",
-            textfont=dict(size=11, family="Space Grotesk, Inter, sans-serif"),
+            textfont=dict(size=11, family="Inter, sans-serif"),
             colorbar=dict(title="IRR %", ticksuffix=" %"),
             hovertemplate=(
                 label_x + " %{x} · " + label_y + " %{y}: %{z:.2f} % IRR<extra></extra>"
@@ -452,7 +452,7 @@ def mc_irr_histogram(irr_werte, p10: float, p50: float, p90: float) -> go.Figure
     fig = go.Figure()
     fig.add_histogram(
         x=[v * 100 for v in irr_werte], nbinsx=40,
-        marker=dict(color=Colors.SOLAR, line=dict(color=Colors.PAPER, width=1)),
+        marker=dict(color=Colors.NEUTRAL, line=dict(color=Colors.PAPER, width=1)),
         hovertemplate="%{x} %: %{y} Läufe<extra></extra>",
     )
     for wert, name, farbe in [
@@ -483,7 +483,7 @@ def mc_fan_chart(mc) -> go.Figure:
     )
     fig.add_scatter(
         x=jahre, y=mc.kum_p10, mode="lines", line=dict(width=0),
-        fill="tonexty", fillcolor="rgba(232, 162, 60, 0.18)",
+        fill="tonexty", fillcolor="rgba(20, 53, 48, 0.10)",
         name="P10–P90", hovertemplate=_EUR_HOVER + "<extra>P10</extra>",
     )
     # Inneres Band (P25-P75)
@@ -493,7 +493,7 @@ def mc_fan_chart(mc) -> go.Figure:
     )
     fig.add_scatter(
         x=jahre, y=mc.kum_p25, mode="lines", line=dict(width=0),
-        fill="tonexty", fillcolor="rgba(232, 162, 60, 0.38)",
+        fill="tonexty", fillcolor="rgba(20, 53, 48, 0.22)",
         name="P25–P75", hovertemplate=_EUR_HOVER + "<extra>P25</extra>",
     )
     fig.add_scatter(

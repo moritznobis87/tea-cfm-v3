@@ -47,7 +47,7 @@ def _sparkline_svg(werte: list[float], breite: int = 220, hoehe: int = 40) -> st
         f'<svg class="card-spark" width="100%" height="{hoehe}" '
         f'viewBox="0 0 {breite} {hoehe}" preserveAspectRatio="none" '
         f'role="img" aria-label="Kumulierter Cashflow">'
-        f'<path d="{flaeche}" fill="rgba(232,162,60,0.22)" stroke="none"/>'
+        f'<path d="{flaeche}" fill="rgba(20,53,48,0.08)" stroke="none"/>'
         f'<line x1="2" y1="{y_null:.1f}" x2="{breite - 2}" y2="{y_null:.1f}" '
         f'stroke="{Colors.LINE}" stroke-dasharray="3,3" stroke-width="1"/>'
         f'<polyline points="{pfad}" fill="none" stroke="{Colors.INK}" '
@@ -120,7 +120,7 @@ def render_overview() -> None:
     )
 
     tab_karte, tab_ranking, tab_tabelle = st.tabs(
-        ["🗺️ Rendite-Risiko-Landkarte", "🏆 Ranking", "📋 Vergleichstabelle"]
+        ["Rendite-Risiko-Landkarte", "Ranking", "Vergleichstabelle"]
     )
     with tab_karte:
         st.caption(

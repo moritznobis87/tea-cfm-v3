@@ -39,7 +39,7 @@ def render_import_export() -> None:
         if projects_dict:
             alle_projekte = [load_project_yaml(p) for p in projects_dict.values()]
             st.download_button(
-                "⬇️ Alle Projekte als Excel",
+                "Alle Projekte als Excel",
                 data=projects_to_excel(alle_projekte),
                 file_name="projekte.xlsx",
                 mime=_XLSX_MIME,
@@ -73,7 +73,7 @@ def render_import_export() -> None:
 
         st.markdown("**Herunterladen**")
         st.download_button(
-            "⬇️ Globale Annahmen als Excel",
+            "Globale Annahmen als Excel",
             data=global_assumptions_to_excel(services.get_global_assumptions()),
             file_name="globale_annahmen.xlsx",
             mime=_XLSX_MIME,
