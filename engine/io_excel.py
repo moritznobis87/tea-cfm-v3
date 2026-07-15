@@ -24,6 +24,7 @@ import pandas as pd
 from .models import (
     AnlagenTyp,
     CapexBreakdown,
+    DirektvermarktungsModus,
     GlobalAssumptions,
     MarktpreisSzenario,
     NegativeStundenModus,
@@ -37,6 +38,8 @@ EINSTELLUNGEN_DEFAULTS = {
     "gueltig_ab": "",
     "gemeindeabgabe_eur_mwh_vorschlag": 2.0,
     "direktvermarktungskosten_eur_mwh_vorschlag": 1.0,
+    "direktvermarktung_modus": "absolut",
+    "direktvermarktung_pct_marktwert": 10.0,
     "negative_stunden_gewichtung_pct": 100.0,
     "negative_stunden_modus": "marktwert",
     "degradation_pct_pa": 0.25,
@@ -103,6 +106,11 @@ def global_assumptions_to_excel(ga: GlobalAssumptions) -> bytes:
             (
                 "direktvermarktungskosten_eur_mwh_vorschlag",
                 ga.direktvermarktungskosten_eur_kwh * 1000,
+            ),
+            ("direktvermarktung_modus", ga.direktvermarktung_modus.value),
+            (
+                "direktvermarktung_pct_marktwert",
+                ga.direktvermarktung_pct_marktwert * 100,
             ),
             (
                 "negative_stunden_gewichtung_pct",
@@ -201,6 +209,13 @@ def excel_to_global_assumptions(file_bytes: bytes) -> GlobalAssumptions:
             get("direktvermarktungskosten_eur_mwh_vorschlag")
         )
         / 1000,
+        direktvermarktung_modus=DirektvermarktungsModus(
+            str(get("direktvermarktung_modus")).strip().lower()
+        ),
+        direktvermarktung_pct_marktwert=float(
+            get("direktvermarktung_pct_marktwert")
+        )
+        / 100,
         negative_stunden_gewichtung_pct=float(get("negative_stunden_gewichtung_pct"))
         / 100,
         degradation_pct_pa=float(get("degradation_pct_pa")) / 100,

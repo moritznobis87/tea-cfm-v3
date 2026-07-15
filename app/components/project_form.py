@@ -26,7 +26,7 @@ import streamlit as st
 
 from app import services
 from app.config import MONATE
-from engine import AnlagenTyp, CapexBreakdown, PVProject
+from engine import AnlagenTyp, CapexBreakdown, DirektvermarktungsModus, PVProject
 
 #: EPC-Vorbelegung je Anlagentyp in €/kWp (Erfahrungswerte 2025/26).
 EPC_DEFAULT_EUR_KWP = {"Agri-PV": 520.0, "Konventionell": 430.0}
@@ -171,16 +171,31 @@ def render_project_form(
             if existing
             else global_assumptions.direktvermarktungskosten_eur_kwh * 1000
         )
-        direktvermarktungskosten_mwh = col9.number_input(
-            "Direktvermarktungskosten (€/MWh)", min_value=0.0,
-            value=direktvermarktung_default, step=0.1,
-            key=f"{form_key}_direktvermarktung",
-            help="Kosten für Bilanzkreis, Prognose, Marktzugang - "
-                 "üblicherweise ca. 1 €/MWh (0,1 ct/kWh).",
-        )
+        if (
+            global_assumptions.direktvermarktung_modus
+            == DirektvermarktungsModus.RELATIV_MARKTWERT
+        ):
+            # Der projektspezifische EUR/MWh-Wert ist im Relativ-Modus ohne
+            # Wirkung - er bleibt gespeichert (fuer einen spaeteren
+            # Moduswechsel), wird aber nicht zur Eingabe angeboten.
+            direktvermarktungskosten_mwh = direktvermarktung_default
+            col9.caption(
+                "Direktvermarktungskosten: "
+                f"{global_assumptions.direktvermarktung_pct_marktwert * 100:.1f} % "
+                "vom nominalen Jahresmarktwert (Modus 'Relativ zum Marktwert', "
+                "siehe Globale Annahmen)."
+            )
+        else:
+            direktvermarktungskosten_mwh = col9.number_input(
+                "Direktvermarktungskosten (€/MWh)", min_value=0.0,
+                value=direktvermarktung_default, step=0.1,
+                key=f"{form_key}_direktvermarktung",
+                help="Kosten für Bilanzkreis, Prognose, Marktzugang - "
+                     "üblicherweise ca. 1 €/MWh (0,1 ct/kWh).",
+            )
         if anlagentyp_label == "Konventionell":
             st.caption(
-                f"ℹ️ Konventionell: automatischer Abschlag von 25 % wird angewendet "
+                f"Konventionell: automatischer Abschlag von 25 % wird angewendet "
                 f"→ effektiv {eag_zuschlag * 0.75:.2f} ct/kWh"
             )
 

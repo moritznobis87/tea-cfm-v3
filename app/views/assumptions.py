@@ -14,6 +14,7 @@ import streamlit as st
 
 from app import services
 from engine import (
+    DirektvermarktungsModus,
     MarktpreisSzenario,
     NegativeStundenModus,
     OpexItem,
@@ -174,13 +175,39 @@ def render_assumptions() -> None:
                  "(im Projektformular unter 'Wirtschaftliche Parameter'), da "
                  "sie je nach Gemeinde unterschiedlich sein kann.",
         )
-        direktvermarktungskosten = st.number_input(
-            "Direktvermarktungskosten – Vorschlagswert für neue Projekte (€/MWh)",
+        st.markdown("**Direktvermarktungskosten**")
+        dv_modus_label = st.radio(
+            "Bemessung der Direktvermarktungskosten",
+            ["Absoluter Betrag (€/MWh)", "Relativ zum Marktwert (%)"],
+            index=0
+            if ga.direktvermarktung_modus == DirektvermarktungsModus.ABSOLUT
+            else 1,
+            horizontal=True,
+            help="Absolut: fester Betrag je erzeugter MWh (projektspezifisch, "
+                 "z.B. 1 €/MWh). Relativ: Anteil am nominalen Jahresmarktwert "
+                 "(gilt für alle Projekte, z.B. 10 % vom Marktwert) - die "
+                 "Kosten atmen dann mit dem Preisniveau.",
+        )
+        dv_relativ = dv_modus_label.startswith("Relativ")
+        col_dv1, col_dv2 = st.columns(2)
+        direktvermarktungskosten = col_dv1.number_input(
+            "Vorschlagswert für neue Projekte (€/MWh)",
             min_value=0.0, value=ga.direktvermarktungskosten_eur_kwh * 1000,
             step=0.1,
+            disabled=dv_relativ,
             help="Kosten für Bilanzkreis, Prognose, Marktzugang - üblicherweise "
                  "ca. 1 €/MWh. Dient nur als Vorbelegung; tatsächlich "
-                 "angewendet wird der projektspezifische Wert.",
+                 "angewendet wird der projektspezifische Wert. Im Modus "
+                 "'Relativ zum Marktwert' ohne Wirkung.",
+        )
+        dv_pct_marktwert = col_dv2.number_input(
+            "Anteil am Marktwert (%)",
+            min_value=0.0, max_value=100.0,
+            value=ga.direktvermarktung_pct_marktwert * 100, step=0.5,
+            disabled=not dv_relativ,
+            help="Direktvermarktungskosten = erzeugte kWh × nominaler "
+                 "Jahresmarktwert × dieser Anteil. Gilt für alle Projekte; "
+                 "die projektspezifischen €/MWh-Werte sind dann ohne Wirkung.",
         )
 
     # --- Technische Standardannahmen -------------------------------------------
@@ -327,6 +354,12 @@ def render_assumptions() -> None:
         ga.tilgungsfreies_anlaufjahr = tilgungsfreies_anlaufjahr
         ga.gemeindeabgabe_eur_kwh = gemeindeabgabe / 1000
         ga.direktvermarktungskosten_eur_kwh = direktvermarktungskosten / 1000
+        ga.direktvermarktung_modus = (
+            DirektvermarktungsModus.RELATIV_MARKTWERT
+            if dv_relativ
+            else DirektvermarktungsModus.ABSOLUT
+        )
+        ga.direktvermarktung_pct_marktwert = dv_pct_marktwert / 100
         ga.tax_modus = TaxModus(tax_modus)
         ga.afa_nutzungsdauer_jahre = (
             int(afa_nutzungsdauer) if afa_nutzungsdauer else None

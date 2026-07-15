@@ -16,44 +16,10 @@ from app.components import charts
 from app.components.kpi import render_kpi_row
 from app.config import STATE_SELECTED_PROJECT
 from app.formatting import fmt_eur, fmt_kwp, fmt_number, fmt_pct
-from app.theme import Colors, badge
+from app.theme import badge
 from app.views.project_detail import render_project_dashboard
 from engine import AnlagenTyp
 from engine.io_yaml import load_project_yaml
-
-
-def _sparkline_svg(werte: list[float], breite: int = 220, hoehe: int = 40) -> str:
-    """Inline-SVG-Sparkline des kumulierten Equity-Cashflows: Linie in Ink,
-    Nulllinie gepunktet, Flaeche ueber null dezent bernstein gefuellt."""
-    if len(werte) < 2:
-        return ""
-    minimum, maximum = min(werte), max(werte)
-    spannweite = (maximum - minimum) or 1.0
-
-    def punkt(i: int, v: float) -> tuple[float, float]:
-        x = i / (len(werte) - 1) * (breite - 4) + 2
-        y = hoehe - 3 - (v - minimum) / spannweite * (hoehe - 6)
-        return x, y
-
-    punkte = [punkt(i, v) for i, v in enumerate(werte)]
-    pfad = " ".join(f"{x:.1f},{y:.1f}" for x, y in punkte)
-    y_null = hoehe - 3 - (0 - minimum) / spannweite * (hoehe - 6)
-    y_null = max(3.0, min(hoehe - 3.0, y_null))
-    flaeche = (
-        f"M {punkte[0][0]:.1f},{y_null:.1f} L {pfad.replace(' ', ' L ')} "
-        f"L {punkte[-1][0]:.1f},{y_null:.1f} Z"
-    )
-    return (
-        f'<svg class="card-spark" width="100%" height="{hoehe}" '
-        f'viewBox="0 0 {breite} {hoehe}" preserveAspectRatio="none" '
-        f'role="img" aria-label="Kumulierter Cashflow">'
-        f'<path d="{flaeche}" fill="rgba(20,53,48,0.08)" stroke="none"/>'
-        f'<line x1="2" y1="{y_null:.1f}" x2="{breite - 2}" y2="{y_null:.1f}" '
-        f'stroke="{Colors.LINE}" stroke-dasharray="3,3" stroke-width="1"/>'
-        f'<polyline points="{pfad}" fill="none" stroke="{Colors.INK}" '
-        f'stroke-width="1.8" vector-effect="non-scaling-stroke"/>'
-        f"</svg>"
-    )
 
 
 def render_overview() -> None:
@@ -75,7 +41,6 @@ def render_overview() -> None:
                 "id": pid,
                 "projekt": project,
                 "kpis": result.kpis,
-                "kum_cf": result.cashflow.data["cf_kumuliert_eur"].tolist(),
             }
         )
 
@@ -119,54 +84,60 @@ def render_overview() -> None:
         ]
     )
 
-    tab_karte, tab_ranking, tab_tabelle = st.tabs(
-        ["Rendite-Risiko-Landkarte", "Ranking", "Vergleichstabelle"]
-    )
-    with tab_karte:
-        st.caption(
-            "Spezifisches Invest gegen EK-Rendite; Blasengröße = "
-            "Anlagenleistung. Oben links steht das effiziente Portfolio: "
-            "hohe Rendite bei niedrigem spezifischem Invest."
+    # Zuklappbar (Standard: eingeklappt), damit die Uebersicht kompakt
+    # bleibt und die Analytik nur bei Bedarf Platz einnimmt.
+    with st.expander(
+        "Portfolio-Analytik (Rendite-Risiko-Landkarte · Ranking · Vergleichstabelle)",
+        expanded=False,
+    ):
+        tab_karte, tab_ranking, tab_tabelle = st.tabs(
+            ["Rendite-Risiko-Landkarte", "Ranking", "Vergleichstabelle"]
         )
-        st.plotly_chart(
-            charts.portfolio_bubble_chart(analytik, selected), width="stretch"
-        )
-    with tab_ranking:
-        st.plotly_chart(
-            charts.portfolio_ranking_chart(analytik, selected), width="stretch"
-        )
-    with tab_tabelle:
-        vergleich = pd.DataFrame(
-            [
-                {
-                    "Projekt": z["projekt"].name,
-                    "Typ": "Agri-PV"
-                    if z["projekt"].anlagentyp == AnlagenTyp.AGRI_PV
-                    else "Konventionell",
-                    "Leistung (kWp)": round(z["projekt"].nennleistung_kwp),
-                    "EK-Rendite (%)": round(z["kpis"].equity_irr * 100, 2)
-                    if z["kpis"].equity_irr is not None
-                    else None,
-                    "NPV bei 8 % (€)": round(z["kpis"].npv_eur),
-                    "Invest (€)": round(z["kpis"].capex_total_eur),
-                    "Invest (€/kWp)": round(
-                        z["kpis"].capex_total_eur / z["projekt"].nennleistung_kwp
-                    )
-                    if z["projekt"].nennleistung_kwp
-                    else None,
-                    "Min. DSCR (x)": round(z["kpis"].dscr_min, 2)
-                    if z["kpis"].dscr_min is not None
-                    else None,
-                    "Payback (Jahr)": z["kpis"].payback_jahre,
-                }
-                for z in zeilen
-            ]
-        )
-        st.dataframe(
-            vergleich.sort_values("EK-Rendite (%)", ascending=False),
-            width="stretch",
-            hide_index=True,
-        )
+        with tab_karte:
+            st.caption(
+                "Spezifisches Invest gegen EK-Rendite; Blasengröße = "
+                "Anlagenleistung. Oben links steht das effiziente Portfolio: "
+                "hohe Rendite bei niedrigem spezifischem Invest."
+            )
+            st.plotly_chart(
+                charts.portfolio_bubble_chart(analytik, selected), width="stretch"
+            )
+        with tab_ranking:
+            st.plotly_chart(
+                charts.portfolio_ranking_chart(analytik, selected), width="stretch"
+            )
+        with tab_tabelle:
+            vergleich = pd.DataFrame(
+                [
+                    {
+                        "Projekt": z["projekt"].name,
+                        "Typ": "Agri-PV"
+                        if z["projekt"].anlagentyp == AnlagenTyp.AGRI_PV
+                        else "Konventionell",
+                        "Leistung (kWp)": round(z["projekt"].nennleistung_kwp),
+                        "EK-Rendite (%)": round(z["kpis"].equity_irr * 100, 2)
+                        if z["kpis"].equity_irr is not None
+                        else None,
+                        "NPV bei 8 % (€)": round(z["kpis"].npv_eur),
+                        "Invest (€)": round(z["kpis"].capex_total_eur),
+                        "Invest (€/kWp)": round(
+                            z["kpis"].capex_total_eur / z["projekt"].nennleistung_kwp
+                        )
+                        if z["projekt"].nennleistung_kwp
+                        else None,
+                        "Min. DSCR (x)": round(z["kpis"].dscr_min, 2)
+                        if z["kpis"].dscr_min is not None
+                        else None,
+                        "Payback (Jahr)": z["kpis"].payback_jahre,
+                    }
+                    for z in zeilen
+                ]
+            )
+            st.dataframe(
+                vergleich.sort_values("EK-Rendite (%)", ascending=False),
+                width="stretch",
+                hide_index=True,
+            )
 
     # --- Projektkarten ------------------------------------------------------
     st.subheader("Projekte")
@@ -184,8 +155,7 @@ def render_overview() -> None:
                 <span class="card-sub">{fmt_kwp(project.nennleistung_kwp)} · IBN {project.inbetriebnahme_jahr}</span><br/>
                 <span class="card-kpi">{fmt_pct(kpis.equity_irr)}</span>
                 <span class="card-kpi-label"> EK-Rendite</span><br/>
-                <span class="card-sub">EK {fmt_eur(kpis.eigenkapital_eur)} · Payback {"Jahr " + fmt_number(kpis.payback_jahre) if kpis.payback_jahre is not None else "n/a"}</span>
-                {_sparkline_svg(z["kum_cf"])}
+                <span class="card-sub">EK {fmt_eur(kpis.eigenkapital_eur)}</span>
                 </div>""",
                 unsafe_allow_html=True,
             )

@@ -112,35 +112,16 @@ def render_project_dashboard(
     )
     npv_wert = npv_at(result.cashflow, npv_satz_pct / 100)
 
+    lcoe = calculate_lcoe(df, npv_satz_pct / 100)
     render_kpi_row(
         [
             ("EK-Rendite (IRR)", fmt_pct(kpis.equity_irr)),
             (f"NPV bei {fmt_number(npv_satz_pct, 2)} %", fmt_eur(npv_wert)),
             ("Min. DSCR (Kreditlaufzeit)", fmt_dscr(kpis.dscr_min)),
-            ("Investitionsvolumen", fmt_eur(kpis.capex_total_eur)),
-            ("Eigenkapitaleinsatz", fmt_eur(kpis.eigenkapital_eur)),
+            ("CAPEX", fmt_eur(kpis.capex_total_eur)),
+            ("LCOE", fmt_ct_kwh(lcoe) if lcoe is not None else "n/a"),
         ],
         group="projekt",
-    )
-
-    lcoe = calculate_lcoe(df, npv_satz_pct / 100)
-    erzeugung_j1 = float(df.loc[df["jahr"] == 1, "produktion_kwh"].iloc[0])
-    spez_invest = (
-        kpis.capex_total_eur / project.nennleistung_kwp
-        if project.nennleistung_kwp
-        else None
-    )
-    render_kpi_row(
-        [
-            ("Payback", f"Jahr {fmt_number(kpis.payback_jahre)}"
-             if kpis.payback_jahre is not None else "n/a"),
-            ("LCOE", fmt_ct_kwh(lcoe) if lcoe is not None else "n/a"),
-            ("Spez. Invest", f"{fmt_number(spez_invest)} €/kWp"
-             if spez_invest is not None else "n/a"),
-            ("Erzeugung Jahr 1", f"{fmt_number(erzeugung_j1 / 1000)} MWh"),
-            ("Erlöse gesamt (Laufzeit)", fmt_eur(float(df["erloes_eur"].sum()))),
-        ],
-        group="projekt2",
     )
 
     if kpis.dscr_min is not None and kpis.dscr_min < 1.0:

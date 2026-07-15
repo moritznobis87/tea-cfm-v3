@@ -33,6 +33,21 @@ class TilgungsArt(str, Enum):
     LINEAR = "linear"
 
 
+class DirektvermarktungsModus(str, Enum):
+    """Bemessung der Direktvermarktungskosten (Bilanzkreis, Prognose,
+    Marktzugang).
+
+    ABSOLUT:           fester Betrag je erzeugter MWh (Projektfeld
+                       direktvermarktungskosten_eur_mwh), z.B. 1 EUR/MWh.
+    RELATIV_MARKTWERT: Anteil am nominalen Jahresmarktwert je erzeugter
+                       kWh (globaler Prozentsatz), z.B. 10 % vom Marktwert -
+                       die Kosten atmen dann mit dem Preisniveau.
+    """
+
+    ABSOLUT = "absolut"
+    RELATIV_MARKTWERT = "relativ_marktwert"
+
+
 class NegativeStundenModus(str, Enum):
     """Verhalten der Anlage in Stunden negativer Strompreise (in denen die
     Marktpraemie gesetzlich entfaellt).
@@ -191,6 +206,11 @@ class GlobalAssumptions(BaseModel):
     # nur als Vorbelegung im "Neues Projekt"-Formular, tatsaechlich
     # angewendet wird PVProject.direktvermarktungskosten_eur_mwh.
     direktvermarktungskosten_eur_kwh: float = Field(ge=0, default=0.001)
+    # Bemessungsmodus der Direktvermarktungskosten (gilt fuer alle
+    # Projekte). Im Modus RELATIV_MARKTWERT ersetzt der Prozentsatz die
+    # projektspezifischen EUR/MWh-Werte.
+    direktvermarktung_modus: DirektvermarktungsModus = DirektvermarktungsModus.ABSOLUT
+    direktvermarktung_pct_marktwert: float = Field(ge=0, le=1, default=0.10)
 
     # Gewichtung des Anteils negativer Stunden (0% = wird komplett
     # ignoriert, d.h. volle Verguetung auch in Stunden negativer Preise;
@@ -275,6 +295,8 @@ class EffectiveAssumptions(BaseModel):
     opex_items: list[OpexItem]
     gemeindeabgabe_eur_kwh: float
     direktvermarktungskosten_eur_kwh: float
+    direktvermarktung_modus: DirektvermarktungsModus
+    direktvermarktung_pct_marktwert: float
     negative_stunden_gewichtung_pct: float
     negative_stunden_modus: NegativeStundenModus
 

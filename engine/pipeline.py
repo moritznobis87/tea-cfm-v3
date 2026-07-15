@@ -72,6 +72,8 @@ def resolve_assumptions(
         opex_items=opex_items,
         gemeindeabgabe_eur_kwh=project.gemeindeabgabe_eur_mwh / 1000,
         direktvermarktungskosten_eur_kwh=project.direktvermarktungskosten_eur_mwh / 1000,
+        direktvermarktung_modus=global_assumptions.direktvermarktung_modus,
+        direktvermarktung_pct_marktwert=global_assumptions.direktvermarktung_pct_marktwert,
         negative_stunden_gewichtung_pct=global_assumptions.negative_stunden_gewichtung_pct,
         negative_stunden_modus=global_assumptions.negative_stunden_modus,
         capex_total_eur=project.capex.summe_eur,
@@ -131,6 +133,9 @@ def run_valuation_from_assumptions(
         energy,
         assumptions.gemeindeabgabe_eur_kwh,
         assumptions.direktvermarktungskosten_eur_kwh,
+        direktvermarktung_modus=assumptions.direktvermarktung_modus,
+        direktvermarktung_pct_marktwert=assumptions.direktvermarktung_pct_marktwert,
+        marktwert_nominal_ct_kwh=revenue["marktwert_nominal_ct_kwh"].to_numpy(),
     )
     financing = calculate_financing(
         timeline,

@@ -14,9 +14,10 @@ Gemeindeabgabe und Direktvermarktungskosten.
 
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
-from .models import OpexItem
+from .models import DirektvermarktungsModus, OpexItem
 
 BASISSPALTEN = [
     "jahr", "opex_gesamt_eur", "gemeindeabgabe_eur", "direktvermarktungskosten_eur",
@@ -30,6 +31,9 @@ def calculate_opex(
     energy: pd.DataFrame,
     gemeindeabgabe_eur_kwh: float = 0.0,
     direktvermarktungskosten_eur_kwh: float = 0.0,
+    direktvermarktung_modus: DirektvermarktungsModus = DirektvermarktungsModus.ABSOLUT,
+    direktvermarktung_pct_marktwert: float = 0.0,
+    marktwert_nominal_ct_kwh: np.ndarray | None = None,
 ) -> pd.DataFrame:
     df = timeline[["jahr"]].copy()
     df["opex_gesamt_eur"] = 0.0
@@ -56,7 +60,22 @@ def calculate_opex(
 
     produktion_kwh = energy["produktion_kwh"].to_numpy()
     df["gemeindeabgabe_eur"] = produktion_kwh * gemeindeabgabe_eur_kwh
-    df["direktvermarktungskosten_eur"] = produktion_kwh * direktvermarktungskosten_eur_kwh
+    if (
+        direktvermarktung_modus == DirektvermarktungsModus.RELATIV_MARKTWERT
+        and marktwert_nominal_ct_kwh is not None
+    ):
+        # Anteil am nominalen Jahresmarktwert je erzeugter kWh - die
+        # Kosten steigen und fallen mit dem Preisniveau.
+        df["direktvermarktungskosten_eur"] = (
+            produktion_kwh
+            * marktwert_nominal_ct_kwh
+            / 100.0
+            * direktvermarktung_pct_marktwert
+        )
+    else:
+        df["direktvermarktungskosten_eur"] = (
+            produktion_kwh * direktvermarktungskosten_eur_kwh
+        )
     df["opex_gesamt_eur"] += df["gemeindeabgabe_eur"] + df["direktvermarktungskosten_eur"]
 
     return df[BASISSPALTEN + posten_spalten]

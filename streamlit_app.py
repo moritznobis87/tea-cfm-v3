@@ -11,8 +11,27 @@ from __future__ import annotations
 
 import streamlit as st
 
+# Markenfarbe und Schrift zur Laufzeit fixieren: .streamlit/config.toml
+# greift nur, wenn die App aus dem Projektordner gestartet wird. Damit das
+# Trianel-Rot unabhaengig vom Startverzeichnis gilt, werden die Theme-
+# Optionen hier zusaetzlich gesetzt (vor set_page_config, damit sie in der
+# ersten an den Browser gesendeten Session ankommen).
+from streamlit import config as _st_config  # noqa: E402
+
 from app.config import APP_TITLE, FAVICON_PATH, LOGO_PATH
-from app.theme import apply_theme
+from app.theme import Colors, apply_theme
+
+_INTER = (
+    "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700"
+    "&display=swap, sans-serif"
+)
+for _option, _wert in [
+    ("theme.primaryColor", Colors.BRAND),
+    ("theme.font", _INTER),
+    ("theme.headingFont", _INTER),
+]:
+    if _st_config.get_option(_option) != _wert:
+        _st_config.set_option(_option, _wert)
 
 st.set_page_config(
     page_title=APP_TITLE,

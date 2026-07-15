@@ -21,6 +21,7 @@ from .cashflow import CashflowTimeseries
 from .models import (
     AnlagenTyp,
     CapexBreakdown,
+    DirektvermarktungsModus,
     EffectiveAssumptions,
     GlobalAssumptions,
     KPIs,
@@ -53,6 +54,7 @@ __all__ = [
     "run_valuation_from_assumptions",
     "AnlagenTyp",
     "CapexBreakdown",
+    "DirektvermarktungsModus",
     "CashflowTimeseries",
     "EffectiveAssumptions",
     "GlobalAssumptions",

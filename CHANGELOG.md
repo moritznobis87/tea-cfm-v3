@@ -1,5 +1,52 @@
 # Changelog
 
+## v3.4 – Kompaktere Übersicht (2026-07)
+
+- KPI-Kachel "Investitionsvolumen" heißt jetzt "CAPEX"; die Leiste zeigt
+  damit exakt: EK-Rendite, NPV, Min. DSCR, CAPEX, LCOE.
+- Portfolio-Analytik (Rendite-Risiko-Landkarte, Ranking,
+  Vergleichstabelle) liegt jetzt in einem zuklappbaren Bereich
+  (Standard: eingeklappt) – die Pipelineübersicht startet kompakt.
+- Hinweis: Cashflow-Sparkline und Payback waren bereits seit v3.2 aus
+  den Projektkarten entfernt.
+
+## v3.3 – Trianel-Rot erzwingen (2026-07)
+
+- Ursache des hellen Streamlit-Rots (#FF4B4B): .streamlit/config.toml
+  wird von Streamlit nur gelesen, wenn die App aus dem Projektordner
+  gestartet wird. Die Theme-Optionen (primaryColor #BE172B, Inter als
+  Fließ- und Überschriftenschrift) werden jetzt zusätzlich zur Laufzeit
+  im Einstiegspunkt gesetzt und gelten damit unabhängig vom
+  Startverzeichnis.
+- CSS-Fallback für die sichtbarsten Akzentflächen (Primary-Buttons,
+  Button-Hover/-Fokus, Tab-Akzentlinie, Slider-Griff und -Wertlabel,
+  Links), damit auch der allererste Seitenaufbau nie im Standard-Rot
+  erscheint.
+
+## v3.2 – Aufgeräumte Kennzahlen & Direktvermarktungs-Modus (2026-07)
+
+### Direktvermarktungskosten: absolut oder relativ zum Marktwert
+- Neuer globaler Modus (Globale Annahmen → Betriebskosten): **Absoluter
+  Betrag** (wie bisher, projektspezifisch in €/MWh, z.B. 1 €/MWh) oder
+  **Relativ zum Marktwert** (globaler Prozentsatz, z.B. 10 % vom
+  nominalen Jahresmarktwert je erzeugter kWh – die Kosten atmen mit dem
+  Preisniveau).
+- Im Relativ-Modus blendet das Projektformular die €/MWh-Eingabe aus und
+  zeigt stattdessen den wirksamen Prozentsatz; der gespeicherte
+  Projektwert bleibt für einen späteren Moduswechsel erhalten.
+- Modus und Prozentsatz sind Teil des YAML- und Excel-Roundtrips
+  (bestehende Dateien laden unverändert mit Modus "absolut").
+- Fünf neue Tests (exakte Jahresformel, Unverändertheit des
+  Absolut-Modus, IRR-Wirkung, YAML- und Excel-Roundtrip).
+
+### Aufgeräumte Kennzahlen
+- Projekt-Dashboard: eine KPI-Leiste mit EK-Rendite, NPV, min. DSCR,
+  Investitionsvolumen und LCOE; entfernt: Payback, Eigenkapitaleinsatz,
+  spezifisches Invest, Erzeugung Jahr 1, Erlöse gesamt.
+- Projektkarten im Portfolio: ohne Cashflow-Sparkline und ohne Payback
+  (Name, Typ-Badge, Leistung, IBN, EK-Rendite, EK-Einsatz).
+- Letztes verbliebenes Icon im Projektformular entfernt.
+
 ## v3.1 – Design-Korrekturen (2026-07)
 
 - Zurück zu Trianel-Rot als einzigem Markenakzent: Kopfzeilen-Band und

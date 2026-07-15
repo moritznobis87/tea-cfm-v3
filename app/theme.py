@@ -248,6 +248,34 @@ _CSS = f"""
     }}
     section[data-testid="stSidebar"] .stRadio label {{ font-weight: 500; }}
 
+    /* --- Markenfarbe erzwingen (Fallback, falls kein Theme greift) -------- */
+    :root {{ --primary-color: {Colors.BRAND}; }}
+    button[kind="primary"], button[data-testid="stBaseButton-primary"] {{
+        background-color: {Colors.BRAND} !important;
+        border-color: {Colors.BRAND} !important;
+        color: #FFFFFF !important;
+    }}
+    button[kind="primary"]:hover,
+    button[data-testid="stBaseButton-primary"]:hover {{
+        background-color: #A31425 !important;
+        border-color: #A31425 !important;
+    }}
+    .stButton > button:hover, .stButton > button:focus:not(:active),
+    .stDownloadButton > button:hover,
+    .stDownloadButton > button:focus:not(:active) {{
+        border-color: {Colors.BRAND} !important;
+        color: {Colors.BRAND} !important;
+    }}
+    .stTabs [data-baseweb="tab-highlight"] {{
+        background-color: {Colors.BRAND} !important;
+    }}
+    div[data-baseweb="slider"] div[role="slider"] {{
+        background-color: {Colors.BRAND} !important;
+        border-color: {Colors.BRAND} !important;
+    }}
+    div[data-testid="stSliderThumbValue"] {{ color: {Colors.BRAND} !important; }}
+    a, a:visited {{ color: {Colors.BRAND}; }}
+
     /* --- Buttons -------------------------------------------------------------- */
     .stButton > button, .stDownloadButton > button {{
         border-radius: 10px;

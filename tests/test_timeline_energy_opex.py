@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
+import numpy as np
 import pytest
 
 from engine import OpexItem
@@ -94,3 +95,79 @@ class TestOpex:
         assert opex["gemeindeabgabe_eur"].iloc[0] == pytest.approx(2000.0)
         assert opex["direktvermarktungskosten_eur"].iloc[0] == pytest.approx(1000.0)
         assert opex["opex_gesamt_eur"].iloc[0] == pytest.approx(3000.0)
+
+
+class TestDirektvermarktungsModus:
+    def test_relativ_marktwert_berechnet_anteil(self, project, global_assumptions):
+        """Im Relativ-Modus: DV-Kosten = Produktion x Marktwert(nominal) x
+        Anteil - Jahr fuer Jahr exakt."""
+        from engine import DirektvermarktungsModus, run_valuation
+
+        ga = global_assumptions.model_copy(deep=True)
+        ga.direktvermarktung_modus = DirektvermarktungsModus.RELATIV_MARKTWERT
+        ga.direktvermarktung_pct_marktwert = 0.10
+
+        df = run_valuation(project, ga).cashflow.data
+        betrieb = df[df["jahr"] >= 1]
+        erwartet = (
+            betrieb["produktion_kwh"]
+            * betrieb["marktwert_nominal_ct_kwh"]
+            / 100.0
+            * 0.10
+        )
+        assert np.allclose(betrieb["direktvermarktungskosten_eur"], erwartet)
+
+    def test_absolut_bleibt_unveraendert(self, project, global_assumptions):
+        """Der Standard-Modus ABSOLUT rechnet exakt wie bisher: fester
+        EUR/kWh-Satz auf die erzeugte Menge."""
+        from engine import run_valuation
+
+        df = run_valuation(project, global_assumptions).cashflow.data
+        betrieb = df[df["jahr"] >= 1]
+        satz = project.direktvermarktungskosten_eur_mwh / 1000
+        assert np.allclose(
+            betrieb["direktvermarktungskosten_eur"],
+            betrieb["produktion_kwh"] * satz,
+        )
+
+    def test_modus_aendert_irr(self, project, global_assumptions):
+        """Ein spuerbarer Marktwert-Anteil (10 %) muss die Rendite gegen-
+        ueber 1 EUR/MWh absolut deutlich druecken."""
+        from engine import DirektvermarktungsModus, run_valuation
+
+        irr_absolut = run_valuation(project, global_assumptions).kpis.equity_irr
+        ga = global_assumptions.model_copy(deep=True)
+        ga.direktvermarktung_modus = DirektvermarktungsModus.RELATIV_MARKTWERT
+        ga.direktvermarktung_pct_marktwert = 0.10
+        irr_relativ = run_valuation(project, ga).kpis.equity_irr
+        assert irr_relativ < irr_absolut
+
+    def test_yaml_roundtrip_mit_modus(self, tmp_path, global_assumptions):
+        from engine import DirektvermarktungsModus
+        from engine.io_yaml import (
+            load_global_assumptions_yaml,
+            save_global_assumptions_yaml,
+        )
+
+        ga = global_assumptions.model_copy(deep=True)
+        ga.direktvermarktung_modus = DirektvermarktungsModus.RELATIV_MARKTWERT
+        ga.direktvermarktung_pct_marktwert = 0.07
+        pfad = tmp_path / "ga.yaml"
+        save_global_assumptions_yaml(ga, pfad)
+        geladen = load_global_assumptions_yaml(pfad)
+        assert geladen.direktvermarktung_modus == DirektvermarktungsModus.RELATIV_MARKTWERT
+        assert geladen.direktvermarktung_pct_marktwert == 0.07
+
+    def test_excel_roundtrip_mit_modus(self, global_assumptions):
+        from engine import DirektvermarktungsModus
+        from engine.io_excel import (
+            excel_to_global_assumptions,
+            global_assumptions_to_excel,
+        )
+
+        ga = global_assumptions.model_copy(deep=True)
+        ga.direktvermarktung_modus = DirektvermarktungsModus.RELATIV_MARKTWERT
+        ga.direktvermarktung_pct_marktwert = 0.12
+        geladen = excel_to_global_assumptions(global_assumptions_to_excel(ga))
+        assert geladen.direktvermarktung_modus == DirektvermarktungsModus.RELATIV_MARKTWERT
+        assert geladen.direktvermarktung_pct_marktwert == pytest.approx(0.12)
