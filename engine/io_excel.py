@@ -287,6 +287,7 @@ PROJEKT_SPALTEN = [
     "gemeindeabgabe_eur_mwh", "direktvermarktungskosten_eur_mwh",
     "marktpreisszenario", "projektflaeche_ha",
     "capex_epc_eur", "capex_netzanschluss_eur", "capex_trasse_eur",
+    "capex_widmung_eur", "capex_genehmigung_eur",
     "capex_sonstige_extern_eur", "capex_agm_eur", "capex_m_and_a_eur",
     "capex_poenale_puffer_eur",
 ]
@@ -313,6 +314,8 @@ def projects_to_excel(projects: list[PVProject]) -> bytes:
             "capex_epc_eur": p.capex.epc_eur,
             "capex_netzanschluss_eur": p.capex.netzanschluss_eur,
             "capex_trasse_eur": p.capex.trasse_eur,
+            "capex_widmung_eur": p.capex.widmung_eur,
+            "capex_genehmigung_eur": p.capex.genehmigung_eur,
             "capex_sonstige_extern_eur": p.capex.sonstige_extern_eur,
             "capex_agm_eur": p.capex.agm_eur,
             "capex_m_and_a_eur": p.capex.m_and_a_eur,
@@ -371,6 +374,9 @@ def excel_to_projects(file_bytes: bytes) -> list[PVProject]:
                     epc_eur=float(r["capex_epc_eur"]),
                     netzanschluss_eur=float(r["capex_netzanschluss_eur"]),
                     trasse_eur=float(r["capex_trasse_eur"]),
+                    # Aeltere Exporte kennen die Spalten noch nicht -> 0.
+                    widmung_eur=float(r.get("capex_widmung_eur", 0) or 0),
+                    genehmigung_eur=float(r.get("capex_genehmigung_eur", 0) or 0),
                     sonstige_extern_eur=float(r["capex_sonstige_extern_eur"]),
                     agm_eur=float(r["capex_agm_eur"]),
                     m_and_a_eur=float(r["capex_m_and_a_eur"]),

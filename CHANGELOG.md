@@ -1,5 +1,18 @@
 # Changelog
 
+## v3.7 – Investkosten: Widmung & Genehmigung (2026-07)
+
+- Zwei neue Positionen in den Investkosten (Details), direkt nach der
+  Trasse: **Widmung** (Vorbelegung 1 €/kWp bzw. 10.000 € im
+  Absolut-Modus) und **Genehmigung** (8 €/kWp bzw. 80.000 €). Die
+  Vorbelegung folgt damit erstmals der gewählten Eingabe-Einheit statt
+  aus dem Absolutwert abgeleitet zu werden.
+- Beide Positionen fließen in CAPEX-Summe, Finanzierung, KPI-Kachel und
+  den Investitionsstruktur-Donut ein und sind Teil des
+  Excel-Roundtrips (ältere Projekt-Exporte ohne die Spalten laden mit
+  0 €).
+- Bestehende Projekte bleiben unverändert (beide Positionen 0 €).
+
 ## v3.6 – Szenario-Reihenfolge & EAG-Default (2026-07)
 
 - Szenario-Reihenfolge: alle Aurora-Szenarien zuerst (Aurora 6/26 bleibt

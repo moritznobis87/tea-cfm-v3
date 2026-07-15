@@ -325,6 +325,8 @@ def _render_financing_tab(result, df, project) -> None:
             "EPC": capex.epc_eur,
             "Netzanschluss": capex.netzanschluss_eur,
             "Trasse": capex.trasse_eur,
+            "Widmung": capex.widmung_eur,
+            "Genehmigung": capex.genehmigung_eur,
             "Sonstige extern": capex.sonstige_extern_eur,
             "AGM": capex.agm_eur,
             "M&A": capex.m_and_a_eur,

@@ -137,3 +137,24 @@ class TestIoRoundtrip:
         assert szenario_neu.marktwert_solar_ct_kwh_je_kalenderjahr == pytest.approx(
             szenario_alt.marktwert_solar_ct_kwh_je_kalenderjahr
         )
+
+
+class TestCapexWidmungGenehmigung:
+    def test_summe_enthaelt_widmung_und_genehmigung(self):
+        from engine import CapexBreakdown
+
+        capex = CapexBreakdown(
+            epc_eur=1_000_000, widmung_eur=10_000, genehmigung_eur=80_000
+        )
+        assert capex.summe_eur == 1_090_000
+
+    def test_excel_roundtrip_neue_capex_felder(self, project):
+        from engine.io_excel import excel_to_projects, projects_to_excel
+
+        p = project.model_copy(deep=True)
+        p.capex.widmung_eur = 10_000
+        p.capex.genehmigung_eur = 80_000
+        geladen = excel_to_projects(projects_to_excel([p]))[0]
+        assert geladen.capex.widmung_eur == 10_000
+        assert geladen.capex.genehmigung_eur == 80_000
+        assert geladen.capex.summe_eur == p.capex.summe_eur

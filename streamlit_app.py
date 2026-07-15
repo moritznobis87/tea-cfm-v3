@@ -1,5 +1,10 @@
 """
 TEA PV-Projektbewertung - Einstiegspunkt.
+
+Bewusst duenn gehalten: Seitenkonfiguration, Theme, Kopfzeile und
+Navigation. Die eigentlichen Seiten leben in app/views/, wieder-
+verwendbare Bausteine in app/components/, Datenzugriff und Caching in
+app/services.py, die Fachlogik in engine/.
 """
 
 from __future__ import annotations

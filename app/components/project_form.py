@@ -101,15 +101,27 @@ def render_project_form(
     capex_mode_changed = st.session_state.get(capex_mode_key) != capex_einheit
     st.session_state[capex_mode_key] = capex_einheit
 
-    def capex_feld(col, label: str, default_abs_eur: float, key_suffix: str) -> float:
+    def capex_feld(
+        col,
+        label: str,
+        default_abs_eur: float,
+        key_suffix: str,
+        default_eur_kwp: float | None = None,
+    ) -> float:
+        """default_eur_kwp: expliziter Vorbelegungswert fuer den
+        €/kWp-Modus (z.B. Widmung 1 €/kWp bei 10.000 € absolut) - ohne
+        Angabe wird er wie bisher aus dem Absolutwert abgeleitet."""
         key = f"{form_key}_{key_suffix}"
         if capex_mode_changed or key not in st.session_state:
             if capex_einheit == "€/kWp":
-                st.session_state[key] = (
-                    round(default_abs_eur / nennleistung_kwp, 1)
-                    if nennleistung_kwp
-                    else 0.0
-                )
+                if default_eur_kwp is not None and not existing:
+                    st.session_state[key] = default_eur_kwp
+                else:
+                    st.session_state[key] = (
+                        round(default_abs_eur / nennleistung_kwp, 1)
+                        if nennleistung_kwp
+                        else 0.0
+                    )
             else:
                 st.session_state[key] = default_abs_eur
         einheit_label = "€/kWp" if capex_einheit == "€/kWp" else "€"
@@ -276,20 +288,33 @@ def render_project_form(
             capex_defaults.trasse_eur if existing else nennleistung_kwp * 40.0,
             "trasse",
         )
+        widmung = capex_feld(
+            c4, "Widmung",
+            capex_defaults.widmung_eur if existing else 10000.0,
+            "widmung",
+            default_eur_kwp=1.0,
+        )
+        c5, c6, c7, c8 = st.columns(4)
+        genehmigung = capex_feld(
+            c5, "Genehmigung",
+            capex_defaults.genehmigung_eur if existing else 80000.0,
+            "genehmigung",
+            default_eur_kwp=8.0,
+        )
         sonstige_extern = capex_feld(
-            c4, "Sonstige Extern",
+            c6, "Sonstige Extern",
             capex_defaults.sonstige_extern_eur if existing else 40000.0,
             "sonst",
         )
-        c5, c6, c7 = st.columns(3)
         agm = capex_feld(
-            c5, "AGM", capex_defaults.agm_eur if existing else 30000.0, "agm",
+            c7, "AGM", capex_defaults.agm_eur if existing else 30000.0, "agm",
         )
         m_and_a = capex_feld(
-            c6, "M&A", capex_defaults.m_and_a_eur if existing else 20000.0, "ma",
+            c8, "M&A", capex_defaults.m_and_a_eur if existing else 20000.0, "ma",
         )
+        c9, _, _, _ = st.columns(4)
         poenale = capex_feld(
-            c7, "Pönale + Puffer",
+            c9, "Pönale + Puffer",
             capex_defaults.poenale_puffer_eur if existing else 35000.0,
             "poenale",
         )
@@ -328,6 +353,8 @@ def render_project_form(
             epc_eur=epc,
             netzanschluss_eur=netzanschluss,
             trasse_eur=trasse,
+            widmung_eur=widmung,
+            genehmigung_eur=genehmigung,
             sonstige_extern_eur=sonstige_extern,
             agm_eur=agm,
             m_and_a_eur=m_and_a,

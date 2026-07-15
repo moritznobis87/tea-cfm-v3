@@ -98,6 +98,8 @@ class CapexBreakdown(BaseModel):
     epc_eur: float = 0.0
     netzanschluss_eur: float = 0.0
     trasse_eur: float = 0.0
+    widmung_eur: float = 0.0
+    genehmigung_eur: float = 0.0
     sonstige_extern_eur: float = 0.0
     agm_eur: float = 0.0
     m_and_a_eur: float = 0.0
@@ -109,6 +111,8 @@ class CapexBreakdown(BaseModel):
             self.epc_eur
             + self.netzanschluss_eur
             + self.trasse_eur
+            + self.widmung_eur
+            + self.genehmigung_eur
             + self.sonstige_extern_eur
             + self.agm_eur
             + self.m_and_a_eur
