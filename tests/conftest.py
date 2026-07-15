@@ -31,8 +31,7 @@ from engine import (  # noqa: E402
 )
 
 
-@pytest.fixture
-def szenario_flach() -> MarktpreisSzenario:
+def _baue_szenario_flach() -> MarktpreisSzenario:
     """Konstante 4 ct/kWh, keine negativen Stunden - macht Erloese trivial
     nachrechenbar."""
     jahre = range(2025, 2061)
@@ -43,11 +42,10 @@ def szenario_flach() -> MarktpreisSzenario:
     )
 
 
-@pytest.fixture
-def global_assumptions(szenario_flach: MarktpreisSzenario) -> GlobalAssumptions:
+def _baue_global_assumptions() -> GlobalAssumptions:
     return GlobalAssumptions(
         gueltig_ab="test",
-        marktpreisszenarien=[szenario_flach],
+        marktpreisszenarien=[_baue_szenario_flach()],
         marktpreis_inflation_pct_pa=0.0,  # Inflation aus -> nominal == real
         marktpreis_inflation_basisjahr=2025,
         opex_standard=[
@@ -74,8 +72,7 @@ def global_assumptions(szenario_flach: MarktpreisSzenario) -> GlobalAssumptions:
     )
 
 
-@pytest.fixture
-def project() -> PVProject:
+def _baue_projekt() -> PVProject:
     return PVProject(
         id="testprojekt",
         name="Testprojekt",
@@ -93,3 +90,18 @@ def project() -> PVProject:
         marktpreisszenario="Testszenario",
         capex=CapexBreakdown(epc_eur=500_000.0, netzanschluss_eur=50_000.0),
     )
+
+
+@pytest.fixture
+def szenario_flach() -> MarktpreisSzenario:
+    return _baue_szenario_flach()
+
+
+@pytest.fixture
+def global_assumptions() -> GlobalAssumptions:
+    return _baue_global_assumptions()
+
+
+@pytest.fixture
+def project() -> PVProject:
+    return _baue_projekt()

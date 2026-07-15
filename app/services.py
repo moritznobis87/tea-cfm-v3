@@ -323,3 +323,44 @@ def _clear_analytics_caches() -> None:
         _break_even_cached, _szenarien_cached,
     ):
         fn.clear()
+
+
+# ---------------------------------------------------------------------------
+# PDF-Ergebnisbericht
+# ---------------------------------------------------------------------------
+
+
+def build_project_report(project_id: str, diskontsatz_pct: float,
+                         ziel_irr_pct: float = 0.08) -> bytes | None:
+    """Stellt alle Berichtsbausteine aus den (gecachten) Services zusammen
+    und erzeugt den PDF-Bericht. Monte Carlo laeuft mit den dokumentierten
+    Standardparametern (400 Laeufe, Standard-Sigmas, fester Seed)."""
+    from app.config import LOGO_PATH
+    from app.report import ReportInputs, build_pdf_report
+    from engine import MC_STANDARD_SIGMAS, calculate_lcoe
+    from engine.kpis import npv_at
+
+    path = PROJECTS_DIR / f"{project_id}.yaml"
+    result = get_valuation(project_id)
+    if result is None or not path.exists():
+        return None
+    project = load_project_yaml(path)
+
+    inputs = ReportInputs(
+        project=project,
+        global_assumptions=get_global_assumptions(),
+        result=result,
+        tornado=get_tornado(project_id),
+        eag_sensitivitaet=get_eag_sensitivity(project_id),
+        monte_carlo=get_monte_carlo(
+            project_id, 400, MC_STANDARD_SIGMAS, diskontsatz_pct
+        ),
+        szenarien=get_scenario_comparison(project_id, diskontsatz_pct),
+        break_even_ct=get_break_even_zuschlag(project_id, ziel_irr_pct),
+        lcoe_ct=calculate_lcoe(result.cashflow.data, diskontsatz_pct),
+        npv_eur=npv_at(result.cashflow, diskontsatz_pct),
+        diskontsatz_pct=diskontsatz_pct,
+        ziel_irr_pct=ziel_irr_pct,
+        logo_path=LOGO_PATH,
+    )
+    return build_pdf_report(inputs)

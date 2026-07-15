@@ -1,5 +1,31 @@
 # Changelog
 
+## v3.8 – PDF-Ergebnisbericht (2026-07)
+
+- Neuer Button "PDF-Bericht erstellen" im Projekt-Dashboard: erzeugt
+  einen herunterladbaren Ergebnisbericht im Gutachtenstil (A4,
+  Trianel-Branding, Kopf-/Fußzeilen mit Seitenzahlen, ca. 15 Seiten).
+- Aufbau: Deckblatt mit Logo, Projektsteckbrief und Disclaimer ·
+  Inhaltsverzeichnis · Management Summary mit KPI-Kacheln und
+  Kernaussagen · Ergebnisrechnung (Wertbrücke, Cashflow-Tabelle) ·
+  Erlöse & Förderung (Vergütungssatz/Marktwert, Markterlös vs. Prämie) ·
+  Finanzierung (DSCR, Schuldenprofil, Kapital-/Investitionsstruktur,
+  NPV-Kurve) · Sensitivität (Tornado, EAG-Varianten, Break-even-Gebot) ·
+  Risikoanalyse (Monte Carlo, 400 Läufe mit dokumentierten
+  Standardparametern) · Szenarienvergleich · Annex A (vollständig
+  aufgelöste Annahmen, OPEX- und CAPEX-Positionen) · Annex B (alle
+  verwendeten Zeitreihen: Marktwerte real/nominal, Erzeugungsmengen
+  6h/1h, Marktwertübersicht aller Szenarien).
+- NPV, LCOE und MC-NPV im Bericht folgen dem im Dashboard gewählten
+  Diskontsatz; Zielrendite für Break-even und Erfolgswahrscheinlichkeit:
+  8,0 %. Diagramme als hochauflösende Grafiken im Markenstil
+  (druckfähig); Bericht wird beim Bearbeiten des Projekts automatisch
+  invalidiert.
+- Technik: reiner Generator ohne Streamlit-Abhängigkeit
+  (app/report.py, ReportLab + Matplotlib – neue Abhängigkeiten in
+  requirements.txt); 3 neue Tests (Struktur, Kapitel, Metadaten);
+  Suite: 96 Tests.
+
 ## v3.7 – Investkosten: Widmung & Genehmigung (2026-07)
 
 - Zwei neue Positionen in den Investkosten (Details), direkt nach der

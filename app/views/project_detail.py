@@ -65,10 +65,11 @@ def render_project_dashboard(
             # laufen - wir wollen immer die tatsaechlich geoeffnete Datei
             # ueberschreiben, nicht versehentlich eine zweite erzeugen.
             services.save_project(updated, file_path)
+            st.session_state.pop(f"pdf_bericht_{file_path.stem}", None)
             st.success("Projekt aktualisiert.")
             st.rerun()
 
-    _, col_dup, col_del, col_export = st.columns([3, 1, 1, 2])
+    _, col_dup, col_del, col_export, col_pdf = st.columns([1.6, 1, 1, 1.8, 1.8])
     with col_dup:
         if st.button("Duplizieren", key=f"dup_{project.id}", width="stretch"):
             kopie = services.duplicate_project(file_path.stem)
@@ -86,6 +87,29 @@ def render_project_dashboard(
             mime=_XLSX_MIME,
             width="stretch",
         )
+    with col_pdf:
+        pdf_key = f"pdf_bericht_{file_path.stem}"
+        if pdf_key not in st.session_state:
+            if st.button("PDF-Bericht erstellen", key=f"pdf_btn_{project.id}",
+                         width="stretch"):
+                with st.spinner(
+                    "Erstelle PDF-Bericht (inkl. Sensitivität und "
+                    "Monte-Carlo-Simulation) …"
+                ):
+                    st.session_state[pdf_key] = services.build_project_report(
+                        file_path.stem,
+                        st.session_state.get("npv_diskontsatz_pct", 8.0) / 100,
+                    )
+                st.rerun()
+        else:
+            st.download_button(
+                "PDF-Bericht herunterladen",
+                data=st.session_state[pdf_key],
+                file_name=f"{project.id}_bericht.pdf",
+                mime="application/pdf",
+                width="stretch",
+                key=f"pdf_dl_{project.id}",
+            )
 
     # Loeschen nur nach expliziter Bestaetigung - das ist nicht rueckholbar.
     if st.session_state.get(STATE_DELETE_CANDIDATE) == file_path.stem:
