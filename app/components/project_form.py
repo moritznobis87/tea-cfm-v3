@@ -152,7 +152,7 @@ def render_project_form(
         )
         eag_zuschlag = col7.number_input(
             "EAG-Zuschlagswert (ct/kWh)", min_value=0.0,
-            value=existing.eag_zuschlagswert_ct_kwh if existing else 7.2,
+            value=existing.eag_zuschlagswert_ct_kwh if existing else 6.5,
             step=0.1, key=f"{form_key}_eag",
         )
         gemeindeabgabe_default = (

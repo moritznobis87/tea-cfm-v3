@@ -1,5 +1,14 @@
 # Changelog
 
+## v3.6 – Szenario-Reihenfolge & EAG-Default (2026-07)
+
+- Szenario-Reihenfolge: alle Aurora-Szenarien zuerst (Aurora 6/26 bleibt
+  Standard-Vorauswahl), Enervis 2025 ans Ende – gilt für Szenario-Tabs,
+  Projektauswahl und Excel-Export.
+- EAG-Zuschlagswert: Vorbelegung für neue Projekte jetzt 6,5 ct/kWh
+  (vorher 7,2); die beiden Template-Projekte wurden ebenfalls auf
+  6,5 ct/kWh gesetzt. Bestehende eigene Projekte bleiben unverändert.
+
 ## v3.5 – Negativmengen je Regel (6h/1h) & Aurora 6/26 (2026-07)
 
 ### Fachlich

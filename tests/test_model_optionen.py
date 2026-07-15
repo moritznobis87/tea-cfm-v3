@@ -276,6 +276,11 @@ class TestAurora626Standarddaten:
     def test_aurora_626_ist_erstes_szenario(self, ausgeliefert):
         assert ausgeliefert.marktpreisszenarien[0].name == "Aurora 6/26"
 
+    def test_aurora_szenarien_vor_enervis(self, ausgeliefert):
+        namen = [s.name for s in ausgeliefert.marktpreisszenarien]
+        assert namen[-1] == "Enervis 2025"
+        assert all(n.startswith("Aurora") for n in namen[:-1])
+
     def test_aurora_626_stuetzwerte(self, ausgeliefert):
         a = ausgeliefert.marktpreisszenarien[0]
         assert a.marktwert_solar_ct_kwh_je_kalenderjahr[2027] == pytest.approx(4.25)
