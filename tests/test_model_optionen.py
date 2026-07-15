@@ -11,7 +11,12 @@ from datetime import date
 
 import pytest
 
-from engine import NegativeStundenModus, TilgungsArt, run_valuation
+from engine import (
+    NegativeStundenModus,
+    NegativeStundenRegel,
+    TilgungsArt,
+    run_valuation,
+)
 from engine.financing import calculate_financing
 from engine.kpis import npv_at
 from engine.timeline import build_timeline
@@ -86,8 +91,9 @@ class TestNegativeStundenModus:
     @pytest.fixture
     def ga_mit_negstunden(self, global_assumptions):
         szenario = global_assumptions.marktpreisszenarien[0]
-        for jahr in szenario.anteil_negativer_stunden_pct_je_kalenderjahr:
-            szenario.anteil_negativer_stunden_pct_je_kalenderjahr[jahr] = 0.10
+        for jahr in szenario.erzeugungsmenge_negativ_6h_pct_je_kalenderjahr:
+            szenario.erzeugungsmenge_negativ_6h_pct_je_kalenderjahr[jahr] = 0.10
+            szenario.erzeugungsmenge_negativ_1h_pct_je_kalenderjahr[jahr] = 0.10
         return global_assumptions
 
     def test_abregelung_entzieht_komplette_verguetung(
@@ -176,3 +182,108 @@ class TestIoRoundtripNeueFelder:
         save_global_assumptions_yaml(global_assumptions, pfad)
         geladen = load_global_assumptions_yaml(pfad)
         assert geladen == global_assumptions
+
+
+class TestNegativeStundenRegel:
+    """6h-Regel (Oesterreich, Standard) vs. 1h-Regel (Deutschland): die
+    Regel waehlt aus, welche Negativmengen-Zeitreihe des Szenarios
+    angewendet wird."""
+
+    @pytest.fixture
+    def ga_mit_getrennten_kurven(self, global_assumptions):
+        szenario = global_assumptions.marktpreisszenarien[0]
+        for jahr in szenario.erzeugungsmenge_negativ_6h_pct_je_kalenderjahr:
+            szenario.erzeugungsmenge_negativ_6h_pct_je_kalenderjahr[jahr] = 0.05
+            szenario.erzeugungsmenge_negativ_1h_pct_je_kalenderjahr[jahr] = 0.20
+        return global_assumptions
+
+    def test_standard_ist_6h(self, global_assumptions):
+        assert (
+            global_assumptions.negative_stunden_regel
+            == NegativeStundenRegel.SECHS_STUNDEN
+        )
+
+    def test_1h_regel_reduziert_erloese_staerker(
+        self, project, ga_mit_getrennten_kurven
+    ):
+        ga = ga_mit_getrennten_kurven
+        erloes_6h = run_valuation(project, ga).cashflow.data["erloes_eur"].sum()
+        ga.negative_stunden_regel = NegativeStundenRegel.EINE_STUNDE
+        erloes_1h = run_valuation(project, ga).cashflow.data["erloes_eur"].sum()
+        assert erloes_1h < erloes_6h
+
+    def test_regel_waehlt_exakt_die_kurve(self, project, ga_mit_getrennten_kurven):
+        from engine.pipeline import resolve_assumptions
+
+        ga = ga_mit_getrennten_kurven
+        ea_6h = resolve_assumptions(project, ga)
+        assert set(ea_6h.anteil_negativer_stunden_pct_je_kalenderjahr.values()) == {
+            0.05
+        }
+        ga.negative_stunden_regel = NegativeStundenRegel.EINE_STUNDE
+        ea_1h = resolve_assumptions(project, ga)
+        assert set(ea_1h.anteil_negativer_stunden_pct_je_kalenderjahr.values()) == {
+            0.20
+        }
+
+    def test_legacy_kurve_wandert_in_beide_regeln(self):
+        from engine import MarktpreisSzenario
+
+        szenario = MarktpreisSzenario(
+            name="Alt",
+            marktwert_solar_ct_kwh_je_kalenderjahr={2030: 4.0},
+            anteil_negativer_stunden_pct_je_kalenderjahr={2030: 0.08},
+        )
+        assert szenario.erzeugungsmenge_negativ_6h_pct_je_kalenderjahr == {2030: 0.08}
+        assert szenario.erzeugungsmenge_negativ_1h_pct_je_kalenderjahr == {2030: 0.08}
+
+    def test_excel_roundtrip_getrennte_kurven_und_regel(self, global_assumptions):
+        from engine.io_excel import (
+            excel_to_global_assumptions,
+            global_assumptions_to_excel,
+        )
+
+        ga = global_assumptions.model_copy(deep=True)
+        szenario = ga.marktpreisszenarien[0]
+        for jahr in szenario.erzeugungsmenge_negativ_6h_pct_je_kalenderjahr:
+            szenario.erzeugungsmenge_negativ_6h_pct_je_kalenderjahr[jahr] = 0.06
+            szenario.erzeugungsmenge_negativ_1h_pct_je_kalenderjahr[jahr] = 0.18
+        ga.negative_stunden_regel = NegativeStundenRegel.EINE_STUNDE
+
+        geladen = excel_to_global_assumptions(global_assumptions_to_excel(ga))
+        s = geladen.marktpreisszenarien[0]
+        for wert in s.erzeugungsmenge_negativ_6h_pct_je_kalenderjahr.values():
+            assert wert == pytest.approx(0.06)
+        for wert in s.erzeugungsmenge_negativ_1h_pct_je_kalenderjahr.values():
+            assert wert == pytest.approx(0.18)
+        assert geladen.negative_stunden_regel == NegativeStundenRegel.EINE_STUNDE
+
+
+class TestAurora626Standarddaten:
+    """Das ausgelieferte Aurora-6/26-Szenario: erstes (Standard-)Szenario
+    mit getrennten 6h/1h-Zeitreihen aus der Marktpreisstudie."""
+
+    @pytest.fixture
+    def ausgeliefert(self):
+        from pathlib import Path
+
+        from engine.io_yaml import load_global_assumptions_yaml
+
+        return load_global_assumptions_yaml(
+            Path(__file__).parent.parent / "data" / "global_assumptions.yaml"
+        )
+
+    def test_aurora_626_ist_erstes_szenario(self, ausgeliefert):
+        assert ausgeliefert.marktpreisszenarien[0].name == "Aurora 6/26"
+
+    def test_aurora_626_stuetzwerte(self, ausgeliefert):
+        a = ausgeliefert.marktpreisszenarien[0]
+        assert a.marktwert_solar_ct_kwh_je_kalenderjahr[2027] == pytest.approx(4.25)
+        assert a.erzeugungsmenge_negativ_6h_pct_je_kalenderjahr[2027] == pytest.approx(0.13)
+        assert a.erzeugungsmenge_negativ_1h_pct_je_kalenderjahr[2027] == pytest.approx(0.18)
+        # 1h erfasst nie weniger Menge als 6h
+        for jahr, wert_6h in a.erzeugungsmenge_negativ_6h_pct_je_kalenderjahr.items():
+            assert a.erzeugungsmenge_negativ_1h_pct_je_kalenderjahr[jahr] >= wert_6h
+        # Voller Horizont (2025/2026 mit 2027-Werten aufgefuellt)
+        assert min(a.marktwert_solar_ct_kwh_je_kalenderjahr) == 2025
+        assert max(a.marktwert_solar_ct_kwh_je_kalenderjahr) == 2060

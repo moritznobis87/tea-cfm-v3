@@ -1,5 +1,35 @@
 # Changelog
 
+## v3.5 – Negativmengen je Regel (6h/1h) & Aurora 6/26 (2026-07)
+
+### Fachlich
+- Die Größe heißt jetzt korrekt **"Erzeugungsmenge neg. Stunden"**: der
+  Anteil der PV-Jahreserzeugung, der in Zeiten negativer Preise anfällt
+  (nicht der Stundenanteil).
+- Jedes Marktpreisszenario führt zwei getrennte Zeitreihen: **6h-Regel**
+  (Prämienentfall erst ab mindestens 6 Stunden am Stück negativer
+  Preise; Standard Österreich/EAG) und **1h-Regel** (bereits ab 1 Stunde
+  am Stück; Regelung Deutschland). Global wählbar unter Globale
+  Annahmen → Marktpreisszenarien; Standard: 6h.
+- Neues Standardszenario **Aurora 6/26** (Marktwerte und getrennte
+  6h/1h-Negativmengen 2027–2060 aus der Marktpreisstudie; 2025/2026 mit
+  den 2027-Werten aufgefüllt). Es steht an erster Stelle und ist damit
+  die Vorauswahl für neue Projekte; bestehende Projekte behalten ihr
+  zugewiesenes Szenario.
+- Bestehende Szenarien: die bisherige (einzelne) Zeitreihe wurde in
+  beide Regel-Spalten übernommen.
+
+### Kompatibilität
+- Ältere YAML-Datenstände und Excel-Importe mit nur einer
+  Negativ-Spalte ("Anteil neg. Stunden (%)") laden weiter: der Wert
+  wird automatisch für beide Regeln übernommen.
+- Excel-Export der Globalen Annahmen enthält jetzt beide Spalten sowie
+  die gewählte Regel; der aufgelöste Parametersatz im Annahmen-Tab
+  weist die Regel aus.
+- 7 neue Tests (Regelwirkung auf Erlöse/IRR, exakte Kurvenwahl,
+  Legacy-Migration, Excel-Roundtrip, Aurora-6/26-Stützwerte); Suite:
+  90 Tests.
+
 ## v3.4 – Kompaktere Übersicht (2026-07)
 
 - KPI-Kachel "Investitionsvolumen" heißt jetzt "CAPEX"; die Leiste zeigt

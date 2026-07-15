@@ -17,6 +17,7 @@ from engine import (
     DirektvermarktungsModus,
     MarktpreisSzenario,
     NegativeStundenModus,
+    NegativeStundenRegel,
     OpexItem,
     TaxModus,
     TilgungsArt,
@@ -74,6 +75,31 @@ def render_assumptions() -> None:
             value=int(round(ga.negative_stunden_gewichtung_pct * 100)), step=5,
         )
 
+        st.markdown("**Regel für den Prämienentfall bei negativen Preisen**")
+        st.caption(
+            "Die Zeitreihen der Szenarien geben die Erzeugungsmenge an, die "
+            "in Zeiten negativer Preise anfällt - getrennt nach 6h-Regel "
+            "(Prämie entfällt erst ab mindestens 6 Stunden am Stück "
+            "negativer Preise) und 1h-Regel (bereits ab 1 Stunde am Stück). "
+            "Standard in Österreich ist die 6h-Regel, in Deutschland die "
+            "1h-Regel."
+        )
+        regel_labels = {
+            NegativeStundenRegel.SECHS_STUNDEN.value: (
+                "6-Stunden-Regel (Österreich, Standard)"
+            ),
+            NegativeStundenRegel.EINE_STUNDE.value: "1-Stunden-Regel (Deutschland)",
+        }
+        regel_optionen = [r.value for r in NegativeStundenRegel]
+        negative_stunden_regel = st.radio(
+            "Regel für negative Preise",
+            regel_optionen,
+            format_func=lambda v: regel_labels[v],
+            index=regel_optionen.index(ga.negative_stunden_regel.value),
+            horizontal=True,
+            label_visibility="collapsed",
+        )
+
         st.markdown("**Verhalten in Stunden negativer Preise**")
         neg_modus_labels = {
             NegativeStundenModus.ABREGELUNG.value: (
@@ -107,7 +133,8 @@ def render_assumptions() -> None:
                 with tab:
                     jahre = sorted(
                         set(szenario.marktwert_solar_ct_kwh_je_kalenderjahr)
-                        | set(szenario.anteil_negativer_stunden_pct_je_kalenderjahr)
+                        | set(szenario.erzeugungsmenge_negativ_6h_pct_je_kalenderjahr)
+                        | set(szenario.erzeugungsmenge_negativ_1h_pct_je_kalenderjahr)
                     )
                     kurven_df = pd.DataFrame(
                         {
@@ -116,9 +143,19 @@ def render_assumptions() -> None:
                                 szenario.marktwert_solar_ct_kwh_je_kalenderjahr.get(j)
                                 for j in jahre
                             ],
-                            "Anteil neg. Stunden (%)": [
+                            "Erzeugungsmenge neg. Stunden 6h (%)": [
                                 (
-                                    szenario.anteil_negativer_stunden_pct_je_kalenderjahr.get(
+                                    szenario.erzeugungsmenge_negativ_6h_pct_je_kalenderjahr.get(
+                                        j
+                                    )
+                                    or 0
+                                )
+                                * 100
+                                for j in jahre
+                            ],
+                            "Erzeugungsmenge neg. Stunden 1h (%)": [
+                                (
+                                    szenario.erzeugungsmenge_negativ_1h_pct_je_kalenderjahr.get(
                                         j
                                     )
                                     or 0
@@ -127,6 +164,12 @@ def render_assumptions() -> None:
                                 for j in jahre
                             ],
                         }
+                    )
+                    st.caption(
+                        "Erzeugungsmenge neg. Stunden: Anteil der "
+                        "PV-Jahreserzeugung, der in Zeiten negativer Preise "
+                        "anfällt - je Regel (6h/1h) eine eigene Zeitreihe. "
+                        "Angewendet wird die oben gewählte Regel."
                     )
                     edited_szenarien[szenario.name] = st.data_editor(
                         kurven_df, width="stretch", hide_index=True,
@@ -298,7 +341,7 @@ def render_assumptions() -> None:
             afa_nutzungsdauer = ga.afa_nutzungsdauer_jahre
             freibetrag = ga.freibetrag_eur
             st.caption(
-                "ℹ️ AfA und Freibetrag werden im Pauschalmodus nicht "
+                "AfA und Freibetrag werden im Pauschalmodus nicht "
                 "angewendet. Der Verlustvortrag gilt trotzdem."
             )
 
@@ -319,12 +362,23 @@ def render_assumptions() -> None:
                         if pd.notna(r["Kalenderjahr"])
                         and pd.notna(r["Marktwert Solar (ct/kWh)"])
                     },
-                    anteil_negativer_stunden_pct_je_kalenderjahr={
-                        int(r["Kalenderjahr"]): float(r["Anteil neg. Stunden (%)"])
+                    erzeugungsmenge_negativ_6h_pct_je_kalenderjahr={
+                        int(r["Kalenderjahr"]): float(
+                            r["Erzeugungsmenge neg. Stunden 6h (%)"]
+                        )
                         / 100
                         for _, r in edited.iterrows()
                         if pd.notna(r["Kalenderjahr"])
-                        and pd.notna(r["Anteil neg. Stunden (%)"])
+                        and pd.notna(r["Erzeugungsmenge neg. Stunden 6h (%)"])
+                    },
+                    erzeugungsmenge_negativ_1h_pct_je_kalenderjahr={
+                        int(r["Kalenderjahr"]): float(
+                            r["Erzeugungsmenge neg. Stunden 1h (%)"]
+                        )
+                        / 100
+                        for _, r in edited.iterrows()
+                        if pd.notna(r["Kalenderjahr"])
+                        and pd.notna(r["Erzeugungsmenge neg. Stunden 1h (%)"])
                     },
                 )
             )
@@ -333,6 +387,7 @@ def render_assumptions() -> None:
         ga.marktpreis_inflation_basisjahr = int(marktpreis_basisjahr)
         ga.negative_stunden_gewichtung_pct = negative_stunden_gewichtung / 100
         ga.negative_stunden_modus = NegativeStundenModus(negative_stunden_modus)
+        ga.negative_stunden_regel = NegativeStundenRegel(negative_stunden_regel)
 
         ga.opex_standard = [
             OpexItem(

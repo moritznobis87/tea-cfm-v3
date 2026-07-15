@@ -51,8 +51,9 @@ class TestEagMarktpraemie:
     ):
         # 10 % negative Stunden in jedem Jahr -> 10 % weniger Erloes.
         szenario = global_assumptions.marktpreisszenarien[0]
-        for jahr in szenario.anteil_negativer_stunden_pct_je_kalenderjahr:
-            szenario.anteil_negativer_stunden_pct_je_kalenderjahr[jahr] = 0.10
+        for jahr in szenario.erzeugungsmenge_negativ_6h_pct_je_kalenderjahr:
+            szenario.erzeugungsmenge_negativ_6h_pct_je_kalenderjahr[jahr] = 0.10
+            szenario.erzeugungsmenge_negativ_1h_pct_je_kalenderjahr[jahr] = 0.10
         revenue = _revenue_fuer(project, global_assumptions)
         # Jahr 1: 1 GWh * 90 % * 7 ct = 63.000 €.
         assert revenue["erloes_eur"].iloc[0] == pytest.approx(63_000.0)
@@ -61,8 +62,9 @@ class TestEagMarktpraemie:
         self, project, global_assumptions
     ):
         szenario = global_assumptions.marktpreisszenarien[0]
-        for jahr in szenario.anteil_negativer_stunden_pct_je_kalenderjahr:
-            szenario.anteil_negativer_stunden_pct_je_kalenderjahr[jahr] = 0.10
+        for jahr in szenario.erzeugungsmenge_negativ_6h_pct_je_kalenderjahr:
+            szenario.erzeugungsmenge_negativ_6h_pct_je_kalenderjahr[jahr] = 0.10
+            szenario.erzeugungsmenge_negativ_1h_pct_je_kalenderjahr[jahr] = 0.10
         global_assumptions.negative_stunden_gewichtung_pct = 0.0
         revenue = _revenue_fuer(project, global_assumptions)
         assert revenue["erloes_eur"].iloc[0] == pytest.approx(70_000.0)

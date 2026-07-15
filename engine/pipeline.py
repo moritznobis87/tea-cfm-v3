@@ -66,7 +66,10 @@ def resolve_assumptions(
         betriebsdauer_jahre=global_assumptions.betriebsdauer_jahre,
         marktpreisszenario_name=szenario.name,
         marktwert_solar_ct_kwh_je_kalenderjahr=szenario.marktwert_solar_ct_kwh_je_kalenderjahr,
-        anteil_negativer_stunden_pct_je_kalenderjahr=szenario.anteil_negativer_stunden_pct_je_kalenderjahr,
+        anteil_negativer_stunden_pct_je_kalenderjahr=szenario.erzeugungsmenge_negativ(
+            global_assumptions.negative_stunden_regel
+        ),
+        negative_stunden_regel=global_assumptions.negative_stunden_regel,
         marktpreis_inflation_pct_pa=global_assumptions.marktpreis_inflation_pct_pa,
         marktpreis_inflation_basisjahr=global_assumptions.marktpreis_inflation_basisjahr,
         opex_items=opex_items,

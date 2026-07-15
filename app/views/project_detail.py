@@ -19,7 +19,13 @@ from app.components.project_form import render_project_form
 from app.config import MONATE_KURZ, STATE_DELETE_CANDIDATE, STATE_SELECTED_PROJECT
 from app.formatting import fmt_ct_kwh, fmt_dscr, fmt_eur, fmt_kwp, fmt_number, fmt_pct
 from app.theme import section_title
-from engine import AnlagenTyp, GlobalAssumptions, NegativeStundenModus, PVProject
+from engine import (
+    AnlagenTyp,
+    GlobalAssumptions,
+    NegativeStundenModus,
+    NegativeStundenRegel,
+    PVProject,
+)
 from engine.analytics import HEATMAP_ACHSEN, calculate_lcoe
 from engine.kpis import npv_at
 
@@ -612,6 +618,13 @@ def _render_assumptions_tab(result) -> None:
             f"- Förderdauer: {ea.eag_foerderdauer_jahre} Jahre\n"
             f"- Inflation Marktwerte: {fmt_pct(ea.marktpreis_inflation_pct_pa)} p.a. "
             f"ab {ea.marktpreis_inflation_basisjahr}\n"
+            f"- Regel neg. Preise: "
+            + (
+                "6-Stunden (Österreich)"
+                if ea.negative_stunden_regel == NegativeStundenRegel.SECHS_STUNDEN
+                else "1-Stunde (Deutschland)"
+            )
+            + "\n"
             f"- Gewichtung neg. Stunden: {fmt_pct(ea.negative_stunden_gewichtung_pct, 0)}\n"
             f"- Negativstunden-Modus: "
             + (

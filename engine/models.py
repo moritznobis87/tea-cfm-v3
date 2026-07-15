@@ -48,6 +48,23 @@ class DirektvermarktungsModus(str, Enum):
     RELATIV_MARKTWERT = "relativ_marktwert"
 
 
+class NegativeStundenRegel(str, Enum):
+    """Regel, ab welcher Dauer zusammenhaengend negativer Preise die
+    Marktpraemie entfaellt - bestimmt, welche der beiden Negativmengen-
+    Zeitreihen eines Szenarios angewendet wird.
+
+    SECHS_STUNDEN: Praemie entfaellt erst, wenn mindestens 6 Stunden am
+                   Stueck negative Preise auftreten (Standard Oesterreich,
+                   EAG).
+    EINE_STUNDE:   Praemie entfaellt bereits ab 1 Stunde am Stueck
+                   negativer Preise (Regelung Deutschland) - die
+                   betroffene Erzeugungsmenge ist entsprechend groesser.
+    """
+
+    SECHS_STUNDEN = "6h"
+    EINE_STUNDE = "1h"
+
+
 class NegativeStundenModus(str, Enum):
     """Verhalten der Anlage in Stunden negativer Strompreise (in denen die
     Marktpraemie gesetzlich entfaellt).
@@ -168,9 +185,42 @@ class MarktpreisSzenario(BaseModel):
     marktwert_solar_ct_kwh_je_kalenderjahr: dict[int, float] = Field(
         default_factory=dict
     )
-    anteil_negativer_stunden_pct_je_kalenderjahr: dict[int, float] = Field(
+    # Erzeugungsmenge in Stunden negativer Preise, als Anteil (0-1) der
+    # PV-Jahreserzeugung - je Regel eine eigene Zeitreihe. Die 1h-Regel
+    # erfasst mehr Stunden und damit groessere Mengen als die 6h-Regel.
+    erzeugungsmenge_negativ_6h_pct_je_kalenderjahr: dict[int, float] = Field(
         default_factory=dict
     )
+    erzeugungsmenge_negativ_1h_pct_je_kalenderjahr: dict[int, float] = Field(
+        default_factory=dict
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _migriere_legacy_negativkurve(cls, data):
+        """Aeltere Datenstaende (YAML/Direktkonstruktion) kennen nur EINE
+        Negativkurve unter 'anteil_negativer_stunden_pct_je_kalenderjahr'.
+        Sie wird in beide Regel-Zeitreihen uebernommen (fachlich: gleiche
+        Annahme fuer 6h und 1h, solange keine getrennten Daten vorliegen).
+        """
+        if isinstance(data, dict):
+            legacy = data.pop("anteil_negativer_stunden_pct_je_kalenderjahr", None)
+            if legacy is not None:
+                data.setdefault(
+                    "erzeugungsmenge_negativ_6h_pct_je_kalenderjahr", legacy
+                )
+                data.setdefault(
+                    "erzeugungsmenge_negativ_1h_pct_je_kalenderjahr", dict(legacy)
+                )
+        return data
+
+    def erzeugungsmenge_negativ(
+        self, regel: NegativeStundenRegel
+    ) -> dict[int, float]:
+        """Die zur Regel gehoerende Negativmengen-Zeitreihe."""
+        if regel == NegativeStundenRegel.EINE_STUNDE:
+            return self.erzeugungsmenge_negativ_1h_pct_je_kalenderjahr
+        return self.erzeugungsmenge_negativ_6h_pct_je_kalenderjahr
 
 
 class GlobalAssumptions(BaseModel):
@@ -190,6 +240,11 @@ class GlobalAssumptions(BaseModel):
     # gesetzlich nominal fix, keine Indexierung.
     marktpreis_inflation_pct_pa: float = Field(ge=0, default=0.02)
     marktpreis_inflation_basisjahr: int = Field(default=2025)
+
+    # Regel fuer den Praemienentfall bei negativen Preisen (6h = Standard
+    # Oesterreich/EAG, 1h = Regelung Deutschland). Bestimmt, welche
+    # Negativmengen-Zeitreihe der Szenarien angewendet wird.
+    negative_stunden_regel: NegativeStundenRegel = NegativeStundenRegel.SECHS_STUNDEN
 
     # Standardbetriebskosten (Pacht kommt separat aus dem Projekt)
     opex_standard: list[OpexItem] = Field(default_factory=list)
@@ -288,7 +343,9 @@ class EffectiveAssumptions(BaseModel):
     betriebsdauer_jahre: int
     marktpreisszenario_name: str
     marktwert_solar_ct_kwh_je_kalenderjahr: dict[int, float]
+    # Aufgeloeste Negativmengen-Kurve gemaess gewaehlter Regel (6h/1h).
     anteil_negativer_stunden_pct_je_kalenderjahr: dict[int, float]
+    negative_stunden_regel: NegativeStundenRegel
     marktpreis_inflation_pct_pa: float
     marktpreis_inflation_basisjahr: int
 

@@ -115,7 +115,7 @@ TORNADO_TREIBER: list[tuple[str, str]] = [
     ("capex", "Investitionskosten"),
     ("opex", "Betriebskosten"),
     ("fk_zins", "Fremdkapitalzins"),
-    ("negative_stunden", "Anteil negativer Stunden"),
+    ("negative_stunden", "Erzeugungsmenge neg. Stunden"),
 ]
 
 
@@ -407,7 +407,9 @@ def run_scenario_comparison(
             update={
                 "marktpreisszenario_name": szenario.name,
                 "marktwert_solar_ct_kwh_je_kalenderjahr": szenario.marktwert_solar_ct_kwh_je_kalenderjahr,
-                "anteil_negativer_stunden_pct_je_kalenderjahr": szenario.anteil_negativer_stunden_pct_je_kalenderjahr,
+                "anteil_negativer_stunden_pct_je_kalenderjahr": szenario.erzeugungsmenge_negativ(
+                    global_assumptions.negative_stunden_regel
+                ),
             }
         )
         result = run_valuation_from_assumptions(

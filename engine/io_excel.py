@@ -28,6 +28,7 @@ from .models import (
     GlobalAssumptions,
     MarktpreisSzenario,
     NegativeStundenModus,
+    NegativeStundenRegel,
     OpexItem,
     PVProject,
     TaxModus,
@@ -39,6 +40,7 @@ EINSTELLUNGEN_DEFAULTS = {
     "gemeindeabgabe_eur_mwh_vorschlag": 2.0,
     "direktvermarktungskosten_eur_mwh_vorschlag": 1.0,
     "direktvermarktung_modus": "absolut",
+    "negative_stunden_regel": "6h",
     "direktvermarktung_pct_marktwert": 10.0,
     "negative_stunden_gewichtung_pct": 100.0,
     "negative_stunden_modus": "marktwert",
@@ -64,7 +66,8 @@ def global_assumptions_to_excel(ga: GlobalAssumptions) -> bytes:
     for szenario in ga.marktpreisszenarien:
         jahre = sorted(
             set(szenario.marktwert_solar_ct_kwh_je_kalenderjahr)
-            | set(szenario.anteil_negativer_stunden_pct_je_kalenderjahr)
+            | set(szenario.erzeugungsmenge_negativ_6h_pct_je_kalenderjahr)
+            | set(szenario.erzeugungsmenge_negativ_1h_pct_je_kalenderjahr)
         )
         for jahr in jahre:
             kurven_zeilen.append(
@@ -74,8 +77,17 @@ def global_assumptions_to_excel(ga: GlobalAssumptions) -> bytes:
                     "Marktwert Solar (ct/kWh)": (
                         szenario.marktwert_solar_ct_kwh_je_kalenderjahr.get(jahr)
                     ),
-                    "Anteil neg. Stunden (%)": (
-                        szenario.anteil_negativer_stunden_pct_je_kalenderjahr.get(jahr)
+                    "Erzeugungsmenge neg. Stunden 6h (%)": (
+                        szenario.erzeugungsmenge_negativ_6h_pct_je_kalenderjahr.get(
+                            jahr
+                        )
+                        or 0
+                    )
+                    * 100,
+                    "Erzeugungsmenge neg. Stunden 1h (%)": (
+                        szenario.erzeugungsmenge_negativ_1h_pct_je_kalenderjahr.get(
+                            jahr
+                        )
                         or 0
                     )
                     * 100,
@@ -83,7 +95,11 @@ def global_assumptions_to_excel(ga: GlobalAssumptions) -> bytes:
             )
     kurven_df = pd.DataFrame(
         kurven_zeilen,
-        columns=["Kalenderjahr", "Szenario", "Marktwert Solar (ct/kWh)", "Anteil neg. Stunden (%)"],
+        columns=[
+            "Kalenderjahr", "Szenario", "Marktwert Solar (ct/kWh)",
+            "Erzeugungsmenge neg. Stunden 6h (%)",
+            "Erzeugungsmenge neg. Stunden 1h (%)",
+        ],
     )
 
     opex_df = pd.DataFrame(
@@ -108,6 +124,7 @@ def global_assumptions_to_excel(ga: GlobalAssumptions) -> bytes:
                 ga.direktvermarktungskosten_eur_kwh * 1000,
             ),
             ("direktvermarktung_modus", ga.direktvermarktung_modus.value),
+            ("negative_stunden_regel", ga.negative_stunden_regel.value),
             (
                 "direktvermarktung_pct_marktwert",
                 ga.direktvermarktung_pct_marktwert * 100,
@@ -170,10 +187,24 @@ def excel_to_global_assumptions(file_bytes: bytes) -> GlobalAssumptions:
             szenarien[name].marktwert_solar_ct_kwh_je_kalenderjahr[jahr] = float(
                 r["Marktwert Solar (ct/kWh)"]
             )
-        if pd.notna(r["Anteil neg. Stunden (%)"]):
-            szenarien[name].anteil_negativer_stunden_pct_je_kalenderjahr[jahr] = (
-                float(r["Anteil neg. Stunden (%)"]) / 100
+        # Aktuelles Format: je Regel eine eigene Spalte. Aeltere Exporte
+        # kennen nur "Anteil neg. Stunden (%)" - der Wert gilt dann fuer
+        # beide Regeln.
+        spalte_6h = "Erzeugungsmenge neg. Stunden 6h (%)"
+        spalte_1h = "Erzeugungsmenge neg. Stunden 1h (%)"
+        legacy_spalte = "Anteil neg. Stunden (%)"
+        if spalte_6h in kurven_df.columns and pd.notna(r.get(spalte_6h)):
+            szenarien[name].erzeugungsmenge_negativ_6h_pct_je_kalenderjahr[jahr] = (
+                float(r[spalte_6h]) / 100
             )
+        if spalte_1h in kurven_df.columns and pd.notna(r.get(spalte_1h)):
+            szenarien[name].erzeugungsmenge_negativ_1h_pct_je_kalenderjahr[jahr] = (
+                float(r[spalte_1h]) / 100
+            )
+        if legacy_spalte in kurven_df.columns and pd.notna(r.get(legacy_spalte)):
+            wert = float(r[legacy_spalte]) / 100
+            szenarien[name].erzeugungsmenge_negativ_6h_pct_je_kalenderjahr[jahr] = wert
+            szenarien[name].erzeugungsmenge_negativ_1h_pct_je_kalenderjahr[jahr] = wert
 
     opex_items = [
         OpexItem(
@@ -211,6 +242,9 @@ def excel_to_global_assumptions(file_bytes: bytes) -> GlobalAssumptions:
         / 1000,
         direktvermarktung_modus=DirektvermarktungsModus(
             str(get("direktvermarktung_modus")).strip().lower()
+        ),
+        negative_stunden_regel=NegativeStundenRegel(
+            str(get("negative_stunden_regel")).strip().lower()
         ),
         direktvermarktung_pct_marktwert=float(
             get("direktvermarktung_pct_marktwert")
