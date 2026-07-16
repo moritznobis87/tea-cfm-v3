@@ -25,6 +25,7 @@ from .auktion import (
     kalibriere_modell,
     load_ausschreibungen,
     prognose_naechste_runde,
+    validiere_einschritt,
     validiere_loo,
     vergleiche_familien,
 )
@@ -60,6 +61,7 @@ __all__ = [
     "kalibriere_modell",
     "load_ausschreibungen",
     "prognose_naechste_runde",
+    "validiere_einschritt",
     "validiere_loo",
     "vergleiche_familien",
     "HEATMAP_ACHSEN",

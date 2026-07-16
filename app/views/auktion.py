@@ -47,6 +47,29 @@ def render_auktion() -> None:
         "Obergrenze, die Zuschlagswerte sinken und verdichten sich – exakt "
         "das in der Auktionsliteratur beschriebene Pay-as-Bid-Muster."
     )
+    section_title("Geschätzte Gebotsverteilungen der historischen Runden")
+    st.caption(
+        "Da die OeMAG weder Einzelgebote noch Gebotsvolumina "
+        "veröffentlicht, werden die Verteilungsparameter je Runde aus den "
+        "Aggregaten (Ø, Minimum) geschätzt. Deutlich sichtbar: In den "
+        "unterzeichneten Runden (gestrichelt) klebt die Masse an der "
+        "Preisobergrenze; mit dem Wettbewerb ab 07/2025 wandern die "
+        "Verteilungen nach links und verdichten sich."
+    )
+    tab_dichte, tab_cdf = st.tabs(["Dichte", "Verteilungsfunktion"])
+    with tab_dichte:
+        st.plotly_chart(
+            charts.auktion_historische_verteilungen_chart(modell, "dichte"),
+            width="stretch",
+        )
+    with tab_cdf:
+        st.plotly_chart(
+            charts.auktion_historische_verteilungen_chart(
+                modell, "verteilungsfunktion"
+            ),
+            width="stretch",
+        )
+
     with st.expander("Datentabelle und Modellkalibrierung"):
         anzeige = df.copy()
         anzeige["bezuschlagt_pct"] = (
@@ -54,7 +77,8 @@ def render_auktion() -> None:
         ).round(0)
         st.dataframe(anzeige, width="stretch", hide_index=True)
         st.markdown(
-            "**Kalibrierung je Runde** (Beta auf [0, Obergrenze]; Bedingungen: "
+            "**Kalibrierung je Runde** (gespiegelte Inverse Gamma auf "
+            "[0, Obergrenze]; Bedingungen: "
             "mengengewichteter Ø-Zuschlag und Minimum als 2 %-Quantil; bei "
             "überzeichneten Runden ist die Wettbewerbsquote r = Gebotsmenge / "
             "ausgeschriebene Menge **latent** und wird aus dem Abstand "
@@ -74,40 +98,61 @@ def render_auktion() -> None:
             for f in sorted(modell.fits, key=lambda f: f.ausschreibung.datum)
         ]), width="stretch", hide_index=True)
 
-    with st.expander("Modellwahl und Validierung (Leave-one-out)"):
-        vergleich, loo = services.get_auktions_validierung()
+    with st.expander("Modellwahl und Validierung (Backtest)"):
+        vergleich, backtest = services.get_auktions_validierung()
         st.markdown(
             "**Familienvergleich** – da nur Aggregate (Min/Ø/Max) je Runde "
             "veröffentlicht werden, scheiden KDE/GMM auf Einzelgeboten aus; "
-            "verglichen werden beschränkte parametrische Familien. Die "
-            "**Beta-Verteilung** reproduziert Ø und Minimum gemeinsam rund "
-            "viermal genauer als die trunkierte Normalverteilung "
-            "(fit_rmse) und bildet als einzige beide Regime automatisch ab: "
-            "β < 1 (Masse an der Obergrenze) in unterzeichneten, β > 1 "
-            "(Dichte ≈ 0 an der Obergrenze) in überzeichneten Runden."
+            "verglichen werden auf [0, Obergrenze] beschränkte "
+            "parametrische Familien. Gewählt ist die **an der Y-Achse "
+            "gespiegelte, an die Obergrenze verschobene Inverse-Gamma-"
+            "Verteilung**: Sie passt auf die (prognoserelevanten) "
+            "Wettbewerbsrunden am besten (Fit-RMSE 0,15 vs. 0,21 der "
+            "Beta) und hat strukturell exakt die erwartete Form – Dichte "
+            "an der Obergrenze null, steiler rechter Abfall, langsam "
+            "auslaufender linker Rand. Die Beta bleibt als Referenz: Sie "
+            "beschreibt die alten, unterzeichneten Runden mit Masse an "
+            "der Obergrenze besser (β < 1), die die Inverse Gamma "
+            "prinzipbedingt nicht abbilden kann; die trunkierte "
+            "Normalverteilung scheitert als symmetrische Basis an "
+            "linkem Ausläufer plus Konzentration (Fit-RMSE ~4× höher)."
         )
         st.dataframe(vergleich, width="stretch", hide_index=True)
         st.markdown(
-            "**Leave-one-out über die Wettbewerbsrunden** – Prognose aus den "
-            "jeweils übrigen Runden bei gegebener Wettbewerbsquote, "
-            "verglichen mit dem bisherigen Ansatz (Fortschreibung des "
-            "letzten Höchstzuschlags als fester Wert):"
+            "**Rollierender Ein-Schritt-Backtest** – für jede "
+            "Wettbewerbsrunde wurde das Modell nur auf den davor "
+            "liegenden Runden kalibriert (Verankerung an der jeweils "
+            "letzten Runde, Random Walk) und der Grenzzuschlag "
+            "prognostiziert; Vergleich mit der naiven Fortschreibung "
+            "des letzten Höchstzuschlags (bisheriger Ansatz):"
         )
-        st.dataframe(loo, width="stretch", hide_index=True)
+        st.dataframe(backtest, width="stretch", hide_index=True)
         st.caption(
-            "Der bisherige Ansatz liefert nur einen Punktwert ohne "
-            "Verteilung – eine Zuschlagswahrscheinlichkeit ist damit "
-            "prinzipiell nicht ableitbar. Das Modell liefert zusätzlich "
-            "Minimum und Mittelwert sowie die volle prädiktive Verteilung "
-            "des Grenzzuschlags inklusive Unsicherheit (Bootstrap der "
-            "Regressionsresiduen, Lognormal-Unsicherheit der "
-            "Wettbewerbsquote)."
+            "RMSE Grenzzuschlag über alle vier Wettbewerbsrunden: Modell "
+            "0,60 vs. naiv 0,69 ct/kWh; im stabilen Regime ab 2026: 0,23 "
+            "vs. 0,36 ct/kWh. Darüber hinaus liefert nur das Modell die "
+            "volle prädiktive Verteilung des Grenzzuschlags – und damit "
+            "die Zuschlagswahrscheinlichkeit je Gebot, die ein fester "
+            "Punktwert prinzipiell nicht hergibt. Die schwächeren Zeilen "
+            "2025 markieren den Regimewechsel (Eintritt des Wettbewerbs), "
+            "den kein rein historisch kalibriertes Verfahren antizipieren "
+            "konnte."
         )
 
     st.divider()
 
     # --- Prognose naechste Runde ---------------------------------------------
     section_title("Prognose der nächsten Ausschreibung")
+    st.caption(
+        "Verankerung an der letzten Ausschreibung: Die zentrale "
+        "Prognosewelt entspricht exakt der Verteilung der letzten Runde "
+        "(nur um Wettbewerbsquote und Preisobergrenze angepasst, Random "
+        "Walk ohne Drift); die Unsicherheit stammt aus den beobachteten "
+        "Änderungen zwischen den Wettbewerbsrunden und der Unsicherheit "
+        "der Wettbewerbsquote. Bei erwarteter Überzeichnung (r > 1) "
+        "werden Unterzeichnungs-Welten ausgeschlossen – der Grenzzuschlag "
+        "fällt dann nie mit der Obergrenze zusammen."
+    )
     col1, col2, col3 = st.columns(3)
     cap = col1.number_input(
         "Preisobergrenze (ct/kWh)", 1.0, 15.0,
@@ -142,9 +187,9 @@ def render_auktion() -> None:
             ("Zuschlagswahrscheinlichkeit", fmt_pct(ziel_prob, 0)),
             ("Erwarteter Grenzzuschlag (Median)",
              fmt_ct_kwh(float(np.median(prognose.pm_sample)))),
-            ("Ø Gebot (Prognose)", fmt_ct_kwh(prognose.gebot_mittel_ct)),
-            ("P(unterzeichnet)",
-             fmt_pct(float(np.mean(prognose.pm_sample >= cap - 1e-9)), 0)),
+            ("Ø Zuschlagswert (Prognose)", fmt_ct_kwh(prognose.gebot_mittel_ct)),
+            ("Letzter Grenzzuschlag (Ist)",
+             fmt_ct_kwh(letzte.ausschreibung.zuschlag_max_ct)),
         ],
         group="auktion",
     )
@@ -156,9 +201,12 @@ def render_auktion() -> None:
             charts.gebotsdichte_chart(prognose, empfohlen), width="stretch"
         )
         st.caption(
-            "Dichte gemittelt über die Prognosewelten; Markierungen: "
-            "Preisobergrenze, Erwartungswert, Median, 5 %/95 %-Quantile "
-            "und das empfohlene Gebot."
+            "Gefüllt: Dichte der Zuschlagswerte (erfolgreiche Gebote, am "
+            "Grenzzuschlag abgeschnitten) – Peak knapp unter dem "
+            "Grenzzuschlag, steiler Abfall nach rechts, langsamer linker "
+            "Auslauf. Gestrichelt: alle Gebote inkl. nicht bezuschlagter. "
+            "Band: P10–P90 des Grenzzuschlags. Markierungen: Obergrenze, "
+            "Erwartungswert, Median, 5/95 %-Quantile, empfohlenes Gebot."
         )
     with col_rechts:
         section_title("Gebot ↔ Zuschlagswahrscheinlichkeit")

@@ -429,7 +429,10 @@ def _auktions_modell_cached(mtime: float, familie: str):
     return kalibriere_modell(runden, familie)
 
 
-def get_auktions_modell(familie: str = "Beta"):
+AUKTIONS_FAMILIE = "Gespiegelte Inverse Gamma"
+
+
+def get_auktions_modell(familie: str = AUKTIONS_FAMILIE):
     return _auktions_modell_cached(AUSSCHREIBUNGEN_PATH.stat().st_mtime, familie)
 
 
@@ -444,15 +447,15 @@ def _gebots_prognose_cached(mtime: float, familie: str, cap: float,
 
 
 def get_gebots_prognose(cap: float, r_erwartet: float, sigma_ln_r: float,
-                        familie: str = "Beta"):
+                        familie: str = AUKTIONS_FAMILIE):
     return _gebots_prognose_cached(
         AUSSCHREIBUNGEN_PATH.stat().st_mtime, familie, cap, r_erwartet, sigma_ln_r
     )
 
 
 @st.cache_data(show_spinner=False)
-def get_auktions_validierung(familie: str = "Beta"):
-    from engine import validiere_loo, vergleiche_familien
+def get_auktions_validierung(familie: str = AUKTIONS_FAMILIE):
+    from engine import validiere_einschritt, vergleiche_familien
 
     runden, _ = get_ausschreibungen()
-    return vergleiche_familien(runden), validiere_loo(runden, familie)
+    return vergleiche_familien(runden), validiere_einschritt(runden, familie)

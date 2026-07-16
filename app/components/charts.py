@@ -646,15 +646,34 @@ def auktion_historie_chart(df: pd.DataFrame) -> go.Figure:
 
 
 def gebotsdichte_chart(prognose, empfohlen_ct: float | None = None) -> go.Figure:
-    """Geschätzte Gebotsverteilung der nächsten Runde: Dichte, Obergrenze,
-    Erwartungswert, Median, Quantile - plus (optional) das empfohlene
-    Gebot."""
+    """Geschätzte Verteilung der nächsten Runde. Gefüllt: Dichte der
+    ZUSCHLAGSWERTE (erfolgreiche Gebote, am Grenzzuschlag der zentralen
+    Prognosewelt abgeschnitten) - höchste Dichte knapp unter dem
+    Grenzzuschlag, steiler Abfall nach rechts, langsamer linker
+    Auslauf. Gestrichelt: Dichte aller Gebote (inkl. nicht
+    bezuschlagter). Graues Band: P10-P90 des Grenzzuschlags."""
+    import numpy as np
+
     fig = go.Figure()
+    fig.add_vrect(
+        x0=float(np.percentile(prognose.pm_sample, 10)),
+        x1=float(np.percentile(prognose.pm_sample, 90)),
+        fillcolor="rgba(138,166,160,0.16)", line_width=0,
+        annotation_text="Grenzzuschlag P10–P90",
+        annotation_position="top left",
+        annotation_font=dict(size=10, color=Colors.MUTED),
+    )
     fig.add_scatter(
         x=prognose.dichte_x, y=prognose.dichte_y, mode="lines",
-        line=dict(color=Colors.INK, width=2), fill="tozeroy",
-        fillcolor="rgba(20,53,48,0.12)", name="Gebotsdichte",
-        hovertemplate="%{x:,.2f} ct/kWh<extra>Dichte</extra>",
+        line=dict(color=Colors.MUTED, width=1.5, dash="dot"),
+        name="Alle Gebote",
+        hovertemplate="%{x:,.2f} ct/kWh<extra>Alle Gebote</extra>",
+    )
+    fig.add_scatter(
+        x=prognose.dichte_x, y=prognose.dichte_zuschlag_y, mode="lines",
+        line=dict(color=Colors.INK, width=2.2), fill="tozeroy",
+        fillcolor="rgba(20,53,48,0.14)", name="Zuschlagswerte",
+        hovertemplate="%{x:,.2f} ct/kWh<extra>Zuschlagswerte</extra>",
     )
     fig.add_vline(x=prognose.preisobergrenze_ct, line_color=Colors.BRAND,
                   line_width=2, annotation_text="Preisobergrenze",
@@ -674,7 +693,8 @@ def gebotsdichte_chart(prognose, empfohlen_ct: float | None = None) -> go.Figure
                       annotation_font_color=Colors.POSITIVE,
                       annotation_position="bottom right")
     fig.update_layout(height=420, xaxis_title="Gebotswert (ct/kWh)",
-                      yaxis_title="Wahrscheinlichkeitsdichte", showlegend=False)
+                      yaxis_title="Wahrscheinlichkeitsdichte",
+                      legend=dict(orientation="h", y=1.08))
     return fig
 
 
@@ -700,4 +720,43 @@ def zuschlagskurve_chart(prognose, ziel_prob: float, empfohlen_ct: float) -> go.
     fig.update_layout(height=420, xaxis_title="Eigenes Gebot (ct/kWh)",
                       yaxis=dict(title="Zuschlagswahrscheinlichkeit",
                                  ticksuffix=" %", range=[0, 104]))
+    return fig
+
+
+def auktion_historische_verteilungen_chart(modell, art: str = "dichte") -> go.Figure:
+    """Geschätzte Gebotsverteilungen aller historischen Runden (Parameter
+    je Runde aus min/Ø/max kalibriert, da Einzelgebote nicht
+    veröffentlicht werden). art: 'dichte' oder 'verteilungsfunktion'.
+    Farbverlauf alt (grau) -> neu (rot); unterzeichnete Runden
+    gestrichelt."""
+    import numpy as np
+
+    def _mix(c1: str, c2: str, t: float) -> str:
+        a = [int(c1[i:i + 2], 16) for i in (1, 3, 5)]
+        b = [int(c2[i:i + 2], 16) for i in (1, 3, 5)]
+        return "#" + "".join(f"{round(a[i] + (b[i] - a[i]) * t):02x}" for i in range(3))
+
+    fits = sorted(modell.fits, key=lambda f: f.ausschreibung.datum)
+    familie = modell.familie
+    fig = go.Figure()
+    for i, f in enumerate(fits):
+        cap = f.ausschreibung.preisobergrenze_ct
+        x = np.linspace(0.02 * cap, cap * (1 - 1e-4), 300)
+        d = familie.dist(f.mu_rel, f.kappa, cap)
+        y = d.pdf(x) if art == "dichte" else d.cdf(x)
+        farbe = _mix(Colors.NEUTRAL, Colors.BRAND, i / max(len(fits) - 1, 1))
+        fig.add_scatter(
+            x=x, y=y, mode="lines", name=f.ausschreibung.datum.strftime("%m/%Y")
+            + (" (unterz.)" if f.ausschreibung.unterzeichnet else ""),
+            line=dict(color=farbe, width=2,
+                      dash="dot" if f.ausschreibung.unterzeichnet else "solid"),
+            hovertemplate="%{x:,.2f} ct/kWh<extra>"
+            + f.ausschreibung.datum.strftime("%m/%Y") + "</extra>",
+        )
+    fig.update_layout(
+        height=440, xaxis_title="Gebotswert (ct/kWh)",
+        yaxis_title=("Wahrscheinlichkeitsdichte" if art == "dichte"
+                     else "F(Gebot) – kumulierte Wahrscheinlichkeit"),
+        legend=dict(font=dict(size=10)),
+    )
     return fig

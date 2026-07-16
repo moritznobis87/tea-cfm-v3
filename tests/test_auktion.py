@@ -20,6 +20,7 @@ from engine.auktion import (
     kalibriere_modell,
     load_ausschreibungen,
     prognose_naechste_runde,
+    validiere_einschritt,
     validiere_loo,
     vergleiche_familien,
 )
@@ -35,6 +36,11 @@ def runden():
 @pytest.fixture(scope="module")
 def modell(runden):
     return kalibriere_modell(runden, "Beta")
+
+
+@pytest.fixture(scope="module")
+def modell_ig(runden):
+    return kalibriere_modell(runden, "Gespiegelte Inverse Gamma")
 
 
 class TestDatenUndRegime:
@@ -206,3 +212,48 @@ class TestMonteCarloIntegration:
         # Konventionell (25 % Abschlag auf das Gebot) rentiert schlechter.
         assert np.nanmean(konv_mc.irr) < np.nanmean(agri.irr)
         assert p.preisobergrenze_ct == 7.77
+
+
+class TestVerankertePrognoseUndFamilienwahl:
+    """Kernanforderungen der ueberarbeiteten Prognose: Verankerung an der
+    letzten Runde (Median-Grenzzuschlag nicht deutlich ueber dem letzten
+    Ist-Wert), keine Masse an der Obergrenze bei Ueberzeichnung sowie die
+    geforderte Dichteform der gespiegelten Inversen Gamma."""
+
+    def test_median_verankert_an_letzter_runde(self, modell_ig):
+        letzter_ist = modell_ig.letzte_runde.ausschreibung.zuschlag_max_ct
+        p = prognose_naechste_runde(
+            modell_ig, 7.77, modell_ig.letzte_runde.wettbewerbsquote
+        )
+        assert float(np.median(p.pm_sample)) <= letzter_ist + 0.15
+
+    def test_keine_masse_an_obergrenze_bei_ueberzeichnung(self, modell_ig):
+        p = prognose_naechste_runde(modell_ig, 7.77, 1.5)
+        assert float(np.mean(p.pm_sample >= 7.77 - 1e-9)) == 0.0
+
+    def test_dichteform_steil_rechts_langsam_links(self, modell_ig):
+        """Gespiegelte InvGamma, Zuschlagswerte: Modus knapp unter dem
+        Grenzzuschlag; rechts vom Modus faellt die Dichte praktisch auf
+        null, links laeuft sie langsam aus."""
+        p = prognose_naechste_runde(
+            modell_ig, 7.77, modell_ig.letzte_runde.wettbewerbsquote
+        )
+        x, y = p.dichte_x, p.dichte_zuschlag_y
+        modus = x[int(np.argmax(y))]
+        assert p.gebot_mittel_ct < modus <= 7.77
+        rechts = y[np.searchsorted(x, min(modus + 0.2, 7.7))]
+        links = y[np.searchsorted(x, modus - 1.0)]
+        assert rechts < 0.1 * y.max()
+        assert 0.05 * y.max() < links < 0.7 * y.max()
+        # Harte Obergrenze: am Cap ist die Dichte null.
+        assert y[-1] < 1e-6 * max(y.max(), 1e-9)
+
+    def test_einschritt_backtest_deckt_wettbewerbsrunden(self, runden):
+        bt = validiere_einschritt(runden, "Gespiegelte Inverse Gamma")
+        assert len(bt) == sum(not r.unterzeichnet for r in runden)
+        # Im stabilen Regime (2026) schlaegt das Modell die naive
+        # Fortschreibung.
+        stabil = bt[bt["datum"].astype(str) >= "2026-01-01"]
+        err_m = stabil["grenzzuschlag_modell_ct"] - stabil["grenzzuschlag_ist_ct"]
+        err_n = stabil["grenzzuschlag_naiv_ct"] - stabil["grenzzuschlag_ist_ct"]
+        assert np.sqrt((err_m**2).mean()) < np.sqrt((err_n**2).mean())

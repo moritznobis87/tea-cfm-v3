@@ -1,5 +1,42 @@
 # Changelog
 
+## v4.1 – Ausschreibungsmodul: Verankerung an der letzten Runde & korrigierte Dichteform (2026-07)
+
+### Prognose grundlegend überarbeitet
+- Die Prognose ist jetzt an der LETZTEN Ausschreibung verankert (lokales
+  Random-Walk-Modell): Die zentrale Prognosewelt entspricht exakt der
+  Verteilung der letzten Runde, nur um Wettbewerbsquote und
+  Preisobergrenze angepasst; die Unsicherheit stammt aus den
+  beobachteten Änderungen zwischen den Wettbewerbsrunden. Die frühere
+  Level-Regression über alle 15 Runden war vom alten, unterzeichneten
+  Regime dominiert und schätzte den nächsten Grenzzuschlag unplausibel
+  hoch.
+- Bei erwarteter Überzeichnung (r > 1) werden Unterzeichnungs-Welten
+  ausgeschlossen (links trunkierte Lognormal-Ziehung von r): Der
+  prognostizierte Grenzzuschlag fällt nie mit der Preisobergrenze
+  zusammen (P = 0 %; vorher fälschlich spürbare Cap-Masse).
+- Median-Grenzzuschlag jetzt ≈ letzter Ist-Wert (6,78 vs. 6,69 ct);
+  Ein-Schritt-Backtest schlägt die naive Fortschreibung (RMSE 0,60 vs.
+  0,69 ct; im stabilen Regime ab 2026: 0,23 vs. 0,36 ct).
+
+### Verteilungsform
+- Neue Familie "Gespiegelte Inverse Gamma" (an der Y-Achse gespiegelte,
+  an die Obergrenze verschobene Inverse-Gamma-Verteilung) als
+  Standardfamilie: beste Anpassung an die Wettbewerbsrunden (Fit-RMSE
+  0,15 vs. 0,21 Beta) und strukturell exakt die erwartete Form – Dichte
+  an der Obergrenze null, steiler rechter Abfall, langsam auslaufender
+  linker Rand.
+- Angezeigt wird die Dichte der ZUSCHLAGSWERTE (erfolgreiche Gebote, am
+  Grenzzuschlag der zentralen Welt abgeschnitten – das ist die
+  Verteilung, die die OeMAG-Aggregate beschreiben) plus gestrichelt die
+  Verteilung aller Gebote und das P10–P90-Band des Grenzzuschlags.
+- Neue Sektion mit den GESCHÄTZTEN VERTEILUNGEN ALLER HISTORISCHEN
+  RUNDEN (Dichte- und Verteilungsfunktions-Tab, Farbverlauf alt→neu):
+  sichtbarer Regimewechsel von Cap-Klumpung zu linksverschobenen,
+  verdichteten Verteilungen.
+- 4 neue Tests (Verankerung, keine Cap-Masse, Dichteform,
+  Backtest-Überlegenheit im stabilen Regime); Suite: 119 Tests.
+
 ## v4.0 – EAG-Ausschreibungsmodul: Gebotsverteilung & Zuschlagswahrscheinlichkeit (2026-07)
 
 ### Neues Modul (Price-Taker-Modell)

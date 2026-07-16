@@ -266,8 +266,54 @@ class FamilieTruncNormal(_Familie):
         return stats.truncnorm(a, b, loc=mu, scale=sigma)
 
 
+class FamilieInvGammaGespiegelt(_Familie):
+    """An der Y-Achse gespiegelte und an die Preisobergrenze verschobene
+    Inverse-Gamma-Verteilung: Gebot b = Obergrenze - Y mit
+    Y ~ InvGamma(a, scale). Die Dichte faellt rechts zur Obergrenze sehr
+    steil auf null (alle Ableitungen verschwinden dort) und laeuft nach
+    links langsam aus (schwerer linker Auslaeufer) - exakt das fuer
+    Pay-as-Bid unter Wettbewerb erwartete Bild: hoechste Dichte knapp
+    unter dem erwarteten Grenzzuschlag. Parametrisierung: kappa =
+    Formparameter a (Konzentration), Lage ueber E[b] = mu_rel * cap.
+    Einschraenkung: Masse DIREKT an der Obergrenze (Gebote am Cap, wie in
+    unterzeichneten Runden beobachtet) kann diese Familie prinzipbedingt
+    nicht abbilden."""
+
+    name = "Gespiegelte Inverse Gamma"
+
+    class _Dist:
+        def __init__(self, a, scale, cap):
+            self.ig = stats.invgamma(a, scale=scale)
+            self.cap = cap
+
+        def cdf(self, x):
+            return self.ig.sf(self.cap - np.asarray(x, dtype=float))
+
+        def ppf(self, q):
+            # Gebote sind physikalisch >= 0: extrem schwere linke
+            # Auslaeufer werden am Nullpunkt gekappt.
+            return np.maximum(self.cap - self.ig.isf(np.asarray(q, dtype=float)), 0.0)
+
+        def pdf(self, x):
+            return self.ig.pdf(self.cap - np.asarray(x, dtype=float))
+
+        def mean(self):
+            return max(self.cap - float(self.ig.mean()), 0.0)
+
+    def dist(self, mu_rel, kappa, cap):
+        a = max(float(kappa), 1.1)          # Erwartungswert existiert fuer a > 1
+        scale = cap * (1 - float(np.clip(mu_rel, 1e-4, 1 - 1e-4))) * (a - 1)
+        return self._Dist(a, max(scale, 1e-9), cap)
+
+
 FAMILIEN: dict[str, _Familie] = {
-    f.name: f for f in (FamilieBeta(), FamilieKumaraswamy(), FamilieTruncNormal())
+    f.name: f
+    for f in (
+        FamilieBeta(),
+        FamilieKumaraswamy(),
+        FamilieTruncNormal(),
+        FamilieInvGammaGespiegelt(),
+    )
 }
 
 
@@ -352,6 +398,13 @@ class AuktionsModell:
     koef_konzentration: tuple[float, float]  # ln(kappa)   = c + d*ln(r)
     residuen_lage: np.ndarray
     residuen_konzentration: np.ndarray
+    # Lokales Trendmodell fuer die Prognose (Verankerung an der letzten
+    # Runde): mittlere Rundenaenderung der transformierten Parameter in
+    # den Wettbewerbsrunden (Bieterlernen) und deren Streuung.
+    drift_lage: float = 0.0
+    drift_konzentration: float = 0.0
+    sd_lage: float = 0.35
+    sd_konzentration: float = 0.35
 
     @property
     def familie(self) -> _Familie:
@@ -382,6 +435,34 @@ def kalibriere_modell(
     b_l, a_l = np.polyfit(x, y_lage, 1)
     b_k, a_k = np.polyfit(x, y_kappa, 1)
 
+    # Drift/Streuung aus den aufeinanderfolgenden Wettbewerbsrunden
+    # (relevantes Regime fuer die Prognose). Fallback bei zu wenigen
+    # Runden: kein Drift, konservative Streuung.
+    wett = sorted(
+        (f for f in fits if not f.ausschreibung.unterzeichnet),
+        key=lambda f: f.ausschreibung.datum,
+    )
+    d_lage = np.diff(_logit([f.mu_rel for f in wett])) if len(wett) >= 2 else np.array([])
+    d_konz = np.diff(np.log([f.kappa for f in wett])) if len(wett) >= 2 else np.array([])
+
+    def _drift_sd(deltas: np.ndarray) -> tuple[float, float]:
+        """Sparsamste belastbare Annahme bei erst drei beobachteten
+        Rundenaenderungen (davon ein Regime-Eintrittssprung 07->10/2025):
+        RANDOM WALK - Drift 0, d.h. die zentrale Prognosewelt entspricht
+        exakt der letzten Runde (nur um Wettbewerbsquote und Obergrenze
+        angepasst). Die STREUUNG der beobachteten Rundenaenderungen geht
+        als Prognoseunsicherheit ein; nach oben begrenzt, da die
+        Rundenschwankung der Fit-Parameter auch Kalibrierrauschen
+        enthaelt (die Konzentration kappa ist aus Aggregaten nur grob
+        identifiziert)."""
+        if len(deltas) == 0:
+            return 0.0, 0.35
+        sd = np.std(deltas, ddof=1) if len(deltas) > 1 else 0.35
+        return 0.0, float(np.clip(sd, 0.15, 0.8))
+
+    drift_l, sd_l = _drift_sd(d_lage)
+    drift_k, sd_k = _drift_sd(d_konz)
+
     return AuktionsModell(
         familie_name=familie_name,
         fits=fits,
@@ -389,6 +470,10 @@ def kalibriere_modell(
         koef_konzentration=(float(a_k), float(b_k)),
         residuen_lage=y_lage - (a_l + b_l * x),
         residuen_konzentration=y_kappa - (a_k + b_k * x),
+        drift_lage=drift_l,
+        drift_konzentration=drift_k,
+        sd_lage=sd_l,
+        sd_konzentration=sd_k,
     )
 
 
@@ -477,6 +562,51 @@ def validiere_loo(runden: list[Ausschreibung], familie_name: str) -> pd.DataFram
     return pd.DataFrame(zeilen)
 
 
+def validiere_einschritt(runden: list[Ausschreibung],
+                          familie_name: str) -> pd.DataFrame:
+    """Rollierender Ein-Schritt-Backtest der VERANKERTEN Prognose ueber
+    die Wettbewerbsrunden: Fuer jede Runde wird das Modell nur auf den
+    davor liegenden Runden kalibriert und der Grenzzuschlag als
+    Punktprognose (zentrale Welt, r der Zielrunde gegeben) vorhergesagt -
+    im Vergleich zur naiven Fortschreibung des letzten Hoechstzuschlags
+    (der bisherigen Praxis)."""
+    familie = FAMILIEN[familie_name]
+    sortiert = sorted(runden, key=lambda r: r.datum)
+    zeilen = []
+    for i, ziel in enumerate(sortiert):
+        if ziel.unterzeichnet or i == 0:
+            continue
+        vorher = sortiert[:i]
+        modell = kalibriere_modell(vorher, familie_name)
+        anker = modell.letzte_runde
+        r_ziel = fit_runde(ziel, familie).wettbewerbsquote
+        dlnr = np.log(r_ziel) - np.log(anker.wettbewerbsquote)
+        th_l = (_logit(np.array([anker.mu_rel]))[0]
+                + modell.koef_lage[1] * dlnr + modell.drift_lage)
+        th_k = (np.log(anker.kappa)
+                + modell.koef_konzentration[1] * dlnr
+                + modell.drift_konzentration)
+        mu_rel = float(1 / (1 + np.exp(-np.clip(th_l, -8, 8))))
+        kappa = float(np.clip(np.exp(th_k), 1.05, 800.0))
+        q = min(1.0, 1.0 / r_ziel)
+        pm_prog = (ziel.preisobergrenze_ct if q >= 1.0
+                   else familie.ppf(mu_rel, kappa, ziel.preisobergrenze_ct, q))
+        zeilen.append({
+            "datum": ziel.datum,
+            "grenzzuschlag_ist_ct": ziel.zuschlag_max_ct,
+            "grenzzuschlag_modell_ct": round(pm_prog, 2),
+            "grenzzuschlag_naiv_ct": vorher[-1].zuschlag_max_ct,
+            "mittel_ist_ct": ziel.zuschlag_mittel_ct,
+            "mittel_modell_ct": round(
+                familie.trunc_mean(mu_rel, kappa, ziel.preisobergrenze_ct,
+                                   pm_prog), 2),
+            "min_ist_ct": ziel.zuschlag_min_ct,
+            "min_modell_ct": round(
+                familie.ppf(mu_rel, kappa, ziel.preisobergrenze_ct, EPS_MIN), 2),
+        })
+    return pd.DataFrame(zeilen)
+
+
 # ---------------------------------------------------------------------------
 # Prognose der naechsten Ausschreibung (Price-Taker)
 # ---------------------------------------------------------------------------
@@ -491,10 +621,11 @@ class GebotsPrognose:
     wettbewerbsquote_erwartet: float
     sigma_ln_r: float
     pm_sample: np.ndarray               # Ziehungen des Grenzzuschlags
-    dichte_x: np.ndarray                # Gebotsdichte (Mischung ueber Ziehungen)
-    dichte_y: np.ndarray
-    gebot_mittel_ct: float              # Erwartungswert der Gebotsverteilung
-    gebot_median_ct: float
+    dichte_x: np.ndarray
+    dichte_y: np.ndarray                # Dichte ALLER Gebote (Mischung)
+    dichte_zuschlag_y: np.ndarray | None = None  # Dichte der ZUSCHLAGSWERTE
+    gebot_mittel_ct: float = 0.0        # Ø der prognostizierten Zuschlagswerte
+    gebot_median_ct: float = 0.0
     gebot_quantile: dict[int, float] = field(default_factory=dict)
     _modell: AuktionsModell | None = None
     _param_sample: np.ndarray | None = None   # (n, 2): mu_rel, kappa je Ziehung
@@ -536,37 +667,86 @@ def prognose_naechste_runde(
     n_ziehungen: int = 4000,
     seed: int = 42,
 ) -> GebotsPrognose:
-    """Zieht n Auktionswelten: r ~ Lognormal(ln r_erwartet, sigma) und
-    Regressionsresiduen fuer Lage/Konzentration (empirisch, Bootstrap aus
-    den historischen Residuen) -> je Welt Parameter, Grenzzuschlag
-    p_m = F^{-1}(min(1, 1/r)) (bei r <= 1 ist p_m die Obergrenze: alle
-    gueltigen Gebote werden bezuschlagt)."""
+    """Prognose als lokales Trendmodell, VERANKERT an der letzten Runde:
+    Die Kernfrage ist, wie weit die naechste Verteilung von der letzten
+    Ausschreibung abweicht - nicht, welches Niveau eine ueber alle
+    (ueberwiegend unterzeichneten) Runden gemittelte Regression liefert.
+
+    Je Auktionswelt:
+      ln r ~ N(ln r_erwartet, sigma)
+      logit(mu_rel) = logit(mu_rel_letzte) + b_lage*(ln r - ln r_letzte)
+                      + Drift_Wettbewerbsrunden + eps
+      ln(kappa)     analog.
+    Die Steigungen b stammen aus der Gesamthistorie (einzige Quelle fuer
+    den r-Effekt ueber beide Regime), Drift und Streuung aus den
+    aufeinanderfolgenden WETTBEWERBSRUNDEN (Bieterlernen; Haufe/Ehrhart
+    2018). Grenzzuschlag p_m = F^{-1}(min(1, 1/r)); nur bei r <= 1
+    (Unterzeichnung) liegt p_m an der Obergrenze - bei anhaltender
+    Ueberzeichnung traegt die Dichte dort praktisch keine Masse.
+    """
     rng = np.random.default_rng(seed)
     familie = modell.familie
     cap = preisobergrenze_ct
+    anker = modell.letzte_runde
+    th_lage_0 = float(_logit(np.array([anker.mu_rel]))[0])
+    th_konz_0 = float(np.log(anker.kappa))
 
-    r_zieh = np.exp(rng.normal(np.log(wettbewerbsquote_erwartet), sigma_ln_r,
-                               n_ziehungen))
-    res_l = rng.choice(modell.residuen_lage, size=n_ziehungen, replace=True)
-    res_k = rng.choice(modell.residuen_konzentration, size=n_ziehungen, replace=True)
+    # Bei erwarteter Ueberzeichnung (r > 1) werden Unterzeichnungs-Welten
+    # ausgeschlossen (links bei r = 1 trunkierte Lognormalverteilung):
+    # die anhaltend hohe Nachfrage ("enormes Interesse", EAG-Abwicklungs-
+    # stelle 07/2026) macht ein Zurueckfallen unter die ausgeschriebene
+    # Menge unplausibel - Gebote an der Obergrenze treten dann nicht auf.
+    mu_ln = np.log(wettbewerbsquote_erwartet)
+    if wettbewerbsquote_erwartet > 1.0:
+        untergrenze = (0.0 - mu_ln) / sigma_ln_r
+        ln_r = stats.truncnorm.rvs(untergrenze, np.inf, loc=mu_ln,
+                                   scale=sigma_ln_r, size=n_ziehungen,
+                                   random_state=rng)
+    else:
+        ln_r = rng.normal(mu_ln, sigma_ln_r, n_ziehungen)
+    r_zieh = np.exp(ln_r)
+    dlnr = ln_r - np.log(anker.wettbewerbsquote)
+    eps_l = rng.normal(0.0, modell.sd_lage, n_ziehungen)
+    eps_k = rng.normal(0.0, modell.sd_konzentration, n_ziehungen)
 
     pm = np.empty(n_ziehungen)
     params = np.empty((n_ziehungen, 2))
     for i in range(n_ziehungen):
-        mu_rel, kappa = modell.parameter_bei(r_zieh[i], res_l[i], res_k[i])
+        th_l = th_lage_0 + modell.koef_lage[1] * dlnr[i] + modell.drift_lage + eps_l[i]
+        th_k = (th_konz_0 + modell.koef_konzentration[1] * dlnr[i]
+                + modell.drift_konzentration + eps_k[i])
+        mu_rel = float(1 / (1 + np.exp(-np.clip(th_l, -8, 8))))
+        kappa = float(np.clip(np.exp(th_k), 1.05, 800.0))
         params[i] = (mu_rel, kappa)
         q = min(1.0, 1.0 / r_zieh[i])
         pm[i] = cap if q >= 1.0 else familie.ppf(mu_rel, kappa, cap, q)
 
-    # Reprasentative Gebotsdichte: Mischung ueber eine Teilstichprobe.
-    x = np.linspace(0.01 * cap, cap, 400)
-    teil = rng.choice(n_ziehungen, size=min(250, n_ziehungen), replace=False)
-    dichte = np.mean([familie.pdf(*params[j], cap, x) for j in teil], axis=0)
-
-    # Kennzahlen der Gebotsverteilung (mittlere Welt)
-    mu_c, ka_c = modell.parameter_bei(wettbewerbsquote_erwartet)
+    # Dichten der ZENTRALEN Prognosewelt (eine einzelne Auktion, nicht
+    # die ueber Parameterunsicherheit verschmierte Mischung - die
+    # Unsicherheit steckt in der p_m-Verteilung und wird im Chart als
+    # Band gezeigt). Zuschlagswerte = Gebotsdichte am zentralen
+    # Grenzzuschlag abgeschnitten und renormiert: hoechste Dichte knapp
+    # unterhalb des Grenzzuschlags, steiler Abfall nach rechts, langsam
+    # auslaufender linker Rand - das ist die Verteilung, die die OeMAG-
+    # Aggregate (min/Ø/max der Zuschlagswerte) beschreiben.
+    dlnr_c = float(np.log(wettbewerbsquote_erwartet)
+                   - np.log(anker.wettbewerbsquote))
+    th_l_c = th_lage_0 + modell.koef_lage[1] * dlnr_c + modell.drift_lage
+    th_k_c = (th_konz_0 + modell.koef_konzentration[1] * dlnr_c
+              + modell.drift_konzentration)
+    mu_c = float(1 / (1 + np.exp(-np.clip(th_l_c, -8, 8))))
+    ka_c = float(np.clip(np.exp(th_k_c), 1.05, 800.0))
     d = familie.dist(mu_c, ka_c, cap)
-    quantile = {q: float(d.ppf(q / 100)) for q in (5, 25, 50, 75, 95)}
+    q_c = min(1.0, 1.0 / wettbewerbsquote_erwartet)
+    pm_c = cap if q_c >= 1.0 else float(d.ppf(q_c))
+
+    x = np.linspace(0.01 * cap, cap * (1 - 1e-4), 500)
+    dichte_alle = np.asarray(d.pdf(x), dtype=float)
+    dichte_zuschlag = dichte_alle * (x <= pm_c) / max(q_c, 1e-6)
+
+    # Kennzahlen der prognostizierten Zuschlagswerte (zentrale Welt).
+    quantile = {q: float(d.ppf(q / 100 * q_c)) for q in (5, 25, 50, 75, 95)}
+    mittel_zuschlag = familie.trunc_mean(mu_c, ka_c, cap, pm_c)
 
     return GebotsPrognose(
         preisobergrenze_ct=cap,
@@ -574,8 +754,9 @@ def prognose_naechste_runde(
         sigma_ln_r=sigma_ln_r,
         pm_sample=pm,
         dichte_x=x,
-        dichte_y=dichte,
-        gebot_mittel_ct=float(d.mean()),
+        dichte_y=dichte_alle,
+        dichte_zuschlag_y=dichte_zuschlag,
+        gebot_mittel_ct=float(mittel_zuschlag),
         gebot_median_ct=quantile[50],
         gebot_quantile=quantile,
         _modell=modell,
