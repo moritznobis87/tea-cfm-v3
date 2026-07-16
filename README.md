@@ -1,135 +1,107 @@
-# TEA PV-Projektbewertung
+"""
+Gemeinsame Fixtures fuer die Engine-Tests.
 
-Wirtschaftlichkeitsrechnung für PV-Projekte nach dem **österreichischen
-EAG-Marktprämienmodell** (gleitende Marktprämie) – ausgerichtet am
-Arbeitsablauf eines Projektentwicklers: Ein neues Projekt ist in unter
-zwei Minuten angelegt, alles selten Geänderte (Preiskurven,
-Standardbetriebskosten, Finanzierungs- und Steuerlogik) wird zentral in
-den Globalen Annahmen gepflegt und automatisch angewendet.
+Die Fixtures bilden ein kleines, vollstaendig deterministisches
+Beispielprojekt ab, dessen Erwartungswerte sich von Hand nachrechnen
+lassen - keine Abhaengigkeit von den (aenderbaren) YAML-Beispieldaten.
+"""
 
-## Schnellstart
+from __future__ import annotations
 
-```bash
-# Nutzung
-pip install -r requirements.txt
-streamlit run streamlit_app.py
+import sys
+from pathlib import Path
 
-# Entwicklung
-pip install -e ".[dev]"
-make test      # Test-Suite (Engine + UI-Smoke-Tests)
-make lint      # Statische Analyse (ruff)
-make run       # App starten
-```
+import pytest
 
-## Funktionsumfang
+# Repository-Wurzel in den Importpfad aufnehmen, damit `import engine`
+# auch ohne editierbare Installation funktioniert (z.B. `pytest` direkt
+# im frisch geklonten Repo).
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-- **Portfolio**: aggregierte Kennzahlen, Rendite-Risiko-Landkarte
-  (Bubble-Chart: spezifisches Invest × IRR × Leistung), Projekt-Ranking,
-  sortierbare Vergleichstabelle und Projektkarten mit
-  Cashflow-Sparkline und Typ-Badge.
-- **Projekt-Dashboard** (7 Analyse-Tabs): EK-Rendite (XIRR), NPV,
-  min. DSCR, Payback, **LCOE**, spezifisches Invest; Wertbrücke
-  (Waterfall) über die Gesamtlaufzeit, Cashflow-Diagramme, DSCR-Verlauf,
-  Schuldenprofil mit Restschuld, Kapital- und Investitionsstruktur
-  (Donuts), NPV-Kurve mit IRR-Nullstelle und ein Transparenz-Tab mit dem
-  vollständig aufgelösten Parametersatz.
-- **Erlösanalyse**: Vergütungssatz vs. Marktwert im Zeitverlauf (die
-  Fläche dazwischen ist die Marktprämie), Aufteilung der Erlöse in
-  Markterlös und Marktprämie (Förderabhängigkeit auf einen Blick).
-- **Sensitivitäts-Studio**: Tornado-Diagramm über sieben Werttreiber
-  (±10 %), IRR-Heatmap über zwei frei wählbare Treiber mit
-  Break-even-Farbumschlag, EAG-Zuschlag-Varianten (±5 %/±10 %) und ein
-  **Gebotsassistent** (minimaler anzulegender Wert für eine
-  Ziel-EK-Rendite - Untergrenze für das EAG-Auktionsgebot).
-- **Monte-Carlo-Simulation**: gleichzeitige Variation von Ertrag,
-  Marktwert-Niveau, CAPEX und OPEX (einstellbare Sigmas, fester Seed,
-  200-1000 Läufe); IRR-Verteilung mit P10/P50/P90,
-  Erfolgswahrscheinlichkeit gegen eine Ziel-Rendite und Fächerdiagramm
-  des kumulierten Equity-Cashflows.
-- **Szenarienvergleich**: identisches Projekt über alle hinterlegten
-  Marktpreisszenarien (IRR/NPV je Szenario, kumulierte Cashflows).
-- **Projektverwaltung**: Anlegen, Bearbeiten, Duplizieren, Löschen (mit
-  Bestätigung), Cashflow-Export als Excel, Sichern/Wiederherstellen von
-  Projekten und Globalen Annahmen über Excel-Dateien.
-- **Fachlogik**: EAG-Marktprämie `MAX(Marktwert Solar, Zuschlagswert)`
-  während der Förderdauer, danach reiner Marktverkauf; Ausfall der
-  Förderung in Stunden negativer Preise; Inflationierung realer
-  Marktwert-Kurven (der EAG-Zuschlag bleibt gesetzlich nominal fix);
-  Annuitäten-/lineare Tilgung; KöSt mit AfA, Freibetrag und
-  Verlustvortrag inkl. 75-%-Verrechnungsgrenze (§8 Abs. 4 Z 2 KStG).
-- **Modelloptionen**: Verhalten in Stunden negativer Preise umschaltbar
-  (Abregelung vs. Rückfall auf Jahresmarktwert), tilgungsfreies
-  Anlaufjahr (On/Off), NPV-Diskontsatz der KPI-Kachel frei wählbar
-  (0–10 %, exakte XNPV-Berechnung).
-- **Geschäftsregel**: Konventionelle Anlagen erhalten automatisch einen
-  Abschlag von 25 % auf den EAG-Zuschlagswert gegenüber Agri-PV
-  (`KONVENTIONELL_ZUSCHLAG_ABSCHLAG_PCT` in `engine/models.py`).
+from engine import (  # noqa: E402
+    AnlagenTyp,
+    CapexBreakdown,
+    GlobalAssumptions,
+    MarktpreisSzenario,
+    NegativeStundenModus,
+    OpexItem,
+    PVProject,
+    TaxModus,
+    TilgungsArt,
+)
 
-## Architektur
 
-```
-streamlit_app.py        Entry-Point: Seitenkonfiguration, Theme, Navigation
-app/                    UI-Schicht (kennt die Engine, aber keine Dateiformate)
-  config.py             Pfade, Konstanten, Session-State-Schlüssel
-  theme.py              Design-Tokens, CSS, zentrales Plotly-Template
-  formatting.py         Deutsche Zahlenformatierung (einzige Stelle dafür)
-  services.py           Gecachter Datenzugriff, Bewertungs-Cache,
-                        Projekt-Lebenszyklus (anlegen/duplizieren/löschen)
-  components/           Wiederverwendbare Bausteine
-    charts.py           Alle Plotly-Diagramme (DataFrame rein, Figure raus)
-    project_form.py     Projektmaske (Neuanlage + Bearbeiten)
-    sidebar.py          Excel-Import/-Export
-  views/                Die Seiten der App
-    overview.py         Portfolio + ausgewähltes Projekt-Dashboard
-    project_detail.py   Dashboard mit Tabs und Aktionen
-    new_project.py      Neuanlage
-    assumptions.py      Globale Annahmen
-engine/                 Reine Fachlogik – kein Streamlit-Import
-  analytics.py          Tornado, IRR-Heatmap, Monte Carlo, Gebotsassistent,
-                        LCOE, Szenarienvergleich
-  models.py             PVProject, GlobalAssumptions, EffectiveAssumptions
-  pipeline.py           resolve_assumptions() (Merge), run_valuation()
-  timeline / energy / revenue / opex / financing / tax / cashflow / kpis
-  sensitivity.py        EAG-Zuschlag ±5/±10 %
-  io_yaml.py, io_excel.py   Persistenz und Austauschformate
-data/                   global_assumptions.yaml + ein YAML pro Projekt
-tests/                  46 Tests: Engine-Einheiten, Pipeline-E2E,
-                        IO-Roundtrips, Formatierung, UI-Smoke (AppTest)
-```
+def _baue_szenario_flach() -> MarktpreisSzenario:
+    """Konstante 4 ct/kWh, keine negativen Stunden - macht Erloese trivial
+    nachrechenbar."""
+    jahre = range(2025, 2061)
+    return MarktpreisSzenario(
+        name="Testszenario",
+        marktwert_solar_ct_kwh_je_kalenderjahr={j: 4.0 for j in jahre},
+        anteil_negativer_stunden_pct_je_kalenderjahr={j: 0.0 for j in jahre},
+    )
 
-Details und Begründungen der Designentscheidungen: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-## Datenhaltung
+def _baue_global_assumptions() -> GlobalAssumptions:
+    return GlobalAssumptions(
+        gueltig_ab="test",
+        marktpreisszenarien=[_baue_szenario_flach()],
+        marktpreis_inflation_pct_pa=0.0,  # Inflation aus -> nominal == real
+        marktpreis_inflation_basisjahr=2025,
+        opex_standard=[
+            OpexItem(name="Betriebsführung", basiswert_eur_kwp=3.0),
+        ],
+        gemeindeabgabe_eur_kwh=0.002,
+        direktvermarktungskosten_eur_kwh=0.001,
+        negative_stunden_gewichtung_pct=1.0,
+        # Explizit Abregelung: Die Einheitstests rechnen mit dem
+        # vollstaendigen Verguetungsausfall (haerteste Annahme);
+        # der App-Default ist seit 2.2 MARKTWERT.
+        negative_stunden_modus=NegativeStundenModus.ABREGELUNG,
+        degradation_pct_pa=0.0,
+        sicherheitsabschlag_pct=0.0,
+        eag_foerderdauer_jahre=20,
+        betriebsdauer_jahre=25,
+        kreditlaufzeit_jahre=20,
+        tilgungsart=TilgungsArt.ANNUITAET,
+        tax_modus=TaxModus.AFA_KOERPERSCHAFTSTEUER,
+        steuersatz_pct=0.23,
+        afa_nutzungsdauer_jahre=20,
+        freibetrag_eur=0.0,
+        verlustvortrag_verrechnungsgrenze_pct=0.75,
+    )
 
-Projekte und Globale Annahmen liegen als YAML unter `data/` – bewusst
-keine Datenbank (siehe ARCHITECTURE.md). **Streamlit Cloud hat kein
-dauerhaftes Dateisystem**: Neu angelegte Projekte gehen bei einem
-Reboot/Redeploy verloren, wenn sie nicht im Repo liegen. Der
-Excel-Download in der Sidebar ist der vorgesehene Sicherungsweg.
 
-## Qualitätssicherung
+def _baue_projekt() -> PVProject:
+    return PVProject(
+        id="testprojekt",
+        name="Testprojekt",
+        inbetriebnahme_jahr=2027,
+        inbetriebnahme_monat=1,
+        anlagentyp=AnlagenTyp.AGRI_PV,
+        nennleistung_kwp=1000.0,
+        vollbenutzungsstunden_kwh_kwp=1000.0,
+        pacht_eur_kwp_jahr=5.0,
+        fremdkapitalzins_pct=0.04,
+        eigenkapitalquote_pct=0.2,
+        eag_zuschlagswert_ct_kwh=7.0,
+        gemeindeabgabe_eur_mwh=2.0,
+        direktvermarktungskosten_eur_mwh=1.0,
+        marktpreisszenario="Testszenario",
+        capex=CapexBreakdown(epc_eur=500_000.0, netzanschluss_eur=50_000.0),
+    )
 
-| Werkzeug | Zweck |
-| --- | --- |
-| `pytest` (78 Tests) | Fachlogik (handgerechnete Erwartungswerte), E2E-Pipeline, IO-Roundtrips, UI-Smoke-Tests |
-| `ruff` | Lint + Import-Sortierung (Konfiguration in `pyproject.toml`) |
-| GitHub Actions | CI auf Python 3.11/3.12: Lint + Tests bei jedem Push/PR |
 
-## Bekannte Einschränkungen
+@pytest.fixture
+def szenario_flach() -> MarktpreisSzenario:
+    return _baue_szenario_flach()
 
-- Die Beispiel-Preiskurven in `data/global_assumptions.yaml` sind
-  plausible Platzhalter, keine validierten Marktprognosen – vor echtem
-  Einsatz durch aktuelle Marktwert-Solar-/Preisszenario-Daten ersetzen.
-- Betriebsperioden werden als volle Kalenderjahre modelliert (das erste
-  Jahr anteilig); der Excel-Sonderfall „Vertragsende am Jahrestag" ist
-  bewusst nicht abgebildet.
-- Kein Nutzer-/Rechtemodell, kein Mehrbenutzerbetrieb.
-- `pyarrow` ist auf `<25` gepinnt: Version 25.0.0 hat einen
-  reproduzierbaren Segmentation Fault beim Rendern von `st.dataframe()`.
 
-## Roadmap
+@pytest.fixture
+def global_assumptions() -> GlobalAssumptions:
+    return _baue_global_assumptions()
 
-1. Reale Marktpreiskurven statt Platzhalter
-2. Korrelierte Zufallsvariablen in der Monte-Carlo-Simulation
-   (z.B. Marktwert-Niveau × Anteil negativer Stunden)
-3. Mehrjahres-Portfolioplanung (IBN-Staffelung, Kapitalbindung)
+
+@pytest.fixture
+def project() -> PVProject:
+    return _baue_projekt()
