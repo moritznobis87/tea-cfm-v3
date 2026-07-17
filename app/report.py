@@ -1100,7 +1100,10 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
          "Negativstunden-Modus",
          "Abregelung" if ea.negative_stunden_modus
          == NegativeStundenModus.ABREGELUNG else "Rückfall auf Marktwert"],
-        ["Pacht", f"{_de(p.pacht_eur_kwp_jahr, 2)} €/kWp/Jahr", "", ""],
+        ["Pacht", f"{_de(p.pacht_eur_kwp_jahr, 2)} €/kWp/Jahr",
+         "Kosteninflation",
+         f"{fmt_pct(ea.kosten_inflation_pct_pa)} p.a. "
+         f"(Pacht, Gemeindeabgabe, Direktvermarktung)"],
     ]
     story.append(_tabelle(annahmen, breiten=[4.1 * cm, 4.35 * cm, 4.1 * cm,
                                              4.35 * cm], schrift=7.6))

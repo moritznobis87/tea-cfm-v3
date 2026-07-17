@@ -1,5 +1,25 @@
 # Changelog
 
+## v4.4 – Kosteninflation auf alle Kostenpositionen (2026-07)
+
+- Behoben: Die Inflation wirkte bisher nur auf die Marktwerte und drei
+  OPEX-Positionen (dort erst ab Jahr 10). NICHT indexiert waren Pacht,
+  Gemeindeabgabe, Direktvermarktungskosten (absoluter Modus) sowie
+  zwei OPEX-Positionen.
+- Neuer globaler Parameter **Kosteninflation (%/Jahr)**, Standard 2,0 %
+  (Globale Annahmen, neben der Marktwert-Inflation): eskaliert Pacht,
+  Gemeindeabgabe und Direktvermarktungskosten (absolut) ab dem
+  2. Betriebsjahr – Eingaben verstehen sich als Preisstand bei
+  Inbetriebnahme (Betriebsjahr 1 = Basis, konsistent zur bestehenden
+  OPEX-Indexierung). Direktvermarktung im Relativ-Modus folgt weiterhin
+  dem nominalen Marktwert (keine Doppelzählung, per Test gesichert).
+- Standard-OPEX-Positionen vereinheitlicht: alle fünf Positionen jetzt
+  2 %/Jahr ab Jahr 1 (vorher drei ab Jahr 10, zwei ohne Index). Die
+  Indexierung bleibt je Position im Editor einstellbar.
+- Wirkung: Template Agri IRR 14,84 % → 13,80 %. Excel-Export/-Import
+  um den Parameter erweitert (ältere Dateien laden mit 2 %-Default);
+  PDF-Annex A weist die Kosteninflation aus. 5 neue Tests; Suite: 126.
+
 ## v4.3 – Prognosemethodik: rekursive Differenzenextrapolation (2026-07)
 
 - Die Momentum-Formel ist vollständig durch die allgemeine

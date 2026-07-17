@@ -41,6 +41,7 @@ EINSTELLUNGEN_DEFAULTS = {
     "direktvermarktungskosten_eur_mwh_vorschlag": 1.0,
     "direktvermarktung_modus": "absolut",
     "negative_stunden_regel": "6h",
+    "kosten_inflation_pct_pa": 0.02,
     "direktvermarktung_pct_marktwert": 10.0,
     "negative_stunden_gewichtung_pct": 100.0,
     "negative_stunden_modus": "marktwert",
@@ -151,6 +152,7 @@ def global_assumptions_to_excel(ga: GlobalAssumptions) -> bytes:
             ),
             ("marktpreis_inflation_pct_pa", ga.marktpreis_inflation_pct_pa * 100),
             ("marktpreis_inflation_basisjahr", ga.marktpreis_inflation_basisjahr),
+            ("kosten_inflation_pct_pa", ga.kosten_inflation_pct_pa),
         ],
         columns=["Parameter", "Wert"],
     )
@@ -273,6 +275,7 @@ def excel_to_global_assumptions(file_bytes: bytes) -> GlobalAssumptions:
         / 100,
         marktpreis_inflation_pct_pa=float(get("marktpreis_inflation_pct_pa")) / 100,
         marktpreis_inflation_basisjahr=int(get("marktpreis_inflation_basisjahr")),
+        kosten_inflation_pct_pa=float(get("kosten_inflation_pct_pa")),
     )
 
 

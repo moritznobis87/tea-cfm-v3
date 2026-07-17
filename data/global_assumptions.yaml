@@ -450,32 +450,33 @@ marktpreisszenarien:
     '2060': 0.0
 marktpreis_inflation_pct_pa: 0.02
 marktpreis_inflation_basisjahr: 2025
+kosten_inflation_pct_pa: 0.02
 negative_stunden_regel: 6h
 opex_standard:
 - name: Technische Betriebsführung
   basiswert_eur_kwp: 3.0
   start_betriebsjahr: 1
   index_pct_pa: 0.02
-  indexierung_ab_jahr: 10
+  indexierung_ab_jahr: 1
 - name: Wartung / Rücklage Wechselrichter
   basiswert_eur_kwp: 1.0
   start_betriebsjahr: 1
   index_pct_pa: 0.02
-  indexierung_ab_jahr: 10
+  indexierung_ab_jahr: 1
 - name: Versicherungen
   basiswert_eur_kwp: 1.0
   start_betriebsjahr: 1
   index_pct_pa: 0.02
-  indexierung_ab_jahr: 10
+  indexierung_ab_jahr: 1
 - name: Kaufmännische Betriebsführung / Buchführung
   basiswert_eur_kwp: 3.0
   start_betriebsjahr: 1
-  index_pct_pa: 0.0
+  index_pct_pa: 0.02
   indexierung_ab_jahr: 1
 - name: Sonstiges
   basiswert_eur_kwp: 1.0
   start_betriebsjahr: 1
-  index_pct_pa: 0.0
+  index_pct_pa: 0.02
   indexierung_ab_jahr: 1
 gemeindeabgabe_eur_kwh: 0.002
 direktvermarktungskosten_eur_kwh: 0.001

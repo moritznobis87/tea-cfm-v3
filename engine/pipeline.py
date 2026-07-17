@@ -38,7 +38,9 @@ def resolve_assumptions(
     project: PVProject, global_assumptions: GlobalAssumptions
 ) -> EffectiveAssumptions:
     pacht_item = OpexItem(
-        name="Pacht", basiswert_eur_kwp=project.pacht_eur_kwp_jahr
+        name="Pacht", basiswert_eur_kwp=project.pacht_eur_kwp_jahr,
+        index_pct_pa=global_assumptions.kosten_inflation_pct_pa,
+        indexierung_ab_jahr=1,
     )
     opex_items = [*global_assumptions.opex_standard, pacht_item]
 
@@ -72,6 +74,7 @@ def resolve_assumptions(
         negative_stunden_regel=global_assumptions.negative_stunden_regel,
         marktpreis_inflation_pct_pa=global_assumptions.marktpreis_inflation_pct_pa,
         marktpreis_inflation_basisjahr=global_assumptions.marktpreis_inflation_basisjahr,
+        kosten_inflation_pct_pa=global_assumptions.kosten_inflation_pct_pa,
         opex_items=opex_items,
         gemeindeabgabe_eur_kwh=project.gemeindeabgabe_eur_mwh / 1000,
         direktvermarktungskosten_eur_kwh=project.direktvermarktungskosten_eur_mwh / 1000,
@@ -139,6 +142,7 @@ def run_valuation_from_assumptions(
         direktvermarktung_modus=assumptions.direktvermarktung_modus,
         direktvermarktung_pct_marktwert=assumptions.direktvermarktung_pct_marktwert,
         marktwert_nominal_ct_kwh=revenue["marktwert_nominal_ct_kwh"].to_numpy(),
+        kosten_inflation_pct_pa=assumptions.kosten_inflation_pct_pa,
     )
     financing = calculate_financing(
         timeline,

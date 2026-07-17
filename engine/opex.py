@@ -34,6 +34,7 @@ def calculate_opex(
     direktvermarktung_modus: DirektvermarktungsModus = DirektvermarktungsModus.ABSOLUT,
     direktvermarktung_pct_marktwert: float = 0.0,
     marktwert_nominal_ct_kwh: np.ndarray | None = None,
+    kosten_inflation_pct_pa: float = 0.0,
 ) -> pd.DataFrame:
     df = timeline[["jahr"]].copy()
     df["opex_gesamt_eur"] = 0.0
@@ -59,7 +60,15 @@ def calculate_opex(
         df["opex_gesamt_eur"] += betrag
 
     produktion_kwh = energy["produktion_kwh"].to_numpy()
-    df["gemeindeabgabe_eur"] = produktion_kwh * gemeindeabgabe_eur_kwh
+    # Allgemeine Kosteninflation fuer die produktionsbasierten Positionen
+    # (EUR/kWh-Saetze, Preisstand Inbetriebnahme = Betriebsjahr 1).
+    inflation_faktor = (
+        (1 + kosten_inflation_pct_pa)
+        ** (df["jahr"] - 1).clip(lower=0).to_numpy()
+    )
+    df["gemeindeabgabe_eur"] = (
+        produktion_kwh * gemeindeabgabe_eur_kwh * inflation_faktor
+    )
     if (
         direktvermarktung_modus == DirektvermarktungsModus.RELATIV_MARKTWERT
         and marktwert_nominal_ct_kwh is not None
@@ -74,7 +83,7 @@ def calculate_opex(
         )
     else:
         df["direktvermarktungskosten_eur"] = (
-            produktion_kwh * direktvermarktungskosten_eur_kwh
+            produktion_kwh * direktvermarktungskosten_eur_kwh * inflation_faktor
         )
     df["opex_gesamt_eur"] += df["gemeindeabgabe_eur"] + df["direktvermarktungskosten_eur"]
 

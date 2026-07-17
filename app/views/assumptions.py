@@ -51,7 +51,7 @@ def render_assumptions() -> None:
             "EAG-Zuschlagswert ist davon nicht betroffen (bleibt gesetzlich "
             "nominal fix während der Förderdauer)."
         )
-        col_infl1, col_infl2 = st.columns(2)
+        col_infl1, col_infl2, col_infl3 = st.columns(3)
         marktpreis_inflation = col_infl1.number_input(
             "Inflation Marktwerte (%/Jahr)", min_value=0.0,
             value=ga.marktpreis_inflation_pct_pa * 100, step=0.1,
@@ -61,6 +61,18 @@ def render_assumptions() -> None:
             value=ga.marktpreis_inflation_basisjahr, step=1,
             help="Preisbasis-Jahr der Marktpreisstudie - ab diesem Jahr wird "
                  "die Inflation aufgeschlagen.",
+        )
+        kosten_inflation = col_infl3.number_input(
+            "Kosteninflation (%/Jahr)", min_value=0.0,
+            value=ga.kosten_inflation_pct_pa * 100, step=0.1,
+            help="Wirkt auf ALLE Kostenpositionen ohne eigene Preislogik: "
+                 "Pacht, Gemeindeabgabe und Direktvermarktungskosten "
+                 "(absoluter Modus) eskalieren damit ab dem 2. "
+                 "Betriebsjahr (Eingaben = Preisstand bei Inbetriebnahme). "
+                 "Die Standard-OPEX-Positionen tragen ihre eigene, unten "
+                 "einstellbare Indexierung (Vorbelegung ebenfalls 2 %/Jahr "
+                 "ab Jahr 1); Direktvermarktung im Relativ-Modus folgt "
+                 "bereits dem nominalen Marktwert.",
         )
 
         st.markdown("**Gewichtung negativer Stunden**")
@@ -384,6 +396,7 @@ def render_assumptions() -> None:
             )
         ga.marktpreisszenarien = neue_szenarien
         ga.marktpreis_inflation_pct_pa = marktpreis_inflation / 100
+        ga.kosten_inflation_pct_pa = kosten_inflation / 100
         ga.marktpreis_inflation_basisjahr = int(marktpreis_basisjahr)
         ga.negative_stunden_gewichtung_pct = negative_stunden_gewichtung / 100
         ga.negative_stunden_modus = NegativeStundenModus(negative_stunden_modus)

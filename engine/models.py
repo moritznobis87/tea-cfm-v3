@@ -245,6 +245,15 @@ class GlobalAssumptions(BaseModel):
     marktpreis_inflation_pct_pa: float = Field(ge=0, default=0.02)
     marktpreis_inflation_basisjahr: int = Field(default=2025)
 
+    # Allgemeine Kosteninflation: wirkt auf ALLE Kostenpositionen ohne
+    # eigene Preislogik - Pacht, Gemeindeabgabe und Direktvermarktungs-
+    # kosten (absoluter Modus) eskalieren damit ab dem 2. Betriebsjahr
+    # (Eingaben = Preisstand bei Inbetriebnahme). Die Standard-OPEX-
+    # Positionen tragen ihre eigene, sichtbare Indexierung (Vorbelegung
+    # ebenfalls 2 %/a ab Jahr 1); Direktvermarktung im Relativ-Modus
+    # folgt bereits dem nominalen Marktwert.
+    kosten_inflation_pct_pa: float = Field(ge=0, default=0.02)
+
     # Regel fuer den Praemienentfall bei negativen Preisen (6h = Standard
     # Oesterreich/EAG, 1h = Regelung Deutschland). Bestimmt, welche
     # Negativmengen-Zeitreihe der Szenarien angewendet wird.
@@ -352,6 +361,7 @@ class EffectiveAssumptions(BaseModel):
     negative_stunden_regel: NegativeStundenRegel
     marktpreis_inflation_pct_pa: float
     marktpreis_inflation_basisjahr: int
+    kosten_inflation_pct_pa: float
 
     opex_items: list[OpexItem]
     gemeindeabgabe_eur_kwh: float

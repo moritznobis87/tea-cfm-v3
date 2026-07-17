@@ -45,6 +45,9 @@ def _baue_szenario_flach() -> MarktpreisSzenario:
 def _baue_global_assumptions() -> GlobalAssumptions:
     return GlobalAssumptions(
         gueltig_ab="test",
+        # Bewusst 0: die Fixtures sollen trivial nachrechenbar bleiben;
+        # die Kosteninflation wird in eigenen Tests geprueft.
+        kosten_inflation_pct_pa=0.0,
         marktpreisszenarien=[_baue_szenario_flach()],
         marktpreis_inflation_pct_pa=0.0,  # Inflation aus -> nominal == real
         marktpreis_inflation_basisjahr=2025,

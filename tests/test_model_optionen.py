@@ -292,3 +292,92 @@ class TestAurora626Standarddaten:
         # Voller Horizont (2025/2026 mit 2027-Werten aufgefuellt)
         assert min(a.marktwert_solar_ct_kwh_je_kalenderjahr) == 2025
         assert max(a.marktwert_solar_ct_kwh_je_kalenderjahr) == 2060
+
+
+class TestKostenInflation:
+    """Die globale Kosteninflation wirkt auf ALLE Kostenpositionen ohne
+    eigene Preislogik: Pacht, Gemeindeabgabe und Direktvermarktung
+    (absoluter Modus) eskalieren ab dem 2. Betriebsjahr; die Standard-
+    OPEX-Positionen tragen ihre eigene Indexierung (Auslieferung: 2 %/a
+    ab Jahr 1); Direktvermarktung im Relativ-Modus folgt bereits dem
+    nominalen Marktwert."""
+
+    def _opex(self, project, ga):
+        from engine import run_valuation
+
+        return run_valuation(project, ga).cashflow.data
+
+    def test_gemeindeabgabe_und_dv_eskalieren(self, project, global_assumptions):
+        ga = global_assumptions.model_copy(deep=True)
+        ga.kosten_inflation_pct_pa = 0.02
+        df = self._opex(project, ga)
+        basis = self._opex(project, global_assumptions)  # Inflation 0
+        for spalte in ("gemeindeabgabe_eur", "direktvermarktungskosten_eur"):
+            j1 = df.loc[df["jahr"] == 1, spalte].iloc[0]
+            j11 = df.loc[df["jahr"] == 11, spalte].iloc[0]
+            j1_flach = basis.loc[basis["jahr"] == 1, spalte].iloc[0]
+            j11_flach = basis.loc[basis["jahr"] == 11, spalte].iloc[0]
+            # Jahr 1 = Preisstand Inbetriebnahme (unveraendert)
+            assert j1 == pytest.approx(j1_flach)
+            # Jahr 11: Faktor 1,02^10 gegenueber der flachen Basis
+            # (Produktionsdegradation kuerzt sich im Quotienten heraus)
+            assert j11 / j11_flach == pytest.approx(1.02**10, rel=1e-9)
+
+    def test_pacht_eskaliert(self, project, global_assumptions):
+        ga = global_assumptions.model_copy(deep=True)
+        ga.kosten_inflation_pct_pa = 0.03
+        df = self._opex(project, ga)
+        pacht_j1 = df.loc[df["jahr"] == 1, "Pacht"].iloc[0]
+        pacht_j2 = df.loc[df["jahr"] == 2, "Pacht"].iloc[0]
+        assert pacht_j1 == pytest.approx(
+            project.pacht_eur_kwp_jahr * project.nennleistung_kwp
+        )
+        assert pacht_j2 == pytest.approx(pacht_j1 * 1.03)
+
+    def test_dv_relativ_unberuehrt(self, project, global_assumptions):
+        """Im Relativ-Modus folgen die DV-Kosten dem nominalen Marktwert -
+        die Kosteninflation darf NICHT zusaetzlich wirken."""
+        from engine import DirektvermarktungsModus
+
+        ga = global_assumptions.model_copy(deep=True)
+        ga.direktvermarktung_modus = DirektvermarktungsModus.RELATIV_MARKTWERT
+        mit = ga.model_copy(deep=True)
+        mit.kosten_inflation_pct_pa = 0.05
+        df_ohne = self._opex(project, ga)
+        df_mit = self._opex(project, mit)
+        assert df_ohne["direktvermarktungskosten_eur"].sum() == pytest.approx(
+            df_mit["direktvermarktungskosten_eur"].sum()
+        )
+
+    def test_inflation_senkt_irr(self, project, global_assumptions):
+        from engine import run_valuation
+
+        ga = global_assumptions.model_copy(deep=True)
+        ga.kosten_inflation_pct_pa = 0.03
+        assert (
+            run_valuation(project, ga).kpis.equity_irr
+            < run_valuation(project, global_assumptions).kpis.equity_irr
+        )
+
+    def test_excel_roundtrip_und_auslieferung(self, global_assumptions):
+        from pathlib import Path
+
+        from engine.io_excel import (
+            excel_to_global_assumptions,
+            global_assumptions_to_excel,
+        )
+        from engine.io_yaml import load_global_assumptions_yaml
+
+        ga = global_assumptions.model_copy(deep=True)
+        ga.kosten_inflation_pct_pa = 0.025
+        geladen = excel_to_global_assumptions(global_assumptions_to_excel(ga))
+        assert geladen.kosten_inflation_pct_pa == pytest.approx(0.025)
+
+        ausgeliefert = load_global_assumptions_yaml(
+            Path(__file__).parent.parent / "data" / "global_assumptions.yaml"
+        )
+        assert ausgeliefert.kosten_inflation_pct_pa == pytest.approx(0.02)
+        # Alle Standard-OPEX-Positionen konsistent indexiert (2 %/a ab Jahr 1)
+        for item in ausgeliefert.opex_standard:
+            assert item.index_pct_pa == pytest.approx(0.02)
+            assert item.indexierung_ab_jahr == 1
