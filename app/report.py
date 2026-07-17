@@ -403,6 +403,55 @@ def _chart_szenarien(vergleich: SzenarioVergleich) -> Image:
     return _fig_zu_bild(fig)
 
 
+def _chart_auktion_historie(df) -> Image:
+    fig, ax = _fig(6.4)
+    x = pd.to_datetime(df["datum"])
+    ax.plot(x, df["preisobergrenze_ct"], color=BRAND, linewidth=1.2,
+            linestyle="--", label="Preisobergrenze")
+    ax.plot(x, df["zuschlag_max_ct"], color=INK, linewidth=1.8, marker="o",
+            markersize=3, label="Höchster Zuschlag")
+    ax.plot(x, df["zuschlag_mittel_ct"], color=INK_SOFT, linewidth=1.6,
+            marker="o", markersize=3, label="Ø Zuschlag (gewichtet)")
+    ax.plot(x, df["zuschlag_min_ct"], color=NEUTRAL, linewidth=1.2,
+            marker="o", markersize=3, label="Niedrigster Zuschlag")
+    wett = df[~df["unterzeichnet"]]
+    if not wett.empty:
+        ax.axvspan(pd.to_datetime(wett["datum"].min()),
+                   pd.to_datetime(df["datum"].max()), color=WASH, zorder=0)
+        ax.annotate("Wettbewerbsphase", (pd.to_datetime(wett["datum"].min()),
+                    ax.get_ylim()[0] + 0.2), fontsize=7.5, color=MUTED)
+    ax.set_ylabel("ct/kWh")
+    ax.legend(loc="lower left", ncol=2)
+    return _fig_zu_bild(fig)
+
+
+def _chart_auktion_dichte(prognose, projekt_wert_ct: float) -> Image:
+    fig, ax = _fig(6.2)
+    ax.plot(prognose.dichte_x, prognose.dichte_y, color=MUTED, linewidth=1.2,
+            linestyle=":", label="Alle Gebote")
+    ax.plot(prognose.dichte_x, prognose.dichte_zuschlag_y, color=INK,
+            linewidth=1.8, label="Zuschlagswerte")
+    ax.fill_between(prognose.dichte_x, prognose.dichte_zuschlag_y,
+                    color=INK, alpha=0.12)
+    if len(prognose.pm_sample) > 1:
+        ax.axvspan(float(np.percentile(prognose.pm_sample, 10)),
+                   float(np.percentile(prognose.pm_sample, 90)),
+                   color=NEUTRAL, alpha=0.18)
+    ax.axvline(prognose.preisobergrenze_ct, color=BRAND, linewidth=1.2,
+               linestyle="--")
+    ax.annotate("Obergrenze", (prognose.preisobergrenze_ct, ax.get_ylim()[1]),
+                textcoords="offset points", xytext=(-4, -10), ha="right",
+                color=BRAND, fontsize=7.5)
+    ax.axvline(projekt_wert_ct, color=POSITIVE, linewidth=1.4)
+    ax.annotate("Projektwert", (projekt_wert_ct, ax.get_ylim()[1] * 0.85),
+                textcoords="offset points", xytext=(4, 0), color=POSITIVE,
+                fontsize=7.5)
+    ax.set_xlabel("Gebotswert (ct/kWh)")
+    ax.set_ylabel("Wahrscheinlichkeitsdichte")
+    ax.legend(loc="upper left")
+    return _fig_zu_bild(fig)
+
+
 # ---------------------------------------------------------------------------
 # Dokumentgeruest (Deckblatt, Kopf-/Fusszeile, Inhaltsverzeichnis)
 # ---------------------------------------------------------------------------
@@ -569,6 +618,10 @@ class ReportInputs:
     diskontsatz_pct: float             # fuer NPV/LCOE/MC-NPV
     ziel_irr_pct: float = 0.08
     logo_path: Path | None = None
+    # Optionales EAG-Ausschreibungsmodell: dict mit "df" (Historie),
+    # "prognose" (GebotsPrognose, Momentum-Modus), "formel_zeile" (Text
+    # mit eingesetzten Stuetzstellen). None -> Kapitel entfaellt.
+    auktion: dict | None = None
 
 
 def build_pdf_report(inputs: ReportInputs) -> bytes:
@@ -936,6 +989,65 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     story.append(Paragraph("Tab. 2: Kennzahlen je Marktpreisszenario.",
                            _STYLE_CAPTION))
     story.append(PageBreak())
+
+    # ------------------------------------------------------- Ausschreibung
+    if inputs.auktion is not None:
+        auk = inputs.auktion
+        prognose_a = auk["prognose"]
+        story.append(_Kapitel("8", "EAG-Ausschreibungsmodell"))
+        story.append(Paragraph(
+            "Price-Taker-Modell der österreichischen "
+            "EAG-Marktprämienausschreibungen (Pay-as-Bid mit "
+            "Gebotspreisreihung): Geschätzt wird die Verteilung der "
+            "Zuschlagswerte; das eigene Gebot beeinflusst den "
+            "Grenzzuschlag nicht. Grenzzuschlag und mengengewichteter "
+            "Ø-Zuschlag der nächsten Runde werden per Momentum-Formel "
+            "x(t+1) = x(t) + Δt·(Δt − Δt−1) aus den Wettbewerbsrunden "
+            "fortgeschrieben; daraus wird die Verteilung gebaut "
+            "(gespiegelte Inverse-Gamma auf [0, Preisobergrenze]). "
+            + auk.get("formel_zeile", ""),
+            _STYLE_TEXT,
+        ))
+        story.append(Paragraph("Historische Ausschreibungen", _STYLE_H2))
+        story.append(_chart_auktion_historie(auk["df"]))
+        story.append(Paragraph(
+            "Abb. 14: Zuschlagswerte (Min/Ø/Max) und Preisobergrenze "
+            "aller Runden seit 2022. Bis 04/2025 unterzeichnet "
+            "(Höchstzuschlag an der Obergrenze), seither Wettbewerb mit "
+            "sinkenden, sich verdichtenden Zuschlagswerten.",
+            _STYLE_CAPTION,
+        ))
+        story.append(Paragraph(
+            "Prognostizierte Verteilung der nächsten Runde", _STYLE_H2,
+        ))
+        story.append(_chart_auktion_dichte(
+            prognose_a, p.eag_zuschlagswert_ct_kwh,
+        ))
+        story.append(Paragraph(
+            f"Abb. 15: Dichte der Zuschlagswerte (am prognostizierten "
+            f"Grenzzuschlag {fmt_ct_kwh(prognose_a.grenzzuschlag_zentral_ct)} "
+            f"abgeschnitten; graues Band: P10–P90 der "
+            f"Grenzzuschlag-Unsicherheit) und Einordnung des angesetzten "
+            f"Projektwerts von {fmt_ct_kwh(p.eag_zuschlagswert_ct_kwh)} – "
+            f"Zuschlagswahrscheinlichkeit "
+            f"{fmt_pct(prognose_a.zuschlagswahrscheinlichkeit(p.eag_zuschlagswert_ct_kwh), 0)}.",
+            _STYLE_CAPTION,
+        ))
+        gebote_zeilen = [["Ziel-Zuschlagswahrscheinlichkeit", "Gebotswert"]]
+        for z in (0.50, 0.60, 0.70, 0.80, 0.90, 0.95):
+            gebote_zeilen.append([
+                f"{z * 100:.0f} %",
+                fmt_ct_kwh(prognose_a.empfohlenes_gebot(z)),
+            ])
+        story.append(_tabelle(gebote_zeilen,
+                              breiten=[_INHALT_B / 2, _INHALT_B / 2]))
+        story.append(Paragraph(
+            "Tab. 3: Empfohlene Gebotswerte je gewünschter "
+            "Zuschlagswahrscheinlichkeit (Quantile der prognostizierten "
+            "Grenzzuschlag-Verteilung).",
+            _STYLE_CAPTION,
+        ))
+        story.append(PageBreak())
 
     # ---------------------------------------------------------------- Annex A
     story.append(_Kapitel("A", "Annex: Annahmen der Berechnung"))

@@ -8,7 +8,6 @@ wahrscheinlichkeit - mit Uebergabe an das Cashflow-Modell.
 
 from __future__ import annotations
 
-import numpy as np
 import streamlit as st
 
 from app import services
@@ -142,52 +141,108 @@ def render_auktion() -> None:
     st.divider()
 
     # --- Prognose naechste Runde ---------------------------------------------
-    section_title("Prognose der nächsten Ausschreibung")
-    st.caption(
-        "Verankerung an der letzten Ausschreibung: Die zentrale "
-        "Prognosewelt entspricht exakt der Verteilung der letzten Runde "
-        "(nur um Wettbewerbsquote und Preisobergrenze angepasst, Random "
-        "Walk ohne Drift); die Unsicherheit stammt aus den beobachteten "
-        "Änderungen zwischen den Wettbewerbsrunden und der Unsicherheit "
-        "der Wettbewerbsquote. Bei erwarteter Überzeichnung (r > 1) "
-        "werden Unterzeichnungs-Welten ausgeschlossen – der Grenzzuschlag "
-        "fällt dann nie mit der Obergrenze zusammen."
+    section_title("Zuschlagswert bestimmen")
+    modus_label = st.radio(
+        "Grundlage des Zuschlagswerts",
+        ["Letzte Ausschreibung (gesetzt)", "Prognosemodell (nächste Ausschreibung)"],
+        horizontal=True,
+        help="Letzte Ausschreibung: Die Verteilung der letzten Runde gilt "
+             "unverändert; die Risikoneigung wählt das Quantil der "
+             "Zuschlagswerte. Prognosemodell: Momentum-Prognose der "
+             "nächsten Runde – Grenzzuschlag und Ø-Zuschlag werden aus "
+             "letzter Änderung und Beschleunigung fortgeschrieben, daraus "
+             "wird die neue Verteilung gebaut.",
     )
-    col1, col2, col3 = st.columns(3)
-    cap = col1.number_input(
-        "Preisobergrenze (ct/kWh)", 1.0, 15.0,
-        float(letzte.ausschreibung.preisobergrenze_ct), 0.01,
-        help="Per Verordnung fixiert; 2026/2027: 7,77 ct/kWh.",
-    )
-    r_erwartet = col2.number_input(
-        "Erwartete Wettbewerbsquote r (Gebote / ausgeschriebene Menge)",
-        0.2, 5.0, float(round(letzte.wettbewerbsquote, 2)), 0.05,
-        help="r > 1 = überzeichnet. Vorbelegung: latent geschätzte Quote "
-             "der letzten Runde. Die EAG-Abwicklungsstelle meldet "
-             "weiterhin 'enormes Interesse' (07/2026).",
-    )
-    sigma_r = col3.slider(
-        "Unsicherheit der Wettbewerbsquote (σ von ln r)", 0.05, 0.6, 0.25, 0.05,
-        help="Streuung der Lognormal-Ziehung von r über die "
-             "Prognosewelten – historisch schwankt r deutlich zwischen "
-             "den Runden.",
-    )
-    prognose = services.get_gebots_prognose(cap, r_erwartet, sigma_r)
+    modus = "letzte" if modus_label.startswith("Letzte") else "prognose"
+
+    if modus == "prognose":
+        col1, col3 = st.columns(2)
+        cap = col1.number_input(
+            "Preisobergrenze (ct/kWh)", 1.0, 15.0,
+            float(letzte.ausschreibung.preisobergrenze_ct), 0.01,
+            help="Per Verordnung fixiert; 2026/2027: 7,77 ct/kWh.",
+        )
+        sigma_pm = col3.slider(
+            "Unsicherheit des Grenzzuschlags (± ct/kWh)", 0.15, 0.8, 0.55, 0.05,
+            help="Streuung um die Punktprognose; Vorbelegung entspricht "
+                 "der Streuung der historischen Rundenänderungen. An der "
+                 "Preisobergrenze trunkiert.",
+        )
+        prognose = services.get_gebots_prognose("prognose", cap, sigma_pm)
+        st.caption(
+            f"Implizierte Wettbewerbsquote der gebauten Verteilung: "
+            f"r = {prognose.wettbewerbsquote:,.2f}".replace(".", ",")
+            + " (Anteil bezuschlagter Gebote = 1/r; ergibt sich aus "
+            "Prognose-Grenzzuschlag, Ø-Prognose und Minimum-Anker)."
+        )
+        with st.expander("Prognosemethodik (Momentum-Formel)"):
+            wett = sorted(
+                (f.ausschreibung for f in modell.fits
+                 if not f.ausschreibung.unterzeichnet),
+                key=lambda a: a.datum,
+            )
+            maxes = [a.zuschlag_max_ct for a in wett]
+            mittels = [a.zuschlag_mittel_ct for a in wett]
+            st.markdown(
+                "Fortschreibung je Stützstelle (Grenzzuschlag und "
+                "Ø-Zuschlag) aus letzter Änderung und Beschleunigung – "
+                "AR-artig:\n\n"
+                "$x_{t+1} = x_t + \\Delta_t \\cdot (\\Delta_t - "
+                "\\Delta_{t-1})$ mit $\\Delta_t = x_t - x_{t-1}$\n\n"
+                f"Grenzzuschlag: {' → '.join(f'{v:,.2f}'.replace('.', ',') for v in maxes)} "
+                f"⇒ **{fmt_ct_kwh(prognose.grenzzuschlag_zentral_ct)}** · "
+                f"Ø-Zuschlag: {' → '.join(f'{v:,.2f}'.replace('.', ',') for v in mittels)} "
+                f"⇒ **{fmt_ct_kwh(prognose.mittel_prognose_ct)}**\n\n"
+                "Aus beiden Punktprognosen wird die neue Verteilung "
+                "gebaut (E[b | b ≤ max] = Ø und F(max) = 1/r); die "
+                "Unsicherheit des Grenzzuschlags folgt der Streuung der "
+                "historischen Rundenänderungen."
+            )
+    else:
+        prognose = services.get_gebots_prognose("letzte")
+        st.caption(
+            f"Die letzte Ausschreibung ({letzte.ausschreibung.datum.strftime('%d.%m.%Y')}) "
+            f"gilt als gesetzt: Grenzzuschlag {fmt_ct_kwh(prognose.grenzzuschlag_zentral_ct)}, "
+            f"Ø {fmt_ct_kwh(letzte.ausschreibung.zuschlag_mittel_ct)}, "
+            f"Minimum {fmt_ct_kwh(letzte.ausschreibung.zuschlag_min_ct)}. Die "
+            f"Risikoneigung wählt das Quantil der Zuschlagswert-Verteilung "
+            f"dieser Runde."
+        )
 
     ziel_prob = st.select_slider(
-        "Gewünschte Zuschlagswahrscheinlichkeit",
+        "Risikoneigung: gewünschte Wahrscheinlichkeit",
         options=[0.50, 0.60, 0.70, 0.80, 0.90, 0.95], value=0.80,
         format_func=lambda v: f"{v * 100:.0f} %",
+        help="Prognosemodell: Zuschlagswahrscheinlichkeit P(Grenzzuschlag "
+             "> Gebot). Letzte Ausschreibung: Anteil der Zuschlagswerte "
+             "der letzten Runde oberhalb des gewählten Werts – hohe "
+             "Wahrscheinlichkeit = konservativ niedriger Wert.",
     )
     empfohlen = prognose.empfohlenes_gebot(ziel_prob)
 
+    # Harte Ueberschreibung: der manuell gesetzte Wert gewinnt immer.
+    col_o1, col_o2 = st.columns([1, 2])
+    ueberschreiben = col_o1.toggle("Zuschlagswert manuell überschreiben",
+                                   value=False, key="auktion_override")
+    if ueberschreiben:
+        effektiver_wert = col_o2.number_input(
+            "Zuschlagswert (ct/kWh)", 0.1, 15.0, float(round(empfohlen, 2)),
+            0.01, key="auktion_override_wert",
+        )
+    else:
+        effektiver_wert = float(round(empfohlen, 2))
+
     render_kpi_row(
         [
-            ("Empfohlenes Gebot", fmt_ct_kwh(empfohlen)),
-            ("Zuschlagswahrscheinlichkeit", fmt_pct(ziel_prob, 0)),
-            ("Erwarteter Grenzzuschlag (Median)",
-             fmt_ct_kwh(float(np.median(prognose.pm_sample)))),
-            ("Ø Zuschlagswert (Prognose)", fmt_ct_kwh(prognose.gebot_mittel_ct)),
+            ("Zuschlagswert" + (" (manuell)" if ueberschreiben else " (empfohlen)"),
+             fmt_ct_kwh(effektiver_wert)),
+            ("Wahrscheinlichkeit",
+             fmt_pct(prognose.zuschlagswahrscheinlichkeit(effektiver_wert), 0)),
+            ("Grenzzuschlag " + ("(Prognose)" if modus == "prognose" else "(Ist, letzte Runde)"),
+             fmt_ct_kwh(prognose.grenzzuschlag_zentral_ct)),
+            ("Ø Zuschlagswert " + ("(Prognose)" if modus == "prognose" else "(Ist)"),
+             fmt_ct_kwh(prognose.gebot_mittel_ct if modus == "prognose"
+                        else letzte.ausschreibung.zuschlag_mittel_ct)),
             ("Letzter Grenzzuschlag (Ist)",
              fmt_ct_kwh(letzte.ausschreibung.zuschlag_max_ct)),
         ],
@@ -196,41 +251,45 @@ def render_auktion() -> None:
 
     col_links, col_rechts = st.columns(2)
     with col_links:
-        section_title("Geschätzte Gebotsverteilung")
+        section_title("Verteilung der Zuschlagswerte")
         st.plotly_chart(
-            charts.gebotsdichte_chart(prognose, empfohlen), width="stretch"
+            charts.gebotsdichte_chart(prognose, effektiver_wert), width="stretch"
         )
         st.caption(
-            "Gefüllt: Dichte der Zuschlagswerte (erfolgreiche Gebote, am "
-            "Grenzzuschlag abgeschnitten) – Peak knapp unter dem "
-            "Grenzzuschlag, steiler Abfall nach rechts, langsamer linker "
-            "Auslauf. Gestrichelt: alle Gebote inkl. nicht bezuschlagter. "
-            "Band: P10–P90 des Grenzzuschlags. Markierungen: Obergrenze, "
-            "Erwartungswert, Median, 5/95 %-Quantile, empfohlenes Gebot."
+            "Gefüllt: Dichte der Zuschlagswerte (am Grenzzuschlag "
+            "abgeschnitten) – Peak knapp unter dem Grenzzuschlag, steiler "
+            "Abfall nach rechts, langsamer linker Auslauf. Gestrichelt: "
+            "alle Gebote inkl. nicht bezuschlagter."
+            + (" Band: P10–P90 des prognostizierten Grenzzuschlags."
+               if modus == "prognose" else "")
         )
     with col_rechts:
-        section_title("Gebot ↔ Zuschlagswahrscheinlichkeit")
+        section_title("Wert ↔ Wahrscheinlichkeit")
         st.plotly_chart(
-            charts.zuschlagskurve_chart(prognose, ziel_prob, empfohlen),
+            charts.zuschlagskurve_chart(prognose,
+                prognose.zuschlagswahrscheinlichkeit(effektiver_wert),
+                effektiver_wert),
             width="stretch",
         )
         st.caption(
-            "P(Zuschlag | Gebot) = P(Grenzzuschlag > Gebot) über alle "
-            "Prognosewelten. Je höher die gewünschte Sicherheit, desto "
-            "niedriger das Gebot."
+            "Prognosemodell: P(Zuschlag | Gebot) = P(Grenzzuschlag > "
+            "Gebot) über die Prognoseunsicherheit."
+            if modus == "prognose" else
+            "Quantilslage in der gesetzten letzten Runde: Anteil der "
+            "Zuschlagswerte oberhalb des gewählten Werts."
         )
 
     uebersicht = " · ".join(
         f"{int(z * 100)} % → {fmt_ct_kwh(prognose.empfohlenes_gebot(z))}"
         for z in (0.50, 0.60, 0.70, 0.80, 0.90, 0.95)
     )
-    st.info(f"Empfohlene Gebote nach Zielwahrscheinlichkeit: {uebersicht}")
+    st.info(f"Werte nach Risikoneigung: {uebersicht}")
 
     st.divider()
 
     # --- Uebergabe an das Cashflow-Modell -------------------------------------
     section_title("Übergabe an das Cashflow-Modell")
-    st.session_state[STATE_EMPFOHLENES_GEBOT] = float(round(empfohlen, 2))
+    st.session_state[STATE_EMPFOHLENES_GEBOT] = float(round(effektiver_wert, 2))
     st.caption(
         "Der empfohlene Wert wird neuen Projekten automatisch als "
         "EAG-Zuschlagswert vorbelegt (im Formular jederzeit manuell "
@@ -248,15 +307,15 @@ def render_auktion() -> None:
             key="auktion_ziel_projekt",
         )
         if col_b.button(
-            f"Gebot {fmt_number(empfohlen, 2)} ct übernehmen",
+            f"Zuschlagswert {fmt_number(effektiver_wert, 2)} ct übernehmen",
             width="stretch", type="primary",
         ):
             projekt = services.get_project(ziel_projekt)
-            projekt.eag_zuschlagswert_ct_kwh = float(round(empfohlen, 2))
+            projekt.eag_zuschlagswert_ct_kwh = float(round(effektiver_wert, 2))
             services.save_project(projekt, projekte[ziel_projekt])
             st.session_state[STATE_SELECTED_PROJECT] = ziel_projekt
             st.success(
                 f"EAG-Zuschlagswert von „{projekt.name}“ auf "
-                f"{fmt_ct_kwh(empfohlen)} gesetzt – Neuberechnung erfolgt "
-                f"automatisch (Portfolio-Seite)."
+                f"{fmt_ct_kwh(effektiver_wert)} gesetzt – Neuberechnung "
+                f"erfolgt automatisch (Portfolio-Seite)."
             )

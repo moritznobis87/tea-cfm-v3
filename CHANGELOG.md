@@ -1,5 +1,42 @@
 # Changelog
 
+## v4.2 – Zwei Zuschlagswert-Modi, Momentum-Prognose & PDF-Kapitel (2026-07)
+
+### Zwei Modi (Seite "Ausschreibung" und Monte-Carlo-Tab)
+- **Letzte Ausschreibung (gesetzt):** Die gefittete Zuschlagswert-
+  Verteilung der letzten Runde gilt unverändert; die Risikoneigung
+  (50–95 %) wählt das Quantil der Zuschlagswerte (hohe
+  Wahrscheinlichkeit = konservativ niedriger Wert).
+- **Prognosemodell (nächste Ausschreibung):** Momentum-Punktprognose je
+  Stützstelle: x(t+1) = x(t) + Δt·(Δt − Δt−1) für Grenzzuschlag
+  (6,69 → 6,65 ct) und Ø-Zuschlag (6,40 → 6,44 ct) über die
+  Wettbewerbsrunden; daraus wird die neue Verteilung gebaut
+  (Ø-Bedingung stark gewichtet, letztes Minimum als weicher
+  Tail-Anker, Abschneiden am prognostizierten Grenzzuschlag). Die
+  Wettbewerbsquote ist impliziert (r = 1/F(max)) und wird ausgewiesen;
+  Grenzzuschlag-Unsicherheit als an der Obergrenze trunkierte
+  Normalverteilung (± einstellbar, Vorbelegung = Streuung der
+  historischen Rundenänderungen). Formel samt eingesetzten
+  Stützstellen im Expander dokumentiert.
+- **Harte Überschreibung:** Auf der Seite lässt sich der Zuschlagswert
+  jederzeit manuell setzen – der überschriebene Wert speist Session-
+  Vorbelegung, Übernehmen-Button und KPI-Zeile. Im Monte-Carlo-Tab ist
+  der feste Projektwert (Schalter aus) die harte Überschreibung; bei
+  aktivierter Ziehung ist die Grundlage wählbar (letzte Runde /
+  Prognosemodell).
+- Backtest auf die Momentum-Formel umgestellt (nur 06/2026 mit drei
+  Stützstellen prüfbar: Prognose 6,46 vs. Ist 6,69; Methode je Zeile
+  ausgewiesen).
+
+### PDF-Bericht
+- Neues Kapitel 8 "EAG-Ausschreibungsmodell": Historie aller Runden
+  (Min/Ø/Max, Preisobergrenze, markierte Wettbewerbsphase),
+  prognostizierte Zuschlagswert-Verteilung mit P10–P90-Band und
+  Einordnung des angesetzten Projektwerts (inkl. dessen
+  Zuschlagswahrscheinlichkeit), Momentum-Formel mit eingesetzten
+  Stützstellen sowie Empfehlungstabelle je Zielwahrscheinlichkeit.
+- Suite: 120 Tests.
+
 ## v4.1 – Ausschreibungsmodul: Verankerung an der letzten Runde & korrigierte Dichteform (2026-07)
 
 ### Prognose grundlegend überarbeitet

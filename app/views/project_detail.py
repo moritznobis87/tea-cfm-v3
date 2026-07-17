@@ -522,28 +522,31 @@ def _render_monte_carlo_tab(project_id: str, diskontsatz: float) -> None:
     gebot_aktiv = st.toggle(
         "EAG-Zuschlagswert aus dem Ausschreibungsmodell ziehen",
         value=False, key=f"mc_gebot_{project_id}",
-        help="Je Lauf wird der anzulegende Wert als zufälliges "
-             "erfolgreiches Gebot der prognostizierten nächsten "
-             "EAG-Ausschreibung gezogen (Seite 'Ausschreibung'), statt den "
-             "fixen Projektwert zu verwenden. Der Konventionell-Abschlag "
-             "bleibt erhalten; die Auktionsunsicherheit fließt so in die "
-             "IRR-Verteilung ein.",
+        help="Je Lauf wird der anzulegende Wert als zufälliger "
+             "Zuschlagswert aus dem Ausschreibungsmodell gezogen (Seite "
+             "'Ausschreibung') – wahlweise aus der letzten Ausschreibung "
+             "(gesetzt) oder aus der Momentum-Prognose der nächsten "
+             "Runde. Ausgeschaltet gilt der feste Projektwert (harte "
+             "Überschreibung über die Projektmaske). Der "
+             "Konventionell-Abschlag bleibt erhalten.",
     )
     if gebot_aktiv:
         modell = services.get_auktions_modell()
         letzte = modell.letzte_runde
-        cap = float(letzte.ausschreibung.preisobergrenze_ct)
-        r_std = float(round(letzte.wettbewerbsquote, 2))
-        col_g1, col_g2 = st.columns(2)
-        r_mc = col_g1.number_input(
-            "Erwartete Wettbewerbsquote r", 0.2, 5.0, r_std, 0.05,
-            key=f"mc_gebot_r_{project_id}",
+        mc_modus_label = st.radio(
+            "Grundlage der Ziehung",
+            ["Letzte Ausschreibung (gesetzt)", "Prognosemodell"],
+            horizontal=True, key=f"mc_gebot_modus_{project_id}",
         )
-        sigma_r_mc = col_g2.slider(
-            "Unsicherheit σ(ln r)", 0.05, 0.6, 0.25, 0.05,
-            key=f"mc_gebot_sigma_{project_id}",
-        )
-        gebots_key = (cap, r_mc, sigma_r_mc)
+        if mc_modus_label.startswith("Letzte"):
+            gebots_key = ("letzte", 0.0, 0.0)
+        else:
+            cap = float(letzte.ausschreibung.preisobergrenze_ct)
+            sigma_pm_mc = st.slider(
+                "Unsicherheit Grenzzuschlag (± ct/kWh)", 0.15, 0.8, 0.55, 0.05,
+                key=f"mc_gebot_sigma_{project_id}",
+            )
+            gebots_key = ("prognose", cap, sigma_pm_mc)
 
     # st.tabs rendert alle Tabs bei jedem Rerun - die Simulation laeuft
     # deshalb erst nach explizitem Start (danach haelt der Cache die

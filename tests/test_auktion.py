@@ -16,9 +16,11 @@ import pytest
 from engine.auktion import (
     EPS_MIN,
     FAMILIEN,
+    ar_punktprognose,
     fit_runde,
     kalibriere_modell,
     load_ausschreibungen,
+    prognose_letzte_runde,
     prognose_naechste_runde,
     validiere_einschritt,
     validiere_loo,
@@ -123,16 +125,14 @@ class TestLinkUndPrognose:
         assert modell.koef_lage[1] < 0
         assert modell.koef_konzentration[1] > 0
 
-    def test_mehr_wettbewerb_senkt_grenzzuschlag(self, modell):
-        cap = 7.77
-        p_wenig = prognose_naechste_runde(modell, cap, 1.2, sigma_ln_r=0.15,
-                                          n_ziehungen=1500)
-        p_viel = prognose_naechste_runde(modell, cap, 2.5, sigma_ln_r=0.15,
-                                         n_ziehungen=1500)
-        assert np.median(p_viel.pm_sample) < np.median(p_wenig.pm_sample)
+    def test_wettbewerbsquote_impliziert(self, modell):
+        """Die Wettbewerbsquote ist im Prognosemodus impliziert
+        (r = 1/F(max)) und liegt im plausiblen Ueberzeichnungsbereich."""
+        p = prognose_naechste_runde(modell, 7.77, n_ziehungen=500)
+        assert 1.0 < p.wettbewerbsquote < 5.0
 
     def test_zuschlagskurve_monoton_und_kalibriert(self, modell):
-        p = prognose_naechste_runde(modell, 7.77, 1.75)
+        p = prognose_naechste_runde(modell, 7.77)
         gebote = np.linspace(4.0, 7.77, 30)
         probs = [p.zuschlagswahrscheinlichkeit(b) for b in gebote]
         assert all(a >= b - 1e-9 for a, b in zip(probs, probs[1:], strict=False))
@@ -141,14 +141,16 @@ class TestLinkUndPrognose:
             assert b <= 7.77 + 1e-9
             assert p.zuschlagswahrscheinlichkeit(b) == pytest.approx(ziel, abs=0.03)
 
-    def test_unterzeichnung_liefert_obergrenze(self, modell):
-        """r deutlich < 1: Grenzzuschlag = Obergrenze, Empfehlung nahe
-        Obergrenze (jedes gueltige Gebot gewinnt)."""
-        p = prognose_naechste_runde(modell, 7.77, 0.4, sigma_ln_r=0.05)
-        assert p.empfohlenes_gebot(0.9) == pytest.approx(7.77, abs=0.05)
+    def test_momentum_formel(self):
+        """Nutzerformel x(t+1) = x(t) + Dt*(Dt - Dt-1) exakt."""
+        assert ar_punktprognose([8.48, 7.29, 6.80, 6.69]) == pytest.approx(
+            6.69 + (-0.11) * ((-0.11) - (-0.49)), abs=1e-9
+        )
+        # Fallback Random Walk bei < 3 Stuetzstellen
+        assert ar_punktprognose([7.29, 6.80]) == 6.80
 
     def test_gebots_ziehungen_erfolgreich_und_begrenzt(self, modell):
-        p = prognose_naechste_runde(modell, 7.77, 1.75, n_ziehungen=800)
+        p = prognose_naechste_runde(modell, 7.77, n_ziehungen=800)
         zieh = p.gebots_ziehungen(400, seed=1)
         assert len(zieh) == 400
         assert (zieh > 0).all() and (zieh <= 7.77 + 1e-9).all()
@@ -156,9 +158,28 @@ class TestLinkUndPrognose:
         assert zieh.mean() < np.mean(p.pm_sample)
 
     def test_reproduzierbar(self, modell):
-        p1 = prognose_naechste_runde(modell, 7.77, 1.75, seed=7)
-        p2 = prognose_naechste_runde(modell, 7.77, 1.75, seed=7)
+        p1 = prognose_naechste_runde(modell, 7.77, seed=7)
+        p2 = prognose_naechste_runde(modell, 7.77, seed=7)
         assert np.allclose(p1.pm_sample, p2.pm_sample)
+
+    def test_modus_letzte_runde_gesetzt(self, modell):
+        """Modus 1: Verteilung der letzten Runde unveraendert; die
+        Risikoneigung waehlt das Quantil der Zuschlagswerte."""
+        p = prognose_letzte_runde(modell)
+        ist = modell.letzte_runde.ausschreibung
+        assert p.modus == "letzte"
+        assert p.grenzzuschlag_zentral_ct == ist.zuschlag_max_ct
+        # Monoton: hoehere Sicherheit -> niedrigerer Wert; nie ueber p_m
+        w = [p.empfohlenes_gebot(z) for z in (0.5, 0.7, 0.9, 0.95)]
+        assert all(a >= b for a, b in zip(w, w[1:], strict=False))
+        assert max(w) <= ist.zuschlag_max_ct + 1e-9
+        # Kalibriert: P(Wert) am gewaehlten Quantil == Zielwahrscheinlichkeit
+        assert p.zuschlagswahrscheinlichkeit(
+            p.empfohlenes_gebot(0.8)
+        ) == pytest.approx(0.8, abs=0.02)
+        # Ziehungen bleiben unter dem gesetzten Grenzzuschlag
+        zieh = p.gebots_ziehungen(300, seed=2)
+        assert (zieh <= ist.zuschlag_max_ct + 1e-9).all()
 
 
 class TestValidierungUndVergleich:
@@ -183,7 +204,7 @@ class TestMonteCarloIntegration:
     ):
         from engine import run_monte_carlo
 
-        p = prognose_naechste_runde(modell, 7.77, 1.75, n_ziehungen=500)
+        p = prognose_naechste_runde(modell, 7.77, n_ziehungen=500)
         basis = run_monte_carlo(project, global_assumptions, n_laeufe=30,
                                 sigmas={"produktion": 0.0})
         mit_gebot = run_monte_carlo(
@@ -201,7 +222,7 @@ class TestMonteCarloIntegration:
     ):
         from engine import AnlagenTyp, run_monte_carlo
 
-        p = prognose_naechste_runde(modell, 7.77, 1.75, n_ziehungen=200)
+        p = prognose_naechste_runde(modell, 7.77, n_ziehungen=200)
         ziehung = np.array([6.0])  # ein festes "Gebot" fuer alle Laeufe
         agri = run_monte_carlo(project, global_assumptions, n_laeufe=3,
                                sigmas={}, gebot_ziehungen=ziehung)
@@ -221,39 +242,40 @@ class TestVerankertePrognoseUndFamilienwahl:
     geforderte Dichteform der gespiegelten Inversen Gamma."""
 
     def test_median_verankert_an_letzter_runde(self, modell_ig):
+        """Momentum-Prognose bei abflachendem Rueckgang: Median-
+        Grenzzuschlag knapp unter dem letzten Ist-Wert (6,65 vs. 6,69)."""
         letzter_ist = modell_ig.letzte_runde.ausschreibung.zuschlag_max_ct
-        p = prognose_naechste_runde(
-            modell_ig, 7.77, modell_ig.letzte_runde.wettbewerbsquote
-        )
-        assert float(np.median(p.pm_sample)) <= letzter_ist + 0.15
+        p = prognose_naechste_runde(modell_ig, 7.77)
+        assert float(np.median(p.pm_sample)) <= letzter_ist + 0.05
+        assert p.grenzzuschlag_zentral_ct == pytest.approx(6.65, abs=0.05)
+        assert p.mittel_prognose_ct == pytest.approx(6.44, abs=0.15)
 
     def test_keine_masse_an_obergrenze_bei_ueberzeichnung(self, modell_ig):
-        p = prognose_naechste_runde(modell_ig, 7.77, 1.5)
+        p = prognose_naechste_runde(modell_ig, 7.77)
         assert float(np.mean(p.pm_sample >= 7.77 - 1e-9)) == 0.0
 
     def test_dichteform_steil_rechts_langsam_links(self, modell_ig):
         """Gespiegelte InvGamma, Zuschlagswerte: Modus knapp unter dem
         Grenzzuschlag; rechts vom Modus faellt die Dichte praktisch auf
         null, links laeuft sie langsam aus."""
-        p = prognose_naechste_runde(
-            modell_ig, 7.77, modell_ig.letzte_runde.wettbewerbsquote
-        )
+        p = prognose_naechste_runde(modell_ig, 7.77)
         x, y = p.dichte_x, p.dichte_zuschlag_y
         modus = x[int(np.argmax(y))]
         assert p.gebot_mittel_ct < modus <= 7.77
         rechts = y[np.searchsorted(x, min(modus + 0.2, 7.7))]
-        links = y[np.searchsorted(x, modus - 1.0)]
-        assert rechts < 0.1 * y.max()
-        assert 0.05 * y.max() < links < 0.7 * y.max()
+        links = y[np.searchsorted(x, modus - 0.5)]
+        assert rechts < 0.1 * y.max()          # steiler Abfall nach rechts
+        assert links > 5 * max(rechts, 1e-12)  # links deutlich langsamer
+        assert links > 0.02 * y.max()
         # Harte Obergrenze: am Cap ist die Dichte null.
         assert y[-1] < 1e-6 * max(y.max(), 1e-9)
 
     def test_einschritt_backtest_deckt_wettbewerbsrunden(self, runden):
+        """Backtest der Momentum-Formel: eine Runde weniger als
+        Wettbewerbsrunden (die erste hat keinen Wettbewerbs-Vorgaenger);
+        die Formel greift erst ab drei Stuetzstellen (ausgewiesen)."""
         bt = validiere_einschritt(runden, "Gespiegelte Inverse Gamma")
-        assert len(bt) == sum(not r.unterzeichnet for r in runden)
-        # Im stabilen Regime (2026) schlaegt das Modell die naive
-        # Fortschreibung.
-        stabil = bt[bt["datum"].astype(str) >= "2026-01-01"]
-        err_m = stabil["grenzzuschlag_modell_ct"] - stabil["grenzzuschlag_ist_ct"]
-        err_n = stabil["grenzzuschlag_naiv_ct"] - stabil["grenzzuschlag_ist_ct"]
-        assert np.sqrt((err_m**2).mean()) < np.sqrt((err_n**2).mean())
+        assert len(bt) == sum(not r.unterzeichnet for r in runden) - 1
+        assert (bt["methode"] == "Momentum-Formel").sum() == 1
+        momentum = bt[bt["methode"] == "Momentum-Formel"].iloc[0]
+        assert momentum["grenzzuschlag_modell_ct"] == pytest.approx(6.46, abs=0.02)
