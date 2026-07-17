@@ -156,11 +156,19 @@ def render_auktion() -> None:
     modus = "letzte" if modus_label.startswith("Letzte") else "prognose"
 
     if modus == "prognose":
-        col1, col3 = st.columns(2)
+        col1, col2, col3 = st.columns(3)
         cap = col1.number_input(
             "Preisobergrenze (ct/kWh)", 1.0, 15.0,
             float(letzte.ausschreibung.preisobergrenze_ct), 0.01,
             help="Per Verordnung fixiert; 2026/2027: 7,77 ct/kWh.",
+        )
+        ordnung = col2.selectbox(
+            "Maximale Differenzenordnung", [1, 2, 3], index=1,
+            help="Ordnung 1 = lineare Fortschreibung des letzten Trends; "
+                 "Ordnung 2 berücksichtigt zusätzlich die Änderung des "
+                 "Trends (Beschleunigung); Ordnung 3 deren Änderung. "
+                 "Effektiv begrenzt durch die verfügbaren "
+                 "Wettbewerbsrunden.",
         )
         sigma_pm = col3.slider(
             "Unsicherheit des Grenzzuschlags (± ct/kWh)", 0.15, 0.8, 0.55, 0.05,
@@ -168,14 +176,25 @@ def render_auktion() -> None:
                  "der Streuung der historischen Rundenänderungen. An der "
                  "Preisobergrenze trunkiert.",
         )
-        prognose = services.get_gebots_prognose("prognose", cap, sigma_pm)
+        lambdas = tuple(
+            st.slider(
+                f"Dämpfung λ{k} (Gewicht der Differenz {k + 1}. Ordnung)",
+                0.0, 1.0, 1.0, 0.05, key=f"auktion_lambda_{k}",
+                help="λ = 1: volle Fortschreibung der höheren Differenz; "
+                     "λ = 0: die höhere Ordnung wird ignoriert (entspricht "
+                     "der jeweils niedrigeren Ordnung).",
+            )
+            for k in range(1, int(ordnung))
+        )
+        prognose = services.get_gebots_prognose("prognose", cap, sigma_pm,
+                                                int(ordnung), lambdas)
         st.caption(
             f"Implizierte Wettbewerbsquote der gebauten Verteilung: "
             f"r = {prognose.wettbewerbsquote:,.2f}".replace(".", ",")
             + " (Anteil bezuschlagter Gebote = 1/r; ergibt sich aus "
             "Prognose-Grenzzuschlag, Ø-Prognose und Minimum-Anker)."
         )
-        with st.expander("Prognosemethodik (Momentum-Formel)"):
+        with st.expander("Prognosemethodik (Differenzenextrapolation)"):
             wett = sorted(
                 (f.ausschreibung for f in modell.fits
                  if not f.ausschreibung.unterzeichnet),
@@ -184,19 +203,28 @@ def render_auktion() -> None:
             maxes = [a.zuschlag_max_ct for a in wett]
             mittels = [a.zuschlag_mittel_ct for a in wett]
             st.markdown(
-                "Fortschreibung je Stützstelle (Grenzzuschlag und "
-                "Ø-Zuschlag) aus letzter Änderung und Beschleunigung – "
-                "AR-artig:\n\n"
-                "$x_{t+1} = x_t + \\Delta_t \\cdot (\\Delta_t - "
-                "\\Delta_{t-1})$ mit $\\Delta_t = x_t - x_{t-1}$\n\n"
+                "Rekursive Mehrfach-Differenzenextrapolation: Die höchste "
+                "Differenz bleibt konstant, alle niedrigeren werden "
+                "rekursiv fortgeschrieben –\n\n"
+                r"$\widehat{\Delta}^{(m)}_{t+1} = \Delta^{(m)}_t \quad\big|\quad "
+                r"\widehat{\Delta}^{(k)}_{t+1} = \Delta^{(k)}_t + "
+                r"\lambda_k \cdot \widehat{\Delta}^{(k+1)}_{t+1} "
+                r"\quad\big|\quad \hat{x}_{t+1} = x_t + \widehat{\Delta}^{(1)}_{t+1}$"
+                "\n\nDamit wird nicht nur der aktuelle Trend, sondern auch "
+                "dessen Veränderung berücksichtigt: Halbiert sich der "
+                "Rückgang je Runde, erwartet das Verfahren eine weitere "
+                "Abflachung statt einer konstanten Fortschreibung.\n\n"
                 f"Grenzzuschlag: {' → '.join(f'{v:,.2f}'.replace('.', ',') for v in maxes)} "
                 f"⇒ **{fmt_ct_kwh(prognose.grenzzuschlag_zentral_ct)}** · "
                 f"Ø-Zuschlag: {' → '.join(f'{v:,.2f}'.replace('.', ',') for v in mittels)} "
                 f"⇒ **{fmt_ct_kwh(prognose.mittel_prognose_ct)}**\n\n"
-                "Aus beiden Punktprognosen wird die neue Verteilung "
-                "gebaut (E[b | b ≤ max] = Ø und F(max) = 1/r); die "
-                "Unsicherheit des Grenzzuschlags folgt der Streuung der "
-                "historischen Rundenänderungen."
+                "Das Minimum wird unverändert fortgeschrieben (keine "
+                "stabile Dynamik in der Historie); anschließend Projektion "
+                "auf Minimum ≤ Ø ≤ Grenzzuschlag < Preisobergrenze. Aus "
+                "den Punktprognosen wird die Verteilung gebaut "
+                "(Ø-Bedingung stark gewichtet, Minimum als weicher "
+                "Tail-Anker); die Grenzzuschlag-Unsicherheit folgt der "
+                "Streuung der historischen Rundenänderungen."
             )
     else:
         prognose = services.get_gebots_prognose("letzte")

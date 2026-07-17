@@ -562,22 +562,43 @@ def validiere_loo(runden: list[Ausschreibung], familie_name: str) -> pd.DataFram
     return pd.DataFrame(zeilen)
 
 
-def ar_punktprognose(werte: list[float]) -> float:
-    """Vom Nutzer vorgegebene Momentum-Punktprognose (AR-artig): die
-    naechste Stuetzstelle folgt aus der letzten Aenderung, skaliert mit
-    der Beschleunigung (Aenderung der Aenderung):
+def differenzen_extrapolation(
+    werte: list[float],
+    ordnung: int = 2,
+    lambdas: tuple[float, ...] | None = None,
+) -> float:
+    """Allgemeine Mehrfach-Differenzenextrapolation: beruecksichtigt
+    neben dem aktuellen Trend auch dessen zeitliche Veraenderung
+    (Beschleunigung) und optional hoehere Differenzen.
 
-        x(t+1) = x(t) + [x(t)-x(t-1)] * ([x(t)-x(t-1)] - [x(t-1)-x(t-2)])
+    Rekursive Differenzen: Delta^(k)_t = Delta^(k-1)_t - Delta^(k-1)_{t-1}.
+    Extrapolation:
+      1. Hoechste Differenz bleibt konstant:  D^(m) = Delta^(m)_t
+      2. Niedrigere rekursiv:  D^(k) = Delta^(k)_t + lambda_k * D^(k+1)
+      3. Naechster Wert:       x_{t+1} = x_t + D^(1)
 
-    Bei abflachendem Rueckgang (Delta schrumpft) ergibt sich ein kleiner
-    naechster Schritt; bei sich beschleunigendem Rueckgang ein
-    groesserer. Mit weniger als drei Stuetzstellen faellt die Prognose
-    auf den letzten Wert zurueck (Random Walk)."""
-    if len(werte) < 3:
+    lambda_k in [0, 1] daempft die hoeheren Ableitungen (Standard 1;
+    lambda -> 0 naehert sich der linearen Fortschreibung der jeweils
+    niedrigeren Ordnung). Die effektive Ordnung wird durch die
+    verfuegbaren Stuetzstellen begrenzt (Ordnung m braucht m+1 Werte);
+    mit nur einer Stuetzstelle bleibt der letzte Wert stehen (Random
+    Walk)."""
+    n = len(werte)
+    if n < 2:
         return float(werte[-1])
-    d1 = werte[-1] - werte[-2]
-    d0 = werte[-2] - werte[-3]
-    return float(werte[-1] + d1 * (d1 - d0))
+    m = int(max(1, min(ordnung, n - 1)))
+    if lambdas is None:
+        lambdas = tuple(1.0 for _ in range(max(m - 1, 0)))
+
+    x = np.asarray(werte, dtype=float)
+    letzte_diff = {k: float(np.diff(x, n=k)[-1]) for k in range(1, m + 1)}
+
+    d_hat = letzte_diff[m]                       # Schritt 1+2
+    for k in range(m - 1, 0, -1):                # Schritt 3
+        lam = float(np.clip(lambdas[k - 1] if k - 1 < len(lambdas) else 1.0,
+                            0.0, 1.0))
+        d_hat = letzte_diff[k] + lam * d_hat
+    return float(x[-1] + d_hat)                  # Schritt 4+5
 
 
 def _fit_an_max_und_mittel(familie: _Familie, cap: float, max_ct: float,
@@ -613,13 +634,15 @@ def _fit_an_max_und_mittel(familie: _Familie, cap: float, max_ct: float,
     return mu_rel, kappa
 
 
-def validiere_einschritt(runden: list[Ausschreibung],
-                          familie_name: str) -> pd.DataFrame:
-    """Rollierender Ein-Schritt-Backtest der Momentum-Punktprognose
-    (ar_punktprognose) ueber die Wettbewerbsrunden, im Vergleich zur
-    naiven Fortschreibung des letzten Hoechstzuschlags. Mit weniger als
-    drei vorherigen Wettbewerbsrunden faellt die Formel auf den letzten
-    Wert zurueck (in der Spalte 'methode' ausgewiesen)."""
+def validiere_einschritt(runden: list[Ausschreibung], familie_name: str,
+                          ordnung: int = 2,
+                          lambdas: tuple[float, ...] | None = None
+                          ) -> pd.DataFrame:
+    """Rollierender Ein-Schritt-Backtest der Differenzenextrapolation
+    ueber die Wettbewerbsrunden, im Vergleich zur naiven Fortschreibung
+    des letzten Hoechstzuschlags. Die effektive Ordnung je Runde
+    (begrenzt durch die verfuegbaren Stuetzstellen) wird in der Spalte
+    'methode' ausgewiesen."""
     sortiert = sorted(runden, key=lambda r: r.datum)
     zeilen = []
     for i, ziel in enumerate(sortiert):
@@ -630,15 +653,18 @@ def validiere_einschritt(runden: list[Ausschreibung],
             continue
         maxes = [r.zuschlag_max_ct for r in wett_vorher]
         mittels = [r.zuschlag_mittel_ct for r in wett_vorher]
+        eff_ordnung = max(1, min(ordnung, len(maxes) - 1)) if len(maxes) > 1 else 0
         zeilen.append({
             "datum": ziel.datum,
-            "methode": ("Momentum-Formel" if len(maxes) >= 3
-                        else "Random Walk (zu wenig Stuetzstellen)"),
+            "methode": (f"Differenzen (Ordnung {eff_ordnung})" if eff_ordnung >= 1
+                        else "Random Walk (eine Stuetzstelle)"),
             "grenzzuschlag_ist_ct": ziel.zuschlag_max_ct,
-            "grenzzuschlag_modell_ct": round(ar_punktprognose(maxes), 2),
+            "grenzzuschlag_modell_ct": round(
+                differenzen_extrapolation(maxes, ordnung, lambdas), 2),
             "grenzzuschlag_naiv_ct": wett_vorher[-1].zuschlag_max_ct,
             "mittel_ist_ct": ziel.zuschlag_mittel_ct,
-            "mittel_modell_ct": round(ar_punktprognose(mittels), 2),
+            "mittel_modell_ct": round(
+                differenzen_extrapolation(mittels, ordnung, lambdas), 2),
             "min_ist_ct": ziel.zuschlag_min_ct,
         })
     return pd.DataFrame(zeilen)
@@ -659,9 +685,9 @@ class GebotsPrognose:
                       Runde wird unveraendert verwendet; die gewaehlte
                       Wahrscheinlichkeit z (Risikoneigung) liefert den
                       Wert am (1-z)-Quantil der Zuschlagswerte.
-    modus='prognose': Momentum-Prognose der naechsten Runde
-                      (ar_punktprognose auf Grenzzuschlag und
-                      Mittelwert); daraus wird die neue Verteilung
+    modus='prognose': Differenzenextrapolation der naechsten Runde
+                      (auf Grenzzuschlag und Mittelwert getrennt);
+                      daraus wird die neue Verteilung
                       gebaut. z ist hier die Zuschlagswahrscheinlichkeit
                       P(Grenzzuschlag > Gebot) ueber die
                       p_m-Unsicherheit (Streuung der historischen
@@ -779,15 +805,21 @@ def prognose_naechste_runde(
     modell: AuktionsModell,
     preisobergrenze_ct: float,
     sigma_pm_ct: float | None = None,
+    ordnung: int = 2,
+    lambdas: tuple[float, ...] | None = None,
     n_ziehungen: int = 4000,
     seed: int = 42,
 ) -> GebotsPrognose:
     """Modus 2: Momentum-Prognose der naechsten Runde.
 
     1. Punktprognosen fuer Grenzzuschlag und mengengewichteten
-       Mittelwert per ar_punktprognose ueber die Wettbewerbsrunden
-       (x(t+1) = x(t) + Delta_t * (Delta_t - Delta_{t-1})), an der
-       Preisobergrenze gekappt.
+       Mittelwert per Differenzenextrapolation (differenzen_
+       extrapolation) ueber die Wettbewerbsrunden - Ordnung und
+       Daempfungsparameter lambda konfigurierbar. Das Minimum wird
+       unveraendert fortgeschrieben (Random Walk; die Historie zeigt
+       dafuer keine stabile Dynamik). Danach Projektion auf den
+       zulaessigen Bereich: Minimum <= Mittel <= Grenzzuschlag <
+       Preisobergrenze.
     2. Daraus wird die neue Zuschlagswert-Verteilung gebaut - identisch
        zur Kalibrierung der historischen Runden: E[b | b <= max] =
        mittel, Minimum (Random Walk) als EPS_MIN-Quantil; abgeschnitten
@@ -807,8 +839,14 @@ def prognose_naechste_runde(
     maxes = [a.zuschlag_max_ct for a in wett]
     mittels = [a.zuschlag_mittel_ct for a in wett]
 
-    max_hat = float(np.clip(ar_punktprognose(maxes), 0.5, cap - 0.02))
-    mittel_hat = float(np.clip(ar_punktprognose(mittels), 0.3, max_hat - 0.05))
+    # Punktprognosen + Projektion auf Min <= Mittel <= Max < Obergrenze
+    max_hat = float(np.clip(
+        differenzen_extrapolation(maxes, ordnung, lambdas), 0.5, cap - 0.02
+    ))
+    mittel_hat = float(np.clip(
+        differenzen_extrapolation(mittels, ordnung, lambdas),
+        0.3, max_hat - 0.05,
+    ))
 
     if sigma_pm_ct is None:
         deltas = np.diff(maxes)
@@ -818,6 +856,7 @@ def prognose_naechste_runde(
 
     familie = FAMILIEN[modell.familie_name]
     min_anker = float(wett[-1].zuschlag_min_ct) if wett else 0.5 * mittel_hat
+    min_anker = min(min_anker, mittel_hat - 0.05)
     mu_rel, kappa = _fit_an_max_und_mittel(
         familie, cap, max_hat, mittel_hat, min_anker
     )

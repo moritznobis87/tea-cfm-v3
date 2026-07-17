@@ -539,14 +539,14 @@ def _render_monte_carlo_tab(project_id: str, diskontsatz: float) -> None:
             horizontal=True, key=f"mc_gebot_modus_{project_id}",
         )
         if mc_modus_label.startswith("Letzte"):
-            gebots_key = ("letzte", 0.0, 0.0)
+            gebots_key = ("letzte",)
         else:
             cap = float(letzte.ausschreibung.preisobergrenze_ct)
             sigma_pm_mc = st.slider(
                 "Unsicherheit Grenzzuschlag (± ct/kWh)", 0.15, 0.8, 0.55, 0.05,
                 key=f"mc_gebot_sigma_{project_id}",
             )
-            gebots_key = ("prognose", cap, sigma_pm_mc)
+            gebots_key = ("prognose", cap, sigma_pm_mc)  # Ordnung/λ: Standard (2, alle 1)
 
     # st.tabs rendert alle Tabs bei jedem Rerun - die Simulation laeuft
     # deshalb erst nach explizitem Start (danach haelt der Cache die

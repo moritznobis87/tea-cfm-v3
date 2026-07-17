@@ -16,7 +16,7 @@ import pytest
 from engine.auktion import (
     EPS_MIN,
     FAMILIEN,
-    ar_punktprognose,
+    differenzen_extrapolation,
     fit_runde,
     kalibriere_modell,
     load_ausschreibungen,
@@ -141,13 +141,24 @@ class TestLinkUndPrognose:
             assert b <= 7.77 + 1e-9
             assert p.zuschlagswahrscheinlichkeit(b) == pytest.approx(ziel, abs=0.03)
 
-    def test_momentum_formel(self):
-        """Nutzerformel x(t+1) = x(t) + Dt*(Dt - Dt-1) exakt."""
-        assert ar_punktprognose([8.48, 7.29, 6.80, 6.69]) == pytest.approx(
-            6.69 + (-0.11) * ((-0.11) - (-0.49)), abs=1e-9
+    def test_differenzen_extrapolation(self):
+        """Rekursive Mehrfach-Differenzenextrapolation exakt nach
+        Spezifikation - inkl. des motivierenden Beispiels: Halbiert sich
+        der Rueckgang (-40 -> -20 -> -10), erwartet das Verfahren mit
+        Daempfung lambda=0,5 den naechsten Schritt bei -5."""
+        w = [100.0, 60.0, 40.0, 30.0]
+        assert differenzen_extrapolation(w, 1) == pytest.approx(20.0)   # linear
+        assert differenzen_extrapolation(w, 2) == pytest.approx(30.0)   # lambda=1
+        assert differenzen_extrapolation(w, 2, (0.5,)) == pytest.approx(25.0)
+        # Handrechnung reale Daten, Ordnung 2: 6,69 + (-0,11 + 0,38)
+        assert differenzen_extrapolation([8.48, 7.29, 6.80, 6.69], 2) == (
+            pytest.approx(6.96, abs=1e-9)
         )
-        # Fallback Random Walk bei < 3 Stuetzstellen
-        assert ar_punktprognose([7.29, 6.80]) == 6.80
+        # lambda=0 entspricht der linearen Fortschreibung
+        assert differenzen_extrapolation(w, 2, (0.0,)) == pytest.approx(20.0)
+        # Effektive Ordnung durch Stuetzstellen begrenzt; Random Walk bei 1
+        assert differenzen_extrapolation([7.29, 6.80], 4) == pytest.approx(6.31)
+        assert differenzen_extrapolation([5.0], 3) == 5.0
 
     def test_gebots_ziehungen_erfolgreich_und_begrenzt(self, modell):
         p = prognose_naechste_runde(modell, 7.77, n_ziehungen=800)
@@ -241,14 +252,28 @@ class TestVerankertePrognoseUndFamilienwahl:
     Ist-Wert), keine Masse an der Obergrenze bei Ueberzeichnung sowie die
     geforderte Dichteform der gespiegelten Inversen Gamma."""
 
-    def test_median_verankert_an_letzter_runde(self, modell_ig):
-        """Momentum-Prognose bei abflachendem Rueckgang: Median-
-        Grenzzuschlag knapp unter dem letzten Ist-Wert (6,65 vs. 6,69)."""
-        letzter_ist = modell_ig.letzte_runde.ausschreibung.zuschlag_max_ct
+    def test_punktprognosen_und_ordnungsprojektion(self, modell_ig):
+        """Standard (Ordnung 2, lambda=1): Grenzzuschlag 6,69 +
+        (-0,11 + 0,38) = 6,96; die Ordnung Min <= OE <= Max < Obergrenze
+        wird eingehalten (OE-Rohprognose 7,09 wird auf max - 0,05
+        projiziert)."""
         p = prognose_naechste_runde(modell_ig, 7.77)
-        assert float(np.median(p.pm_sample)) <= letzter_ist + 0.05
-        assert p.grenzzuschlag_zentral_ct == pytest.approx(6.65, abs=0.05)
-        assert p.mittel_prognose_ct == pytest.approx(6.44, abs=0.15)
+        assert p.grenzzuschlag_zentral_ct == pytest.approx(6.96, abs=0.02)
+        assert p.grenzzuschlag_zentral_ct < 7.77
+        assert p.gebot_mittel_ct < p.grenzzuschlag_zentral_ct
+        assert p.gebot_quantile[5] < p.gebot_mittel_ct
+
+    def test_ordnung_und_daempfung_wirken(self, modell_ig):
+        p1 = prognose_naechste_runde(modell_ig, 7.77, ordnung=1)
+        p2 = prognose_naechste_runde(modell_ig, 7.77, ordnung=2)
+        p2d = prognose_naechste_runde(modell_ig, 7.77, ordnung=2,
+                                      lambdas=(0.0,))
+        # Ordnung 1 = linearer Trend (6,58); lambda=0 faellt darauf zurueck
+        assert p1.grenzzuschlag_zentral_ct == pytest.approx(6.58, abs=0.02)
+        assert p2d.grenzzuschlag_zentral_ct == pytest.approx(
+            p1.grenzzuschlag_zentral_ct, abs=0.01
+        )
+        assert p2.grenzzuschlag_zentral_ct > p1.grenzzuschlag_zentral_ct
 
     def test_keine_masse_an_obergrenze_bei_ueberzeichnung(self, modell_ig):
         p = prognose_naechste_runde(modell_ig, 7.77)
@@ -276,6 +301,10 @@ class TestVerankertePrognoseUndFamilienwahl:
         die Formel greift erst ab drei Stuetzstellen (ausgewiesen)."""
         bt = validiere_einschritt(runden, "Gespiegelte Inverse Gamma")
         assert len(bt) == sum(not r.unterzeichnet for r in runden) - 1
-        assert (bt["methode"] == "Momentum-Formel").sum() == 1
-        momentum = bt[bt["methode"] == "Momentum-Formel"].iloc[0]
-        assert momentum["grenzzuschlag_modell_ct"] == pytest.approx(6.46, abs=0.02)
+        # Erste Runde hat nur eine Stuetzstelle (Random Walk), danach
+        # steigt die effektive Ordnung mit den verfuegbaren Runden.
+        assert bt["methode"].iloc[0].startswith("Random Walk")
+        assert bt["methode"].iloc[1:].str.startswith("Differenzen").all()
+        # 06/2026 aus [8.48, 7.29, 6.80], Ordnung 2: 6.80 + (-0.49 + 0.70)
+        letzte_zeile = bt.iloc[-1]
+        assert letzte_zeile["grenzzuschlag_modell_ct"] == pytest.approx(7.01, abs=0.02)

@@ -1,5 +1,28 @@
 # Changelog
 
+## v4.3 – Prognosemethodik: rekursive Differenzenextrapolation (2026-07)
+
+- Die Momentum-Formel ist vollständig durch die allgemeine
+  Mehrfach-Differenzenextrapolation ersetzt: Rekursive Differenzen
+  Δ⁽ᵏ⁾, höchste Ordnung bleibt konstant, niedrigere werden rekursiv um
+  λₖ-gedämpfte höhere Ordnungen ergänzt, x̂(t+1) = x(t) + Δ̂⁽¹⁾. Das
+  Verfahren berücksichtigt damit Trend UND Trendänderung: Halbiert
+  sich der Rückgang je Runde (−40 → −20 → −10), erwartet es mit
+  λ = 0,5 den nächsten Schritt bei −5 statt −10.
+- Parametrierbar auf der Seite: maximale Differenzenordnung (1–3,
+  Standard 2; effektiv durch verfügbare Wettbewerbsrunden begrenzt)
+  und alle Dämpfungsparameter λₖ ∈ [0, 1] (Standard 1; λ = 0
+  entspricht der jeweils niedrigeren Ordnung – per Test und E2E
+  verifiziert).
+- Anwendung getrennt auf Grenzzuschlag und Ø-Zuschlag; das Minimum
+  wird unverändert fortgeschrieben (keine stabile Dynamik in der
+  Historie). Anschließend Projektion auf Minimum ≤ Ø ≤ Grenzzuschlag <
+  Preisobergrenze. Standardwerte auf den aktuellen Daten (Ordnung 2,
+  λ = 1): Grenzzuschlag 6,96 ct, Ø 6,91 ct (projiziert).
+- Backtest je Runde mit ausgewiesener effektiver Ordnung; Ø-Prognose
+  06/2026: 6,43 vs. Ist 6,40 ct. PDF-Kapitel 8 und alle Hilfetexte auf
+  die neue Methodik umgestellt. Suite: 121 Tests.
+
 ## v4.2 – Zwei Zuschlagswert-Modi, Momentum-Prognose & PDF-Kapitel (2026-07)
 
 ### Zwei Modi (Seite "Ausschreibung" und Monte-Carlo-Tab)

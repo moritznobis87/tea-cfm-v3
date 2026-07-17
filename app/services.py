@@ -286,7 +286,7 @@ def _monte_carlo_cached(
     project_path: str, pm: float, gm: float,
     n_laeufe: int, sigma_items: tuple[tuple[str, float], ...],
     diskontsatz_pct: float,
-    gebots_key: tuple[str, float, float] | None,
+    gebots_key: tuple | None,
 ):
     from engine import run_monte_carlo
 
@@ -294,8 +294,7 @@ def _monte_carlo_cached(
     if gebots_key is not None:
         # Ziehungen deterministisch aus der (gecachten) Prognose ableiten -
         # der Cache-Schluessel sind Modus + Prognoseparameter.
-        modus, cap, sigma_pm = gebots_key
-        prognose = get_gebots_prognose(modus, cap, sigma_pm)
+        prognose = get_gebots_prognose(*gebots_key)
         ziehungen = prognose.gebots_ziehungen(n_laeufe)
     return run_monte_carlo(
         load_project_yaml(project_path), get_global_assumptions(),
@@ -307,9 +306,9 @@ def _monte_carlo_cached(
 def get_monte_carlo(
     project_id: str, n_laeufe: int, sigmas: dict[str, float],
     diskontsatz_pct: float,
-    gebots_key: tuple[str, float, float] | None = None,
+    gebots_key: tuple | None = None,
 ):
-    """gebots_key = (Modus, Preisobergrenze, sigma_pm)
+    """gebots_key = (Modus, Preisobergrenze, sigma_pm, Ordnung, Lambdas)
     aktiviert die Ziehung des EAG-Zuschlagswerts aus dem Ausschreibungs-
     modell; Modus 'letzte' oder 'prognose' (None = fixer Projektwert,
     d.h. die harte Ueberschreibung ueber die Projektmaske)."""
@@ -410,7 +409,7 @@ def _auktions_paket_fuer_bericht() -> dict | None:
         modell = get_auktions_modell()
         letzte = modell.letzte_runde
         prognose = get_gebots_prognose(
-            "prognose", float(letzte.ausschreibung.preisobergrenze_ct), 0.0,
+            "prognose", float(letzte.ausschreibung.preisobergrenze_ct),
         )
         wett = sorted((f.ausschreibung for f in modell.fits
                        if not f.ausschreibung.unterzeichnet),
@@ -465,27 +464,34 @@ def get_auktions_modell(familie: str = AUKTIONS_FAMILIE):
 
 @st.cache_resource(show_spinner=False)
 def _gebots_prognose_cached(mtime: float, familie: str, modus: str,
-                            cap: float, sigma_pm: float):
+                            cap: float, sigma_pm: float, ordnung: int,
+                            lambdas: tuple[float, ...]):
     from engine import prognose_letzte_runde, prognose_naechste_runde
 
     modell = _auktions_modell_cached(mtime, familie)
     if modus == "letzte":
         return prognose_letzte_runde(modell)
     return prognose_naechste_runde(
-        modell, cap, sigma_pm_ct=sigma_pm if sigma_pm > 0 else None
+        modell, cap, sigma_pm_ct=sigma_pm if sigma_pm > 0 else None,
+        ordnung=ordnung, lambdas=lambdas or None,
     )
 
 
 def get_gebots_prognose(modus: str, cap: float = 0.0, sigma_pm: float = 0.0,
+                        ordnung: int = 2,
+                        lambdas: tuple[float, ...] = (),
                         familie: str = AUKTIONS_FAMILIE):
     """modus='letzte' (letzte Ausschreibung als gesetzt) oder
-    modus='prognose' (Momentum-Prognose der naechsten Runde;
-    sigma_pm <= 0 -> Standard aus historischen Rundenaenderungen). Die
-    Wettbewerbsquote ist im Prognosemodus impliziert."""
+    modus='prognose' (Differenzenextrapolation der naechsten Runde;
+    ordnung = maximale Differenzenordnung, lambdas = Daempfung je
+    Ordnung, leer -> alle 1; sigma_pm <= 0 -> Standard aus historischen
+    Rundenaenderungen). Die Wettbewerbsquote ist impliziert."""
     if modus == "letzte":
         cap = sigma_pm = 0.0
+        ordnung, lambdas = 0, ()
     return _gebots_prognose_cached(
         AUSSCHREIBUNGEN_PATH.stat().st_mtime, familie, modus, cap, sigma_pm,
+        ordnung, tuple(lambdas),
     )
 
 

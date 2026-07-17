@@ -1001,9 +1001,14 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
             "Gebotspreisreihung): Geschätzt wird die Verteilung der "
             "Zuschlagswerte; das eigene Gebot beeinflusst den "
             "Grenzzuschlag nicht. Grenzzuschlag und mengengewichteter "
-            "Ø-Zuschlag der nächsten Runde werden per Momentum-Formel "
-            "x(t+1) = x(t) + Δt·(Δt − Δt−1) aus den Wettbewerbsrunden "
-            "fortgeschrieben; daraus wird die Verteilung gebaut "
+            "Ø-Zuschlag der nächsten Runde werden per rekursiver "
+            "Differenzenextrapolation fortgeschrieben (die höchste "
+            "Differenz bleibt konstant, niedrigere werden rekursiv um "
+            "λ-gedämpfte höhere Ordnungen ergänzt; Standard: Ordnung 2, "
+            "λ = 1) – berücksichtigt also Trend und Trendänderung. Das "
+            "Minimum folgt einem Random Walk, anschließend Projektion "
+            "auf Min ≤ Ø ≤ Grenzzuschlag < Obergrenze; daraus wird die "
+            "Verteilung gebaut "
             "(gespiegelte Inverse-Gamma auf [0, Preisobergrenze]). "
             + auk.get("formel_zeile", ""),
             _STYLE_TEXT,
