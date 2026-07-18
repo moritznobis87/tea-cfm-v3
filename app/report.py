@@ -1080,136 +1080,51 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
         erste = df_a["datum"].min()
         letzte_r = df_a.sort_values("datum").iloc[-1]
         story.append(Paragraph(
-            f"Österreich vergibt die EAG-Marktprämie für Photovoltaik seit "
-            f"Dezember 2022 über wettbewerbliche Ausschreibungen der "
-            f"EAG-Abwicklungsstelle (OeMAG). Der Mechanismus ist eine "
-            f"Pay-as-Bid-Auktion mit Gebotspreisreihung: Gebote werden "
-            f"aufsteigend gereiht und bis zur ausgeschriebenen Menge "
-            f"bezuschlagt; jeder Gewinner erhält seinen eigenen Gebotswert "
-            f"als anzulegenden Wert über die 20-jährige Förderdauer. Der "
-            f"zulässige Höchstwert ist per Verordnung fixiert und wurde "
-            f"schrittweise von 9,33 über 8,98 auf aktuell 7,77 ct/kWh "
-            f"(2026/2027) abgesenkt. Die Datenbasis umfasst {n_runden} "
-            f"Runden seit {erste.strftime('%m/%Y')}.",
+            txt("bericht.auktion_historie_intro", n_runden=n_runden,
+                erste_datum=erste.strftime("%m/%Y")),
             _STYLE_TEXT,
         ))
         story.append(Paragraph(
-            "Die Historie zerfällt in zwei klar getrennte Regime. Bis "
-            "einschließlich April 2025 waren die Runden unterzeichnet: Das "
-            "Gebotsvolumen blieb unter der ausgeschriebenen Menge, "
-            "erhebliche Restmengen (z. B. 302 von 700 MW in der ersten "
-            "Runde) blieben unbezuschlagt, und der höchste Zuschlagswert "
-            "lag exakt an der Preisobergrenze – ohne Wettbewerbsdruck "
-            "bieten Teilnehmer rational nahe am zulässigen Maximum "
-            "(mengengewichtete Durchschnitte von 8,85 bis 9,22 ct/kWh bei "
-            "einer Obergrenze von 9,33 ct/kWh). Genau dieses Verhalten "
-            "beschreibt die Auktionsliteratur zu Pay-as-Bid-Verfahren "
-            "(Haufe/Ehrhart 2018; Kreiss et al. 2017): Ohne bindende "
-            "Mengenrestriktion existiert kein Anreiz zum Unterbieten.",
-            _STYLE_TEXT,
+            txt("bericht.auktion_historie_unterzeichnet"), _STYLE_TEXT,
         ))
         story.append(Paragraph(
-            f"Seit Juli 2025 ist das Bild gekippt: Die Nachfrage übersteigt "
-            f"die ausgeschriebene Menge (die EAG-Abwicklungsstelle meldet "
-            f"anhaltend 'enormes Interesse'), die Restmengen liegen nahe "
-            f"null und der Grenzzuschlag löst sich von der Obergrenze – er "
-            f"fiel über die vier Wettbewerbsrunden von 8,48 auf zuletzt "
-            f"{fmt_ct_kwh(letzte_r['zuschlag_max_ct'])} "
-            f"({letzte_r['datum'].strftime('%m/%Y')}), bei sinkender "
-            f"Schrittweite (−1,19 → −0,49 → −0,11 ct). Zugleich verdichten "
-            f"sich die Zuschlagswerte: Bieter 'shaden' ihre Gebote knapp "
-            f"unter den erwarteten Grenzzuschlag und lernen über die "
-            f"Runden. Da die OeMAG das eingereichte Gebotsvolumen nicht "
-            f"veröffentlicht, ist der Überzeichnungsgrad der "
-            f"Wettbewerbsrunden nicht direkt beobachtbar und wird im "
-            f"Modell als latente Größe behandelt.",
+            txt("bericht.auktion_historie_wettbewerb",
+                grenzzuschlag_ct=fmt_ct_kwh(letzte_r["zuschlag_max_ct"]),
+                letzte_datum=letzte_r["datum"].strftime("%m/%Y")),
             _STYLE_TEXT,
         ))
         story.append(_chart_auktion_historie(df_a))
         story.append(Paragraph(
-            f"Abb. 14: Zuschlagswerte (Min/Ø/Max) und Preisobergrenze aller "
-            f"{n_runden} Runden. Grau hinterlegt: Wettbewerbsphase ab "
-            f"07/2025 (Grenzzuschlag unterhalb der Obergrenze).",
-            _STYLE_CAPTION,
+            txt("bericht.abb_14_caption", n_runden=n_runden), _STYLE_CAPTION,
         ))
 
         # --- 8.2 Fitting der Verteilungsfunktionen ---
         story.append(Paragraph(
-            "Anpassung der Verteilungsfunktionen an die historischen "
-            "Runden", _STYLE_H2,
+            txt("bericht.abschnitt_auktion_fitting"), _STYLE_H2,
         ))
         r_latent_txt = f"{modell_a.letzte_runde.wettbewerbsquote:.2f}".replace(".", ",")
         story.append(Paragraph(
-            "Je Runde veröffentlicht die OeMAG ausschließlich Aggregate "
-            "der bezuschlagten Gebote (Minimum, mengengewichteter "
-            "Durchschnitt, Maximum) sowie die Mengen – Einzelgebote und "
-            "Gebotsvolumen bleiben unbekannt. Nichtparametrische "
-            "Verfahren (KDE, Mischmodelle auf Rohgeboten) scheiden damit "
-            "aus; stattdessen wird je Runde eine auf das Intervall "
-            "[0, Preisobergrenze] beschränkte parametrische Verteilung "
-            "über zwei Momenten-/Quantilbedingungen kalibriert: Der "
-            "mengengewichtete Durchschnitt wird als (bei überzeichneten "
-            "Runden am Grenzzuschlag trunkierter) Erwartungswert "
-            "getroffen, das veröffentlichte Minimum als 2-%-Quantil aller "
-            "Gebote interpretiert (das günstigste Gebot gewinnt stets; "
-            "Größenordnung 40–80 Gebote je Runde). Für überzeichnete "
-            "Runden ergibt sich die Wettbewerbsquote r = Gebotsmenge / "
-            "ausgeschriebene Menge dann implizit aus der Lage des "
-            "Grenzzuschlags in der Verteilung (zuletzt r ≈ "
-            + r_latent_txt +
-            "). Die so geschätzten Verteilungen zeigen den Regimewechsel "
-            "unmittelbar: Cap-Klumpung in den unterzeichneten Runden, "
-            "Linksverschiebung und Verdichtung unter Wettbewerb.",
+            txt("bericht.auktion_fitting_intro", wettbewerbsquote=r_latent_txt),
             _STYLE_TEXT,
         ))
         story.append(_chart_auktion_fits(modell_a))
-        story.append(Paragraph(
-            "Abb. 15: Je Runde geschätzte Gebotsverteilungen (Farbverlauf "
-            "von grau = älteste zu rot = jüngste Runde; unterzeichnete "
-            "Runden gestrichelt).",
-            _STYLE_CAPTION,
-        ))
+        story.append(Paragraph(txt("bericht.abb_15_caption"), _STYLE_CAPTION))
 
         # --- 8.3 Modellbeschreibung mit Formeln ---
         story.append(Paragraph(txt("bericht.abschnitt_auktion_modell"), _STYLE_H2))
-        story.append(Paragraph(
-            "Verteilungsfamilie. Gebote b werden als an der "
-            "Preisobergrenze P<sub>max</sub> gespiegelte Inverse-Gamma-"
-            "Verteilung modelliert: b = P<sub>max</sub> − Y mit "
-            "Y ~ InvGamma(α, β). Die Dichte fällt rechts zur Obergrenze "
-            "sehr steil auf null und läuft nach links langsam aus – exakt "
-            "das für Pay-as-Bid unter Wettbewerb erwartete Bild:",
-            _STYLE_TEXT,
-        ))
+        story.append(Paragraph(txt("bericht.modell_verteilungsfamilie"), _STYLE_TEXT))
         story.append(_formel(
             r"$f_Y(y)=\dfrac{\beta^{\alpha}}{\Gamma(\alpha)}\,"
             r"y^{-\alpha-1}e^{-\beta/y},\qquad "
             r"f_B(b)=f_Y(P_{max}-b),\quad b\leq P_{max}$"
         ))
-        story.append(Paragraph(
-            "Kalibrierung je Runde. Die Parameter (α, β) je Runde folgen "
-            "aus den beiden Bedingungen (mengengewichteter Durchschnitt "
-            "m̄, Minimum b<sub>min</sub>, Grenzzuschlag p<sub>m</sub>, "
-            "ε = 0,02); die Wettbewerbsquote überzeichneter Runden ist "
-            "latent:",
-            _STYLE_TEXT,
-        ))
+        story.append(Paragraph(txt("bericht.modell_kalibrierung"), _STYLE_TEXT))
         story.append(_formel(
             r"$\mathrm{E}[\,b\mid b\leq p_m\,]=\bar{m},"
             r"\qquad F_B(b_{min})=\varepsilon,"
             r"\qquad r=\dfrac{1}{F_B(p_m)}$"
         ))
-        story.append(Paragraph(
-            "Punktprognose der nächsten Runde. Grenzzuschlag und "
-            "Ø-Zuschlag werden getrennt per rekursiver "
-            "Differenzenextrapolation über die Wettbewerbsrunden "
-            "fortgeschrieben. Für eine Zeitreihe x<sub>t</sub> werden "
-            "Differenzen rekursiv gebildet; die höchste verwendete "
-            "Ordnung m bleibt konstant, alle niedrigeren werden – "
-            "gedämpft mit λ<sub>k</sub> ∈ [0, 1] – rekursiv "
-            "fortgeschrieben (Standard: m = 2, λ = 1):",
-            _STYLE_TEXT,
-        ))
+        story.append(Paragraph(txt("bericht.modell_punktprognose_intro"), _STYLE_TEXT))
         story.append(_formel(
             r"$\Delta^{(k)}_{t}=\Delta^{(k-1)}_{t}-\Delta^{(k-1)}_{t-1},"
             r"\qquad \widehat{\Delta}^{(m)}_{t+1}=\Delta^{(m)}_{t}$"
@@ -1220,37 +1135,18 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
             r"\qquad \hat{x}_{t+1}=x_{t}+\widehat{\Delta}^{(1)}_{t+1}$"
         ))
         story.append(Paragraph(
-            "Das Verfahren berücksichtigt damit Trend und Trendänderung: "
-            "Flacht der Rückgang ab, erwartet es eine weitere Abflachung "
-            "statt konstanter Fortschreibung. Das Minimum folgt einem "
-            "Random Walk (keine stabile Dynamik in der Historie); "
-            "anschließend wird auf Minimum ≤ Ø ≤ Grenzzuschlag < "
-            "P<sub>max</sub> projiziert und aus den Punktprognosen die "
-            "Verteilung der nächsten Runde gebaut (Ø-Bedingung stark "
-            "gewichtet, Minimum als weicher Tail-Anker). " +
-            auk.get("formel_zeile", ""),
+            txt("bericht.modell_punktprognose_ergebnis",
+                formel_zeile=auk.get("formel_zeile", "")),
             _STYLE_TEXT,
         ))
-        story.append(Paragraph(
-            "Unsicherheit und Gebotsentscheidung. Die Unsicherheit des "
-            "Grenzzuschlags wird als an der Obergrenze trunkierte "
-            "Normalverteilung um die Punktprognose modelliert (σ aus der "
-            "Streuung der historischen Rundenänderungen). Als Price-Taker "
-            "gilt für die Zuschlagswahrscheinlichkeit des eigenen Gebots "
-            "und das empfohlene Gebot zur Zielwahrscheinlichkeit z:",
-            _STYLE_TEXT,
-        ))
+        story.append(Paragraph(txt("bericht.modell_unsicherheit_intro"), _STYLE_TEXT))
         story.append(_formel(
             r"$p_m\sim\left.\mathcal{N}(\hat{p}_m,\,\sigma^2)"
             r"\right|_{(0{,}5;\;P_{max})},\qquad "
             r"\mathrm{P}(\mathrm{Zuschlag}\mid b)=\mathrm{P}(p_m>b),"
             r"\qquad b(z)=Q_{1-z}(p_m)$"
         ))
-        story.append(Paragraph(
-            "Die dargestellte Verteilung der Zuschlagswerte ist die am "
-            "Grenzzuschlag abgeschnittene, renormierte Gebotsdichte:",
-            _STYLE_TEXT,
-        ))
+        story.append(Paragraph(txt("bericht.modell_zuschlagsdichte_intro"), _STYLE_TEXT))
         story.append(_formel(
             r"$f(\,b\mid b\leq p_m\,)"
             r"=\dfrac{f_B(b)\;\mathbf{1}\{b\leq p_m\}}{F_B(p_m)}$"
@@ -1262,25 +1158,24 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
             prognose_a, p.eag_zuschlagswert_ct_kwh,
         ))
         story.append(Paragraph(
-            f"Abb. 16: Prognostizierte Verteilung der nächsten Runde – "
-            f"Dichte der Zuschlagswerte (am Grenzzuschlag "
-            f"{fmt_ct_kwh(prognose_a.grenzzuschlag_zentral_ct)} "
-            f"abgeschnitten), gestrichelt die Verteilung aller Gebote, "
-            f"graues Band: P10–P90 der Grenzzuschlag-Unsicherheit; grün: "
-            f"angesetzter Projektwert {fmt_ct_kwh(p.eag_zuschlagswert_ct_kwh)}.",
+            txt("bericht.abb_16_caption",
+                grenzzuschlag_ct=fmt_ct_kwh(prognose_a.grenzzuschlag_zentral_ct),
+                projektwert_ct=fmt_ct_kwh(p.eag_zuschlagswert_ct_kwh)),
             _STYLE_CAPTION,
         ))
         story.append(_chart_auktion_kurve(
             prognose_a, p.eag_zuschlagswert_ct_kwh,
         ))
         story.append(Paragraph(
-            f"Abb. 17: Gebotswert und Zuschlagswahrscheinlichkeit "
-            f"P(Grenzzuschlag > Gebot) über die Prognoseunsicherheit; der "
-            f"angesetzte Projektwert erreicht "
-            f"{fmt_pct(prognose_a.zuschlagswahrscheinlichkeit(p.eag_zuschlagswert_ct_kwh), 0)}.",
+            txt("bericht.abb_17_caption", wahrscheinlichkeit_pct=fmt_pct(
+                prognose_a.zuschlagswahrscheinlichkeit(p.eag_zuschlagswert_ct_kwh), 0
+            )),
             _STYLE_CAPTION,
         ))
-        gebote_zeilen = [["Ziel-Zuschlagswahrscheinlichkeit", "Gebotswert"]]
+        gebote_zeilen = [[
+            txt("bericht.tab_3_spalte_wahrscheinlichkeit"),
+            txt("bericht.tab_3_spalte_gebotswert"),
+        ]]
         for z in (0.50, 0.60, 0.70, 0.80, 0.90, 0.95):
             gebote_zeilen.append([
                 f"{z * 100:.0f} %",
@@ -1288,12 +1183,7 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
             ])
         story.append(_tabelle(gebote_zeilen,
                               breiten=[_INHALT_B / 2, _INHALT_B / 2]))
-        story.append(Paragraph(
-            "Tab. 3: Empfohlene Gebotswerte je gewünschter "
-            "Zuschlagswahrscheinlichkeit (Quantile der prognostizierten "
-            "Grenzzuschlag-Verteilung).",
-            _STYLE_CAPTION,
-        ))
+        story.append(Paragraph(txt("bericht.tab_3_caption"), _STYLE_CAPTION))
         story.append(PageBreak())
 
     # ---------------------------------------------------------------- Annex A

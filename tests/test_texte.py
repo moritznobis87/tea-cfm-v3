@@ -103,3 +103,58 @@ class TestExcelTexte:
         _setze_sprache("de")
         assert _t("kpi_nennleistung") == "Nennleistung"
         assert "300" in _t("sektion_monte_carlo", n_mc=300)
+
+
+class TestBerichtKapitel8Ausgelagert:
+    """Die zuvor als bekannte Luecke dokumentierten Fliesstext-Absaetze
+    aus PDF-Kapitel 8 sind jetzt vollstaendig in bericht.yaml ausgelagert
+    und mit Platzhaltern fuer die eingesetzten Kennzahlen versehen."""
+
+    def test_alle_kapitel8_schluessel_vorhanden(self):
+        t = _setze_sprache("de")
+        schluessel = (
+            "abschnitt_auktion_fitting", "auktion_historie_intro",
+            "auktion_historie_unterzeichnet", "auktion_historie_wettbewerb",
+            "abb_14_caption", "auktion_fitting_intro", "abb_15_caption",
+            "modell_verteilungsfamilie", "modell_kalibrierung",
+            "modell_punktprognose_intro", "modell_punktprognose_ergebnis",
+            "modell_unsicherheit_intro", "modell_zuschlagsdichte_intro",
+            "abb_16_caption", "abb_17_caption",
+            "tab_3_spalte_wahrscheinlichkeit", "tab_3_spalte_gebotswert",
+            "tab_3_caption",
+        )
+        for s in schluessel:
+            text = t.txt(f"bericht.{s}")
+            assert text and text != f"bericht.{s}", s
+
+    def test_platzhalter_werden_korrekt_eingesetzt(self):
+        t = _setze_sprache("de")
+        text = t.txt("bericht.auktion_historie_intro", n_runden=15,
+                     erste_datum="12/2022")
+        assert "15 Runden seit 12/2022" in text
+        text2 = t.txt("bericht.abb_16_caption", grenzzuschlag_ct="6,65 ct/kWh",
+                      projektwert_ct="6,50 ct/kWh")
+        assert "6,65 ct/kWh" in text2 and "6,50 ct/kWh" in text2
+
+    def test_formel_zeile_platzhalter(self):
+        t = _setze_sprache("de")
+        text = t.txt("bericht.modell_punktprognose_ergebnis",
+                     formel_zeile="Test-Stützstellen: 1 → 2 ct.")
+        assert text.endswith("Test-Stützstellen: 1 → 2 ct.")
+
+    def test_report_nutzt_ausgelagerte_texte(self):
+        """Der generierte PDF-Bericht enthaelt die ausgelagerten Absaetze
+        unveraendert (End-to-End ueber den bestehenden Berichts-Service)."""
+        import io
+
+        from pypdf import PdfReader
+
+        from app import services
+
+        _setze_sprache("de")
+        pdf = services.build_project_report("template-agri", 0.08)
+        text = "\n".join(
+            s.extract_text() for s in PdfReader(io.BytesIO(pdf)).pages
+        )
+        assert "Österreich vergibt die EAG-Marktprämie" in text
+        assert "Seit Juli 2025 ist das Bild gekippt" in text

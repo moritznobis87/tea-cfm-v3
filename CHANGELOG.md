@@ -1,5 +1,25 @@
 # Changelog
 
+## v4.8 – PDF-Kapitel 8: letzte Fließtexte ausgelagert (2026-07)
+
+- Die zuvor als bekannte Lücke dokumentierten Fließtext-Absätze in
+  PDF-Kapitel 8 (Historie der Ausschreibungen, Fitting-Erklärung,
+  Modellbeschreibung, Bildunterschriften Abb. 14–17, Tabellenkopf/
+  -unterschrift Tab. 3) sind jetzt vollständig nach `bericht.yaml`
+  ausgelagert – 18 neue Schlüssel mit `{platzhalter}` für alle zuvor
+  im Code eingesetzten Kennzahlen (Rundenanzahl, Daten, Grenzzuschlag,
+  Wettbewerbsquote, Projektwert, Zuschlagswahrscheinlichkeit,
+  Formel-Zeile). `app/report.py` enthält für Kapitel 8 keine
+  literalen deutschen Fließtexte mehr, nur noch `txt(...)`-Aufrufe.
+- Damit sind sämtliche sichtbaren Texte der Anwendung ausgelagert:
+  UI, Diagramme, kompletter PDF-Bericht und Excel-Ergebnisexport.
+  `locales/README.md` aktualisiert (Platzhalter-Beispiel, bekannte
+  Lücke entfernt).
+- 4 neue Tests (Schlüsselvollständigkeit, Platzhalter-Einsetzung,
+  End-to-End-Regeneration des PDF-Berichts mit den ausgelagerten
+  Texten); Suite: 147. PDF-Ausgabe inhaltlich unverändert
+  (byte-identische Textinhalte, gleiche Dateigröße).
+
 ## v4.7 – Sprachdateien: alle Texte ausgelagert (2026-07)
 
 - Neuer zentraler Text-Loader `texte.py` (Projekt-Wurzel, bewusst

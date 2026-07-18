@@ -1,10 +1,8 @@
-# Freitext des PDF-Berichts (app/report.py): Kapitelueberschriften und
-# Abschnittstitel (H2). Die ausfuehrlichen Fliesstexte (mehrsaetzige
-# Absaetze mit vielen eingesetzten Kennzahlen, insbesondere in Kapitel
-# 8 "EAG-Ausschreibungsmodell") sind aktuell noch direkt in report.py
-# formuliert; sie folgen demselben txt(...)-Muster und koennen bei
-# Bedarf nach demselben Schema hierher verlagert werden (siehe
-# Kommentar am Kapitelanfang in report.py).
+# Freitext des PDF-Berichts (app/report.py): Kapitelueberschriften,
+# Abschnittstitel (H2) sowie die vollstaendigen Fliesstext-Absaetze und
+# Bildunterschriften von Kapitel 8 "EAG-Ausschreibungsmodell".
+# Platzhalter ({name}) entsprechen genau den Werten, die im Code als
+# Schluesselwortargumente an txt(...) uebergeben werden.
 
 # --- Kapitelueberschriften (Nummer wird separat aus dem Code gesetzt) --------
 kapitel_1_titel: "Management Summary"
@@ -30,7 +28,133 @@ abschnitt_npv_diskontsatz: "Kapitalwert über den Diskontsatz"
 abschnitt_tornado: "Tornado-Analyse"
 abschnitt_eag_varianten: "EAG-Zuschlagswert-Varianten"
 abschnitt_auktion_historie: "Historie der Ausschreibungen"
+abschnitt_auktion_fitting: "Anpassung der Verteilungsfunktionen an die historischen Runden"
 abschnitt_auktion_modell: "Modellbeschreibung"
 abschnitt_auktion_prognose: "Prognose der nächsten Runde"
 abschnitt_opex_positionen: "Betriebskosten-Positionen"
 abschnitt_capex: "Investitionskosten"
+
+# --- Kapitel 8 "EAG-Ausschreibungsmodell": Fliesstext-Absaetze ---------------
+# Platzhalter entsprechen genau den Werten, die zuvor als f-String im
+# Python-Code eingesetzt wurden (Zahlen/Daten aus der Berechnung); alle
+# uebrigen (historische) Zahlen im Text sind feststehende Fakten und
+# bleiben Teil des uebersetzbaren Fliesstexts.
+auktion_historie_intro: >-
+  Österreich vergibt die EAG-Marktprämie für Photovoltaik seit Dezember 2022
+  über wettbewerbliche Ausschreibungen der EAG-Abwicklungsstelle (OeMAG). Der
+  Mechanismus ist eine Pay-as-Bid-Auktion mit Gebotspreisreihung: Gebote
+  werden aufsteigend gereiht und bis zur ausgeschriebenen Menge bezuschlagt;
+  jeder Gewinner erhält seinen eigenen Gebotswert als anzulegenden Wert über
+  die 20-jährige Förderdauer. Der zulässige Höchstwert ist per Verordnung
+  fixiert und wurde schrittweise von 9,33 über 8,98 auf aktuell 7,77 ct/kWh
+  (2026/2027) abgesenkt. Die Datenbasis umfasst {n_runden} Runden seit
+  {erste_datum}.
+
+auktion_historie_unterzeichnet: >-
+  Die Historie zerfällt in zwei klar getrennte Regime. Bis einschließlich
+  April 2025 waren die Runden unterzeichnet: Das Gebotsvolumen blieb unter
+  der ausgeschriebenen Menge, erhebliche Restmengen (z. B. 302 von 700 MW in
+  der ersten Runde) blieben unbezuschlagt, und der höchste Zuschlagswert lag
+  exakt an der Preisobergrenze – ohne Wettbewerbsdruck bieten Teilnehmer
+  rational nahe am zulässigen Maximum (mengengewichtete Durchschnitte von
+  8,85 bis 9,22 ct/kWh bei einer Obergrenze von 9,33 ct/kWh). Genau dieses
+  Verhalten beschreibt die Auktionsliteratur zu Pay-as-Bid-Verfahren
+  (Haufe/Ehrhart 2018; Kreiss et al. 2017): Ohne bindende Mengenrestriktion
+  existiert kein Anreiz zum Unterbieten.
+
+auktion_historie_wettbewerb: >-
+  Seit Juli 2025 ist das Bild gekippt: Die Nachfrage übersteigt die
+  ausgeschriebene Menge (die EAG-Abwicklungsstelle meldet anhaltend 'enormes
+  Interesse'), die Restmengen liegen nahe null und der Grenzzuschlag löst
+  sich von der Obergrenze – er fiel über die vier Wettbewerbsrunden von 8,48
+  auf zuletzt {grenzzuschlag_ct} ({letzte_datum}), bei sinkender Schrittweite
+  (−1,19 → −0,49 → −0,11 ct). Zugleich verdichten sich die Zuschlagswerte:
+  Bieter 'shaden' ihre Gebote knapp unter den erwarteten Grenzzuschlag und
+  lernen über die Runden. Da die OeMAG das eingereichte Gebotsvolumen nicht
+  veröffentlicht, ist der Überzeichnungsgrad der Wettbewerbsrunden nicht
+  direkt beobachtbar und wird im Modell als latente Größe behandelt.
+
+abb_14_caption: >-
+  Abb. 14: Zuschlagswerte (Min/Ø/Max) und Preisobergrenze aller {n_runden}
+  Runden. Grau hinterlegt: Wettbewerbsphase ab 07/2025 (Grenzzuschlag
+  unterhalb der Obergrenze).
+
+auktion_fitting_intro: >-
+  Je Runde veröffentlicht die OeMAG ausschließlich Aggregate der
+  bezuschlagten Gebote (Minimum, mengengewichteter Durchschnitt, Maximum)
+  sowie die Mengen – Einzelgebote und Gebotsvolumen bleiben unbekannt.
+  Nichtparametrische Verfahren (KDE, Mischmodelle auf Rohgeboten) scheiden
+  damit aus; stattdessen wird je Runde eine auf das Intervall [0,
+  Preisobergrenze] beschränkte parametrische Verteilung über zwei
+  Momenten-/Quantilbedingungen kalibriert: Der mengengewichtete Durchschnitt
+  wird als (bei überzeichneten Runden am Grenzzuschlag trunkierter)
+  Erwartungswert getroffen, das veröffentlichte Minimum als 2-%-Quantil
+  aller Gebote interpretiert (das günstigste Gebot gewinnt stets;
+  Größenordnung 40–80 Gebote je Runde). Für überzeichnete Runden ergibt sich
+  die Wettbewerbsquote r = Gebotsmenge / ausgeschriebene Menge dann implizit
+  aus der Lage des Grenzzuschlags in der Verteilung (zuletzt r ≈
+  {wettbewerbsquote}). Die so geschätzten Verteilungen zeigen den
+  Regimewechsel unmittelbar: Cap-Klumpung in den unterzeichneten Runden,
+  Linksverschiebung und Verdichtung unter Wettbewerb.
+
+abb_15_caption: >-
+  Abb. 15: Je Runde geschätzte Gebotsverteilungen (Farbverlauf von grau =
+  älteste zu rot = jüngste Runde; unterzeichnete Runden gestrichelt).
+
+modell_verteilungsfamilie: >-
+  Verteilungsfamilie. Gebote b werden als an der Preisobergrenze
+  P<sub>max</sub> gespiegelte Inverse-Gamma-Verteilung modelliert:
+  b = P<sub>max</sub> − Y mit Y ~ InvGamma(α, β). Die Dichte fällt rechts zur
+  Obergrenze sehr steil auf null und läuft nach links langsam aus – exakt
+  das für Pay-as-Bid unter Wettbewerb erwartete Bild:
+
+modell_kalibrierung: >-
+  Kalibrierung je Runde. Die Parameter (α, β) je Runde folgen aus den
+  beiden Bedingungen (mengengewichteter Durchschnitt m̄, Minimum
+  b<sub>min</sub>, Grenzzuschlag p<sub>m</sub>, ε = 0,02); die
+  Wettbewerbsquote überzeichneter Runden ist latent:
+
+modell_punktprognose_intro: >-
+  Punktprognose der nächsten Runde. Grenzzuschlag und Ø-Zuschlag werden
+  getrennt per rekursiver Differenzenextrapolation über die
+  Wettbewerbsrunden fortgeschrieben. Für eine Zeitreihe x<sub>t</sub>
+  werden Differenzen rekursiv gebildet; die höchste verwendete Ordnung m
+  bleibt konstant, alle niedrigeren werden – gedämpft mit λ<sub>k</sub> ∈
+  [0, 1] – rekursiv fortgeschrieben (Standard: m = 2, λ = 1):
+
+modell_punktprognose_ergebnis: >-
+  Das Verfahren berücksichtigt damit Trend und Trendänderung: Flacht der
+  Rückgang ab, erwartet es eine weitere Abflachung statt konstanter
+  Fortschreibung. Das Minimum folgt einem Random Walk (keine stabile
+  Dynamik in der Historie); anschließend wird auf Minimum ≤ Ø ≤
+  Grenzzuschlag < P<sub>max</sub> projiziert und aus den Punktprognosen
+  die Verteilung der nächsten Runde gebaut (Ø-Bedingung stark gewichtet,
+  Minimum als weicher Tail-Anker). {formel_zeile}
+
+modell_unsicherheit_intro: >-
+  Unsicherheit und Gebotsentscheidung. Die Unsicherheit des
+  Grenzzuschlags wird als an der Obergrenze trunkierte Normalverteilung
+  um die Punktprognose modelliert (σ aus der Streuung der historischen
+  Rundenänderungen). Als Price-Taker gilt für die Zuschlagswahrscheinlichkeit
+  des eigenen Gebots und das empfohlene Gebot zur Zielwahrscheinlichkeit z:
+
+modell_zuschlagsdichte_intro: >-
+  Die dargestellte Verteilung der Zuschlagswerte ist die am Grenzzuschlag
+  abgeschnittene, renormierte Gebotsdichte:
+
+abb_16_caption: >-
+  Abb. 16: Prognostizierte Verteilung der nächsten Runde – Dichte der
+  Zuschlagswerte (am Grenzzuschlag {grenzzuschlag_ct} abgeschnitten),
+  gestrichelt die Verteilung aller Gebote, graues Band: P10–P90 der
+  Grenzzuschlag-Unsicherheit; grün: angesetzter Projektwert {projektwert_ct}.
+
+abb_17_caption: >-
+  Abb. 17: Gebotswert und Zuschlagswahrscheinlichkeit P(Grenzzuschlag > Gebot)
+  über die Prognoseunsicherheit; der angesetzte Projektwert erreicht
+  {wahrscheinlichkeit_pct}.
+
+tab_3_spalte_wahrscheinlichkeit: "Ziel-Zuschlagswahrscheinlichkeit"
+tab_3_spalte_gebotswert: "Gebotswert"
+tab_3_caption: >-
+  Tab. 3: Empfohlene Gebotswerte je gewünschter Zuschlagswahrscheinlichkeit
+  (Quantile der prognostizierten Grenzzuschlag-Verteilung).

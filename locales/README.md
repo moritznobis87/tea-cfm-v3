@@ -46,15 +46,13 @@ Einfach den Wert in der passenden YAML-Datei bearbeiten – kein
 Code-Deployment nötig, kein Python-Wissen erforderlich. Neue Texte
 brauchen einen neuen, sprechenden Schlüssel (Konvention:
 `bereich_beschreibung`, z. B. `btn_pdf_bericht`) und werden im Code per
-`txt("<datei>.<schluessel>")` abgerufen.
+`txt("<datei>.<schluessel>")` abgerufen. Texte mit eingesetzten
+Kennzahlen (z. B. Bildunterschriften im PDF-Bericht) verwenden
+`{platzhalter}` in der YAML-Datei und werden per
+`txt("<schluessel>", platzhalter=wert)` aufgerufen – siehe
+`bericht.yaml` (Kapitel 8) für ein durchgängiges Beispiel mit mehreren
+Absätzen und dynamischen Werten (Rundenanzahl, Daten, Kennzahlen).
 
-## Bekannte Lücke
-
-Die ausführlichen Fließtext-Absätze in PDF-Kapitel 8 (Historie der
-Ausschreibungen, Modellbeschreibung – mehrsätzige Absätze mit vielen
-eingesetzten Kennzahlen) liegen aktuell noch direkt in `app/report.py`
-als Python-Strings. Sie folgen technisch demselben Muster und lassen
-sich nach Bedarf auf dieselbe Art nach `bericht.yaml` auslagern; das
-wurde aus Aufwandsgründen zunächst zurückgestellt, da diese Absätze
-sehr viele dynamische Kennzahlen enthalten und die Formatierung robust
-bleiben muss.
+Damit sind sämtliche sichtbaren Texte der Anwendung ausgelagert – UI,
+Diagramme, PDF-Bericht (inklusive der mehrsätzigen Fließtext-Absätze
+in Kapitel 8) und der Excel-Ergebnisexport.
