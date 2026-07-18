@@ -1,5 +1,34 @@
 # Changelog
 
+## v4.7 – Sprachdateien: alle Texte ausgelagert (2026-07)
+
+- Neuer zentraler Text-Loader `texte.py` (Projekt-Wurzel, bewusst
+  außerhalb von `engine/` und `app/`, damit beide Schichten ihn ohne
+  Schichtverletzung nutzen können): liest `locales/<sprache>/*.yaml`,
+  merged nach `<datei>.<schlüssel>`, mit Fallback-Kette Zielsprache →
+  Deutsch → Schlüsselname (fail-soft, kein Absturz bei Lücken).
+  Sprachwahl über Umgebungsvariable `TEA_SPRACHE` (Standard `de`).
+  Platzhalter als `{name}` via `str.format`.
+- **Vier Sprachdateien nach Textgattung** (`locales/de/`):
+  `oberflaeche.yaml` (Navigation, Buttons, Badges, Abschnittstitel,
+  Hinweistexte), `diagramme.yaml` (Diagrammtitel, Achsen, Legenden,
+  Annotationen), `bericht.yaml` (PDF-Kapitel-/Abschnittsüberschriften),
+  `excel.yaml` (Pipeline-Export-Beschriftungen) – siehe
+  `locales/README.md` für Architektur und Anleitung zum Übersetzen.
+- Durchgängig verdrahtet: komplette Navigation und Kopfzeile
+  (`streamlit_app.py`), alle Projekt-/Portfolio-Buttons und
+  Statusbadges (`overview.py`, `project_detail.py`), 35 Diagrammtexte
+  (`charts.py`), 25 PDF-Kapitel-/Abschnittstitel (`report.py`), 81
+  Beschriftungen des Excel-Ergebnisexports über den schichtfreien
+  `_t(...)`-Helfer (`io_ergebnis_excel.py`, ohne Streamlit-Abhängigkeit
+  in der Engine).
+- Demo-Übersetzung `locales/en/oberflaeche.yaml` (bewusst
+  unvollständig) belegt den Fallback auf Deutsch für fehlende
+  Schlüssel. 11 neue Tests für Loader/Fallback/Platzhalter; Suite: 143.
+- Bekannte Lücke (dokumentiert in `locales/README.md`): die
+  mehrsätzigen Fließtext-Absätze in PDF-Kapitel 8 sind noch nicht
+  ausgelagert.
+
 ## v4.6 – Excel-Ergebnisbericht für die gesamte Pipeline (2026-07)
 
 - Neuer Export auf der Portfolio-Seite ("Excel-Ergebnisbericht

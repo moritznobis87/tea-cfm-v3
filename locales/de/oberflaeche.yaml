@@ -1,0 +1,51 @@
+# Kurze UI-Texte: Navigation, Kopfzeile, Buttons, Abschnittstitel,
+# Labels und Hilfetexte, die app-weit wiederverwendet werden.
+# Struktur: ein Schluessel je Text; Platzhalter als {name}.
+
+# --- Kopfzeile / App-Rahmen ------------------------------------------------
+app_titel: "TEA PV-Projektbewertung"
+app_untertitel: "Wirtschaftlichkeit · Sensitivität · Risiko — EAG-Marktprämienmodell, Österreich"
+
+# --- Navigation --------------------------------------------------------------
+nav_titel: "Navigation"
+nav_portfolio: "Portfolio"
+nav_neues_projekt: "Neues Projekt"
+nav_ausschreibung: "Ausschreibung"
+nav_globale_annahmen: "Globale Annahmen"
+
+# --- Allgemeine Buttons -------------------------------------------------------
+btn_speichern: "Speichern"
+btn_abbrechen: "Abbrechen"
+btn_loeschen: "Löschen"
+btn_ja_loeschen: "Ja, löschen"
+btn_duplizieren: "Duplizieren"
+btn_oeffnen: "Öffnen"
+btn_inaktiv_schalten: "Inaktiv schalten"
+btn_aktivieren: "Aktivieren"
+btn_excel_export: "Excel-Export"
+btn_pdf_bericht: "PDF-Bericht erstellen"
+btn_pipeline_excel: "Excel-Ergebnisbericht erstellen"
+btn_pipeline_excel_download: "Pipeline-Ergebnisse herunterladen (.xlsx)"
+
+# --- Badges / Status -----------------------------------------------------------
+badge_agri: "Agri-PV"
+badge_konventionell: "Konventionell"
+badge_inaktiv: "Inaktiv"
+
+# --- Portfolio-Übersicht -------------------------------------------------------
+portfolio_kpi_gesamt_kwp: "Gesamtleistung"
+portfolio_kpi_gesamt_capex: "CAPEX gesamt"
+portfolio_kpi_gesamt_ek: "Eigenkapital gesamt"
+portfolio_kpi_ek_rendite: "Ø EK-Rendite"
+portfolio_toggle_inaktive: "Inaktive Projekte ({anzahl}) in den Portfolio-KPIs berücksichtigen"
+portfolio_toggle_inaktive_hilfe: "Inaktive Projekte bleiben erhalten (graue Karten), sind aber aus Rendite-Risiko-Landkarte, Ranking und Vergleichstabelle ausgeblendet. Dieser Schalter steuert nur die kumulierten Kennzahlen oben."
+portfolio_analytik_titel: "Portfolio-Analytik"
+portfolio_tab_karte: "Rendite-Risiko-Landkarte"
+portfolio_tab_ranking: "Ranking"
+portfolio_tab_tabelle: "Vergleichstabelle"
+portfolio_excel_hilfe: "Erstellt eine Arbeitsmappe mit einem Reiter je Projekt: alle Auswertungen (Cashflows, Erlöse, OPEX, DSCR, NPV, Sensitivitäten, Monte Carlo, Szenarien) als native, editierbare Excel-Diagramme samt Datentabellen."
+portfolio_excel_spinner: "Berechne alle Projekte und erstelle Diagramme…"
+
+# --- Projekt-Dashboard ---------------------------------------------------------
+projekt_inaktiv_hinweis: "Dieses Projekt ist **inaktiv**: Es bleibt erhalten, wird aber in der Portfolio-Analytik nicht angezeigt und kann aus den kumulierten Portfolio-KPIs herausgerechnet werden."
+projekt_loeschen_bestaetigung: "Projekt „{name}“ wirklich unwiderruflich löschen?"

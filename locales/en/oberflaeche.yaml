@@ -1,0 +1,22 @@
+# Example English translation (partial) demonstrating the locale
+# architecture: any key not present here falls back to German
+# automatically (see texte.py). Copy locales/de/*.yaml to a new
+# language folder and translate values to add a full language.
+app_titel: "TEA PV Project Valuation"
+app_untertitel: "Economics · Sensitivity · Risk — EAG market premium model, Austria"
+nav_titel: "Navigation"
+nav_portfolio: "Portfolio"
+nav_neues_projekt: "New Project"
+nav_ausschreibung: "Auction"
+nav_globale_annahmen: "Global Assumptions"
+btn_speichern: "Save"
+btn_abbrechen: "Cancel"
+btn_loeschen: "Delete"
+btn_ja_loeschen: "Yes, delete"
+btn_duplizieren: "Duplicate"
+btn_oeffnen: "Open"
+btn_inaktiv_schalten: "Deactivate"
+btn_aktivieren: "Activate"
+badge_agri: "Agri-PV"
+badge_konventionell: "Conventional"
+badge_inaktiv: "Inactive"

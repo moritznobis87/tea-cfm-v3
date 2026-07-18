@@ -28,6 +28,7 @@ from engine import (
 )
 from engine.analytics import HEATMAP_ACHSEN, calculate_lcoe
 from engine.kpis import npv_at
+from texte import txt
 
 _XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -70,28 +71,25 @@ def render_project_dashboard(
             st.rerun()
 
     if not project.aktiv:
-        st.info(
-            "Dieses Projekt ist **inaktiv**: Es bleibt erhalten, wird aber "
-            "in der Portfolio-Analytik nicht angezeigt und kann aus den "
-            "kumulierten Portfolio-KPIs herausgerechnet werden."
-        )
+        st.info(txt("oberflaeche.projekt_inaktiv_hinweis"))
     col_aktiv, col_dup, col_del, col_export, col_pdf = st.columns(
         [1.6, 1, 1, 1.8, 1.8]
     )
     with col_aktiv:
-        aktiv_label = "Inaktiv schalten" if project.aktiv else "Aktivieren"
+        aktiv_label = (txt("oberflaeche.btn_inaktiv_schalten") if project.aktiv
+                      else txt("oberflaeche.btn_aktivieren"))
         if st.button(aktiv_label, key=f"aktiv_{project.id}", width="stretch"):
             project.aktiv = not project.aktiv
             services.save_project(project, file_path)
             st.rerun()
     with col_dup:
-        if st.button("Duplizieren", key=f"dup_{project.id}", width="stretch"):
+        if st.button(txt("oberflaeche.btn_duplizieren"), key=f"dup_{project.id}", width="stretch"):
             kopie = services.duplicate_project(file_path.stem)
             if kopie is not None:
                 st.session_state[STATE_SELECTED_PROJECT] = kopie.id
                 st.rerun()
     with col_del:
-        if st.button("Löschen", key=f"del_{project.id}", width="stretch"):
+        if st.button(txt("oberflaeche.btn_loeschen"), key=f"del_{project.id}", width="stretch"):
             st.session_state[STATE_DELETE_CANDIDATE] = file_path.stem
     with col_export:
         st.download_button(
@@ -104,7 +102,7 @@ def render_project_dashboard(
     with col_pdf:
         pdf_key = f"pdf_bericht_{file_path.stem}"
         if pdf_key not in st.session_state:
-            if st.button("PDF-Bericht erstellen", key=f"pdf_btn_{project.id}",
+            if st.button(txt("oberflaeche.btn_pdf_bericht"), key=f"pdf_btn_{project.id}",
                          width="stretch"):
                 with st.spinner(
                     "Erstelle PDF-Bericht (inkl. Sensitivität und "
@@ -117,7 +115,7 @@ def render_project_dashboard(
                 st.rerun()
         else:
             st.download_button(
-                "PDF-Bericht herunterladen",
+                txt("oberflaeche.btn_pdf_bericht") + " herunterladen",
                 data=st.session_state[pdf_key],
                 file_name=f"{services.slugify(project.name)}_bericht.pdf",
                 mime="application/pdf",
@@ -129,12 +127,12 @@ def render_project_dashboard(
     if st.session_state.get(STATE_DELETE_CANDIDATE) == file_path.stem:
         st.warning(f"Projekt „{project.name}“ endgültig löschen?")
         col_ja, col_nein, _ = st.columns([1, 1, 4])
-        if col_ja.button("Ja, löschen", type="primary", key=f"del_ok_{project.id}"):
+        if col_ja.button(txt("oberflaeche.btn_ja_loeschen"), type="primary", key=f"del_ok_{project.id}"):
             services.delete_project(file_path.stem)
             st.session_state.pop(STATE_DELETE_CANDIDATE, None)
             st.session_state.pop(STATE_SELECTED_PROJECT, None)
             st.rerun()
-        if col_nein.button("Abbrechen", key=f"del_no_{project.id}"):
+        if col_nein.button(txt("oberflaeche.btn_abbrechen"), key=f"del_no_{project.id}"):
             st.session_state.pop(STATE_DELETE_CANDIDATE, None)
             st.rerun()
 

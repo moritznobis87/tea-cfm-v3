@@ -20,6 +20,7 @@ from app.theme import badge
 from app.views.project_detail import render_project_dashboard
 from engine import AnlagenTyp
 from engine.io_yaml import load_project_yaml
+from texte import txt
 
 
 def render_overview() -> None:
@@ -49,13 +50,9 @@ def render_overview() -> None:
     inaktive_anzahl = len(zeilen) - len(aktive)
     if inaktive_anzahl:
         mit_inaktiven = st.toggle(
-            f"Inaktive Projekte ({inaktive_anzahl}) in den Portfolio-KPIs "
-            f"berücksichtigen",
+            txt("oberflaeche.portfolio_toggle_inaktive", anzahl=inaktive_anzahl),
             value=False, key="portfolio_mit_inaktiven",
-            help="Inaktive Projekte bleiben erhalten (graue Karten), sind "
-                 "aber aus Rendite-Risiko-Landkarte, Ranking und "
-                 "Vergleichstabelle ausgeblendet. Dieser Schalter steuert "
-                 "nur die kumulierten Kennzahlen oben.",
+            help=txt("oberflaeche.portfolio_toggle_inaktive_hilfe"),
         )
     else:
         mit_inaktiven = False
@@ -102,19 +99,15 @@ def render_overview() -> None:
     )
 
     col_xl1, col_xl2 = st.columns([1.6, 3])
-    if col_xl1.button("Excel-Ergebnisbericht erstellen", width="stretch",
-                      help="Erstellt eine Arbeitsmappe mit einem Reiter je "
-                           "Projekt: alle Auswertungen (Cashflows, Erlöse, "
-                           "OPEX, DSCR, NPV, Sensitivitäten, Monte Carlo, "
-                           "Szenarien) als native, editierbare "
-                           "Excel-Diagramme samt Datentabellen."):
-        with st.spinner("Berechne alle Projekte und erstelle Diagramme…"):
+    if col_xl1.button(txt("oberflaeche.btn_pipeline_excel"), width="stretch",
+                      help=txt("oberflaeche.portfolio_excel_hilfe")):
+        with st.spinner(txt("oberflaeche.portfolio_excel_spinner")):
             st.session_state["pipeline_excel"] = services.build_pipeline_excel()
     if st.session_state.get("pipeline_excel"):
         from datetime import date as _date
 
         col_xl2.download_button(
-            "Pipeline-Ergebnisse herunterladen (.xlsx)",
+            txt("oberflaeche.btn_pipeline_excel_download"),
             data=st.session_state["pipeline_excel"],
             file_name=f"pipeline_ergebnisse_{_date.today().isoformat()}.xlsx",
             mime="application/vnd.openxmlformats-officedocument"
@@ -184,9 +177,9 @@ def render_overview() -> None:
         project = z["projekt"]
         kpis = z["kpis"]
         ist_agri = project.anlagentyp == AnlagenTyp.AGRI_PV
-        typ_badge = badge("Agri-PV", "agri") if ist_agri else badge("Konventionell", "konv")
+        typ_badge = badge(txt("oberflaeche.badge_agri"), "agri") if ist_agri else badge(txt("oberflaeche.badge_konventionell"), "konv")
         if not project.aktiv:
-            typ_badge += " " + badge("Inaktiv", "inaktiv")
+            typ_badge += " " + badge(txt("oberflaeche.badge_inaktiv"), "inaktiv")
         selected_cls = " selected" if z["id"] == selected else ""
         if not project.aktiv:
             selected_cls += " inaktiv"
@@ -201,7 +194,7 @@ def render_overview() -> None:
                 </div>""",
                 unsafe_allow_html=True,
             )
-            if st.button("Öffnen", key=f"open_{z['id']}", width="stretch"):
+            if st.button(txt("oberflaeche.btn_oeffnen"), key=f"open_{z['id']}", width="stretch"):
                 st.session_state[STATE_SELECTED_PROJECT] = z["id"]
                 st.rerun()
 

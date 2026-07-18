@@ -15,6 +15,7 @@ import plotly.graph_objects as go
 
 from app.formatting import fmt_pct
 from app.theme import Colors
+from texte import txt
 
 _EUR_HOVER = "%{y:,.0f} €"
 
@@ -32,7 +33,7 @@ def revenue_chart(df: pd.DataFrame) -> go.Figure:
         marker_color=Colors.POSITIVE, hovertemplate=_EUR_HOVER + "<extra></extra>",
     )
     fig.update_layout(
-        yaxis_title="€", xaxis_title="Betriebsjahr", height=360, showlegend=False
+        yaxis_title="€", xaxis_title=txt("diagramme.achse_betriebsjahr"), height=360, showlegend=False
     )
     return fig
 
@@ -59,7 +60,7 @@ def opex_stacked_chart(df: pd.DataFrame, opex_posten: list[str]) -> go.Figure:
         hovertemplate=_EUR_HOVER + "<extra>Direktvermarktung</extra>",
     )
     fig.update_layout(
-        barmode="stack", yaxis_title="€", xaxis_title="Betriebsjahr", height=420
+        barmode="stack", yaxis_title="€", xaxis_title=txt("diagramme.achse_betriebsjahr"), height=420
     )
     return fig
 
@@ -75,7 +76,7 @@ def operating_cashflow_chart(df: pd.DataFrame) -> go.Figure:
         hovertemplate=_EUR_HOVER + "<extra></extra>",
     )
     fig.update_layout(
-        yaxis_title="€", xaxis_title="Betriebsjahr", height=360, showlegend=False
+        yaxis_title="€", xaxis_title=txt("diagramme.achse_betriebsjahr"), height=360, showlegend=False
     )
     return fig
 
@@ -90,7 +91,7 @@ def financing_cashflow_chart(df: pd.DataFrame) -> go.Figure:
         marker_color=Colors.POSITIVE, hovertemplate=_EUR_HOVER + "<extra></extra>",
     )
     fig.add_bar(
-        x=df["jahr"], y=-df["tilgung_eur"], name="Tilgung",
+        x=df["jahr"], y=-df["tilgung_eur"], name=txt("diagramme.serie_tilgung"),
         marker_color=Colors.NEUTRAL, hovertemplate=_EUR_HOVER + "<extra></extra>",
     )
     fig.update_layout(
@@ -104,7 +105,7 @@ def total_cashflow_chart(df: pd.DataFrame) -> go.Figure:
     rechte Achse)."""
     fig = go.Figure()
     fig.add_bar(
-        x=df["jahr"], y=df["cf_gesamt_eur"], name="Cashflow (Jahr)",
+        x=df["jahr"], y=df["cf_gesamt_eur"], name=txt("diagramme.achse_cashflow_jahr"),
         marker_color=_signed_colors(df["cf_gesamt_eur"]),
         hovertemplate=_EUR_HOVER + "<extra></extra>",
     )
@@ -114,7 +115,7 @@ def total_cashflow_chart(df: pd.DataFrame) -> go.Figure:
         hovertemplate=_EUR_HOVER + "<extra>kumuliert</extra>",
     )
     fig.update_layout(
-        yaxis=dict(title="Cashflow (Jahr) in €"),
+        yaxis=dict(title=txt("diagramme.achse_cashflow_jahr_eur")),
         yaxis2=dict(
             title="Kumuliert in €", overlaying="y", side="right", showgrid=False
         ),
@@ -135,10 +136,10 @@ def dscr_chart(dscr_df: pd.DataFrame) -> go.Figure:
     )
     fig.add_hline(
         y=1.0, line_dash="dot", line_color="gray",
-        annotation_text="DSCR = 1,0x (Deckungsgrenze)",
+        annotation_text=txt("diagramme.serie_dscr_grenze"),
     )
     fig.update_layout(
-        xaxis_title="Betriebsjahr", yaxis_title="DSCR (x)",
+        xaxis_title=txt("diagramme.achse_betriebsjahr"), yaxis_title=txt("diagramme.achse_dscr"),
         height=420, showlegend=False,
     )
     return fig
@@ -159,7 +160,7 @@ def npv_curve_chart(npv_df: pd.DataFrame, equity_irr: float | None) -> go.Figure
             annotation_text="IRR",
         )
     fig.update_layout(
-        xaxis_title="Diskontsatz (%)", yaxis_title="NPV (€)", height=420
+        xaxis_title=txt("diagramme.achse_diskontsatz_pct"), yaxis_title=txt("diagramme.achse_npv_eur"), height=420
     )
     return fig
 
@@ -273,7 +274,7 @@ def verguetung_chart(
     )
     fig.add_scatter(
         x=betrieb["jahr"], y=betrieb["verguetungssatz_ct_kwh"],
-        name="Vergütungssatz", mode="lines",
+        name=txt("diagramme.serie_verguetungssatz"), mode="lines",
         line=dict(color=Colors.INK, width=2.5),
         fill="tonexty", fillcolor="rgba(138, 166, 160, 0.25)",
         hovertemplate="%{y:,.2f} ct/kWh<extra>Vergütungssatz</extra>",
@@ -288,7 +289,7 @@ def verguetung_chart(
         annotation_text="Förderende", annotation_position="top",
     )
     fig.update_layout(
-        height=420, xaxis_title="Betriebsjahr", yaxis_title="ct/kWh",
+        height=420, xaxis_title=txt("diagramme.achse_betriebsjahr"), yaxis_title="ct/kWh",
         hovermode="x unified",
     )
     return fig
@@ -301,17 +302,17 @@ def revenue_split_chart(df: pd.DataFrame) -> go.Figure:
     betrieb = df[df["jahr"] >= 1]
     fig = go.Figure()
     fig.add_bar(
-        x=betrieb["jahr"], y=betrieb["erloes_markt_eur"], name="Markterlös",
+        x=betrieb["jahr"], y=betrieb["erloes_markt_eur"], name=txt("diagramme.serie_markterloes"),
         marker_color=Colors.POSITIVE,
         hovertemplate=_EUR_HOVER + "<extra>Markterlös</extra>",
     )
     fig.add_bar(
-        x=betrieb["jahr"], y=betrieb["erloes_praemie_eur"], name="Marktprämie (EAG)",
+        x=betrieb["jahr"], y=betrieb["erloes_praemie_eur"], name=txt("diagramme.serie_marktpraemie") + " (EAG)",
         marker_color=Colors.NEUTRAL,
         hovertemplate=_EUR_HOVER + "<extra>Marktprämie</extra>",
     )
     fig.update_layout(
-        barmode="stack", height=400, xaxis_title="Betriebsjahr", yaxis_title="€",
+        barmode="stack", height=400, xaxis_title=txt("diagramme.achse_betriebsjahr"), yaxis_title="€",
         hovermode="x unified",
     )
     return fig
@@ -330,17 +331,17 @@ def debt_profile_chart(df: pd.DataFrame, fremdkapital_eur: float) -> go.Figure:
         hovertemplate=_EUR_HOVER + "<extra>Restschuld</extra>",
     )
     fig.add_bar(
-        x=betrieb["jahr"], y=betrieb["zinsen_eur"], name="Zinsen",
+        x=betrieb["jahr"], y=betrieb["zinsen_eur"], name=txt("diagramme.serie_zinsen"),
         marker_color=Colors.BRAND,
         hovertemplate=_EUR_HOVER + "<extra>Zinsen</extra>",
     )
     fig.add_bar(
-        x=betrieb["jahr"], y=betrieb["tilgung_eur"], name="Tilgung",
+        x=betrieb["jahr"], y=betrieb["tilgung_eur"], name=txt("diagramme.serie_tilgung"),
         marker_color=Colors.NEUTRAL,
         hovertemplate=_EUR_HOVER + "<extra>Tilgung</extra>",
     )
     fig.update_layout(
-        barmode="stack", height=420, xaxis_title="Betriebsjahr", yaxis_title="€",
+        barmode="stack", height=420, xaxis_title=txt("diagramme.achse_betriebsjahr"), yaxis_title="€",
         hovermode="x unified",
     )
     return fig
@@ -366,7 +367,7 @@ def capex_donut_chart(posten: dict[str, float]) -> go.Figure:
 def kapitalstruktur_donut_chart(ek_eur: float, fk_eur: float) -> go.Figure:
     fig = go.Figure(
         go.Pie(
-            labels=["Eigenkapital", "Fremdkapital"],
+            labels=[txt("diagramme.serie_eigenkapital"), txt("diagramme.serie_fremdkapital")],
             values=[max(ek_eur, 0), max(fk_eur, 0)],
             hole=0.55,
             marker=dict(colors=[Colors.INK, Colors.NEUTRAL]),
@@ -620,20 +621,20 @@ def auktion_historie_chart(df: pd.DataFrame) -> go.Figure:
     Unterzeichnete Runden sind grau hinterlegt."""
     fig = go.Figure()
     x = df["datum"]
-    fig.add_scatter(x=x, y=df["preisobergrenze_ct"], name="Preisobergrenze",
+    fig.add_scatter(x=x, y=df["preisobergrenze_ct"], name=txt("diagramme.serie_preisobergrenze"),
                     mode="lines", line=dict(color=Colors.BRAND, dash="dot", width=2),
                     hovertemplate="%{y:,.2f} ct/kWh<extra>Obergrenze</extra>")
-    fig.add_scatter(x=x, y=df["zuschlag_max_ct"], name="Höchster Zuschlag",
+    fig.add_scatter(x=x, y=df["zuschlag_max_ct"], name=txt("diagramme.serie_hoechster_zuschlag"),
                     mode="lines+markers", line=dict(color=Colors.INK, width=2),
                     hovertemplate="%{y:,.2f} ct/kWh<extra>Max</extra>")
-    fig.add_scatter(x=x, y=df["zuschlag_mittel_ct"], name="Ø Zuschlag (gewichtet)",
+    fig.add_scatter(x=x, y=df["zuschlag_mittel_ct"], name=txt("diagramme.serie_mittlerer_zuschlag"),
                     mode="lines+markers", line=dict(color=Colors.INK_SOFT, width=2),
                     hovertemplate="%{y:,.2f} ct/kWh<extra>Mittel</extra>")
-    fig.add_scatter(x=x, y=df["zuschlag_min_ct"], name="Niedrigster Zuschlag",
+    fig.add_scatter(x=x, y=df["zuschlag_min_ct"], name=txt("diagramme.serie_niedrigster_zuschlag"),
                     mode="lines+markers", line=dict(color=Colors.NEUTRAL, width=1.5),
                     hovertemplate="%{y:,.2f} ct/kWh<extra>Min</extra>")
     quote = df["bezuschlagt_mw"] / df["ausgeschrieben_mw"] * 100
-    fig.add_bar(x=x, y=quote, name="Bezuschlagt / Ausgeschrieben", yaxis="y2",
+    fig.add_bar(x=x, y=quote, name=txt("diagramme.serie_bezuschlagungsquote"), yaxis="y2",
                 marker_color="rgba(138,166,160,0.35)",
                 hovertemplate="%{y:,.0f} %<extra>Bezuschlagungsquote</extra>")
     fig.update_layout(
@@ -659,41 +660,41 @@ def gebotsdichte_chart(prognose, empfohlen_ct: float | None = None) -> go.Figure
         x0=float(np.percentile(prognose.pm_sample, 10)),
         x1=float(np.percentile(prognose.pm_sample, 90)),
         fillcolor="rgba(138,166,160,0.16)", line_width=0,
-        annotation_text="Grenzzuschlag P10–P90",
+        annotation_text=txt("diagramme.annotation_grenzzuschlag_p10_p90"),
         annotation_position="top left",
         annotation_font=dict(size=10, color=Colors.MUTED),
     )
     fig.add_scatter(
         x=prognose.dichte_x, y=prognose.dichte_y, mode="lines",
         line=dict(color=Colors.MUTED, width=1.5, dash="dot"),
-        name="Alle Gebote",
+        name=txt("diagramme.serie_alle_gebote"),
         hovertemplate="%{x:,.2f} ct/kWh<extra>Alle Gebote</extra>",
     )
     fig.add_scatter(
         x=prognose.dichte_x, y=prognose.dichte_zuschlag_y, mode="lines",
         line=dict(color=Colors.INK, width=2.2), fill="tozeroy",
-        fillcolor="rgba(20,53,48,0.14)", name="Zuschlagswerte",
+        fillcolor="rgba(20,53,48,0.14)", name=txt("diagramme.serie_zuschlagswerte"),
         hovertemplate="%{x:,.2f} ct/kWh<extra>Zuschlagswerte</extra>",
     )
     fig.add_vline(x=prognose.preisobergrenze_ct, line_color=Colors.BRAND,
-                  line_width=2, annotation_text="Preisobergrenze",
+                  line_width=2, annotation_text=txt("diagramme.serie_preisobergrenze"),
                   annotation_font_color=Colors.BRAND)
     fig.add_vline(x=prognose.gebot_mittel_ct, line_dash="dash",
-                  line_color=Colors.INK_SOFT, annotation_text="Erwartungswert",
+                  line_color=Colors.INK_SOFT, annotation_text=txt("diagramme.annotation_erwartungswert"),
                   annotation_position="top left")
     fig.add_vline(x=prognose.gebot_median_ct, line_dash="dot",
-                  line_color=Colors.MUTED, annotation_text="Median",
+                  line_color=Colors.MUTED, annotation_text=txt("diagramme.annotation_median"),
                   annotation_position="bottom left")
     for q in (5, 95):
         fig.add_vline(x=prognose.gebot_quantile[q], line_dash="dot",
                       line_color=Colors.LINE)
     if empfohlen_ct is not None:
         fig.add_vline(x=empfohlen_ct, line_color=Colors.POSITIVE, line_width=2,
-                      annotation_text="Empfohlenes Gebot",
+                      annotation_text=txt("diagramme.annotation_empfohlenes_gebot"),
                       annotation_font_color=Colors.POSITIVE,
                       annotation_position="bottom right")
-    fig.update_layout(height=420, xaxis_title="Gebotswert (ct/kWh)",
-                      yaxis_title="Wahrscheinlichkeitsdichte",
+    fig.update_layout(height=420, xaxis_title=txt("diagramme.achse_gebotswert"),
+                      yaxis_title=txt("diagramme.achse_wahrscheinlichkeitsdichte"),
                       legend=dict(orientation="h", y=1.08))
     return fig
 
@@ -713,11 +714,11 @@ def zuschlagskurve_chart(prognose, ziel_prob: float, empfohlen_ct: float) -> go.
     fig.add_scatter(x=[empfohlen_ct], y=[ziel_prob * 100], mode="markers",
                     marker=dict(color=Colors.BRAND, size=12,
                                 line=dict(color="white", width=2)),
-                    name="Arbeitspunkt", showlegend=False,
+                    name=txt("diagramme.serie_arbeitspunkt"), showlegend=False,
                     hovertemplate="Empfehlung %{x:,.2f} ct/kWh bei %{y:,.0f} %<extra></extra>")
     fig.add_hline(y=ziel_prob * 100, line_dash="dot", line_color=Colors.MUTED)
     fig.add_vline(x=empfohlen_ct, line_dash="dot", line_color=Colors.MUTED)
-    fig.update_layout(height=420, xaxis_title="Eigenes Gebot (ct/kWh)",
+    fig.update_layout(height=420, xaxis_title=txt("diagramme.achse_eigenes_gebot"),
                       yaxis=dict(title="Zuschlagswahrscheinlichkeit",
                                  ticksuffix=" %", range=[0, 104]))
     return fig
@@ -754,7 +755,7 @@ def auktion_historische_verteilungen_chart(modell, art: str = "dichte") -> go.Fi
             + f.ausschreibung.datum.strftime("%m/%Y") + "</extra>",
         )
     fig.update_layout(
-        height=440, xaxis_title="Gebotswert (ct/kWh)",
+        height=440, xaxis_title=txt("diagramme.achse_gebotswert"),
         yaxis_title=("Wahrscheinlichkeitsdichte" if art == "dichte"
                      else "F(Gebot) – kumulierte Wahrscheinlichkeit"),
         legend=dict(font=dict(size=10)),

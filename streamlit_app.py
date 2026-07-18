@@ -48,6 +48,7 @@ from app.views.assumptions import render_assumptions  # noqa: E402
 from app.views.auktion import render_auktion  # noqa: E402
 from app.views.new_project import render_new_project  # noqa: E402
 from app.views.overview import render_overview  # noqa: E402
+from texte import txt  # noqa: E402
 
 # --- Kopfzeile (Hero) --------------------------------------------------------
 col_logo, col_title = st.columns([1, 9], vertical_alignment="center")
@@ -55,21 +56,20 @@ if LOGO_PATH.exists():
     col_logo.image(str(LOGO_PATH), width=84)
 col_title.markdown(
     f"""<div>
-    <p class="app-hero-title">{APP_TITLE}</p>
-    <p class="app-hero-sub">Wirtschaftlichkeit · Sensitivität · Risiko —
-    EAG-Marktprämienmodell, Österreich</p>
+    <p class="app-hero-title">{txt("oberflaeche.app_titel")}</p>
+    <p class="app-hero-sub">{txt("oberflaeche.app_untertitel")}</p>
     </div>""",
     unsafe_allow_html=True,
 )
 st.markdown('<div class="app-header-rule"></div>', unsafe_allow_html=True)
 
 # --- Navigation ----------------------------------------------------------------
-_NAV_PORTFOLIO = "Portfolio"
-_NAV_NEU = "Neues Projekt"
-_NAV_AUKTION = "Ausschreibung"
-_NAV_ANNAHMEN = "Globale Annahmen"
+_NAV_PORTFOLIO = txt("oberflaeche.nav_portfolio")
+_NAV_NEU = txt("oberflaeche.nav_neues_projekt")
+_NAV_AUKTION = txt("oberflaeche.nav_ausschreibung")
+_NAV_ANNAHMEN = txt("oberflaeche.nav_globale_annahmen")
 nav = st.sidebar.radio(
-    "Navigation",
+    txt("oberflaeche.nav_titel"),
     [_NAV_PORTFOLIO, _NAV_NEU, _NAV_AUKTION, _NAV_ANNAHMEN],
     key="nav",
 )

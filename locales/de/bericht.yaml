@@ -1,0 +1,36 @@
+# Freitext des PDF-Berichts (app/report.py): Kapitelueberschriften und
+# Abschnittstitel (H2). Die ausfuehrlichen Fliesstexte (mehrsaetzige
+# Absaetze mit vielen eingesetzten Kennzahlen, insbesondere in Kapitel
+# 8 "EAG-Ausschreibungsmodell") sind aktuell noch direkt in report.py
+# formuliert; sie folgen demselben txt(...)-Muster und koennen bei
+# Bedarf nach demselben Schema hierher verlagert werden (siehe
+# Kommentar am Kapitelanfang in report.py).
+
+# --- Kapitelueberschriften (Nummer wird separat aus dem Code gesetzt) --------
+kapitel_1_titel: "Management Summary"
+kapitel_2_titel: "Ergebnisrechnung"
+kapitel_3_titel: "Erlöse und Förderung"
+kapitel_4_titel: "Finanzierung"
+kapitel_5_titel: "Sensitivitätsanalyse"
+kapitel_6_titel: "Risikoanalyse (Monte-Carlo-Simulation)"
+kapitel_7_titel: "Szenarienvergleich"
+kapitel_8_titel: "EAG-Ausschreibungsmodell"
+kapitel_a_titel: "Annex: Annahmen der Berechnung"
+kapitel_b_titel: "Annex: Zeitreihen"
+
+# --- Abschnittstitel (H2) ------------------------------------------------------
+abschnitt_cashflow_vermoegen: "Gesamt-Cashflow und Vermögensaufbau"
+abschnitt_wertbruecke: "Wertbrücke über die Gesamtlaufzeit"
+abschnitt_cashflow_uebersicht: "Cashflow-Übersicht (Auszug)"
+abschnitt_verguetung_marktwert: "Vergütungssatz und Marktwert"
+abschnitt_markterloes_praemie: "Markterlös und Marktprämie"
+abschnitt_dscr: "Schuldendienstdeckung (DSCR)"
+abschnitt_schuldenprofil: "Schuldenprofil"
+abschnitt_npv_diskontsatz: "Kapitalwert über den Diskontsatz"
+abschnitt_tornado: "Tornado-Analyse"
+abschnitt_eag_varianten: "EAG-Zuschlagswert-Varianten"
+abschnitt_auktion_historie: "Historie der Ausschreibungen"
+abschnitt_auktion_modell: "Modellbeschreibung"
+abschnitt_auktion_prognose: "Prognose der nächsten Runde"
+abschnitt_opex_positionen: "Betriebskosten-Positionen"
+abschnitt_capex: "Investitionskosten"

@@ -29,6 +29,19 @@ from .models import AnlagenTyp, GlobalAssumptions, PVProject
 from .pipeline import run_valuation
 from .sensitivity import run_eag_sensitivity
 
+try:  # Sprachtexte: eigenstaendiges Modul ohne Engine-Abhaengigkeit
+    from texte import excel_texte
+except ImportError:  # pragma: no cover - Fallback bei isoliertem Aufruf
+    def excel_texte() -> dict[str, str]:
+        return {}
+
+
+def _t(schluessel: str, **platzhalter) -> str:
+    """Liest einen Excel-Beschriftungstext; faellt bei fehlendem
+    Schluessel auf den Schluessel selbst zurueck (fail-soft)."""
+    text = excel_texte().get(schluessel, schluessel)
+    return text.format(**platzhalter) if platzhalter else text
+
 _FONT = "Arial"
 _INK = "143530"
 _BRAND = "BE172B"
@@ -157,21 +170,22 @@ def _projektblatt(ws, project: PVProject, ga: GlobalAssumptions,
     for sp in "BCDEFGH":
         ws.column_dimensions[sp].width = 14
 
-    typ = "Agri-PV" if project.anlagentyp == AnlagenTyp.AGRI_PV else "Konventionell"
+    typ = (_t("typ_agri") if project.anlagentyp == AnlagenTyp.AGRI_PV
+           else _t("typ_konventionell"))
     titel = ws.cell(row=1, column=1, value=f"{project.name} ({typ})"
                     + ("" if project.aktiv else " – INAKTIV"))
     titel.font = _F_TITEL
 
     # --- KPI-Block ---
     kpi_paare = [
-        ("Nennleistung", project.nennleistung_kwp, "#,##0 \"kWp\""),
-        ("EAG-Zuschlagswert", project.eag_zuschlagswert_ct_kwh, "0.00 \"ct/kWh\""),
-        ("CAPEX gesamt", kpis.capex_total_eur, _EUR + " €"),
-        ("Eigenkapital", kpis.eigenkapital_eur, _EUR + " €"),
-        ("EK-Rendite (IRR)", kpis.equity_irr, _PCT),
-        ("NPV", kpis.npv_eur, _EUR + " €"),
-        ("DSCR (Minimum)", kpis.dscr_min, "0.00"),
-        ("Amortisation", kpis.payback_jahre, "0.0 \"Jahre\""),
+        (_t("kpi_nennleistung"), project.nennleistung_kwp, "#,##0 \"kWp\""),
+        (_t("kpi_eag_zuschlagswert"), project.eag_zuschlagswert_ct_kwh, "0.00 \"ct/kWh\""),
+        (_t("kpi_capex_gesamt"), kpis.capex_total_eur, _EUR + " €"),
+        (_t("kpi_eigenkapital"), kpis.eigenkapital_eur, _EUR + " €"),
+        (_t("kpi_ek_rendite"), kpis.equity_irr, _PCT),
+        (_t("kpi_npv"), kpis.npv_eur, _EUR + " €"),
+        (_t("kpi_dscr_min"), kpis.dscr_min, "0.00"),
+        (_t("kpi_amortisation"), kpis.payback_jahre, "0.0 \"Jahre\""),
     ]
     for i, (name, wert, fmt) in enumerate(kpi_paare):
         z = 3 + i
@@ -185,39 +199,39 @@ def _projektblatt(ws, project: PVProject, ga: GlobalAssumptions,
     zeile = 13
 
     # --- 1. Verguetung & Marktwert ---
-    zeile = _sektion(ws, zeile, "Vergütung und Marktwert (ct/kWh)")
+    zeile = _sektion(ws, zeile, _t("sektion_verguetung"))
     t = betrieb[["jahr", "marktwert_nominal_ct_kwh", "verguetungssatz_ct_kwh"]]
-    t = t.rename(columns={"jahr": "Jahr",
-                          "marktwert_nominal_ct_kwh": "Marktwert (nominal)",
-                          "verguetungssatz_ct_kwh": "Vergütungssatz"})
+    t = t.rename(columns={"jahr": _t("spalte_jahr"),
+                          "marktwert_nominal_ct_kwh": _t("spalte_marktwert_nominal"),
+                          "verguetungssatz_ct_kwh": _t("spalte_verguetungssatz")})
     kopf, ende = _schreibe_tabelle(ws, zeile, t, {
-        "Marktwert (nominal)": _CT, "Vergütungssatz": _CT})
+        _t("spalte_marktwert_nominal"): _CT, _t("spalte_verguetungssatz"): _CT})
     chart = _linien_chart(ws, kopf, ende, [2, 3],
-                          "Vergütung und Marktwert", "ct/kWh")
+                          _t("chart_verguetung_titel"), "ct/kWh")
     chart.y_axis.numFmt = "0.00"
     _haenge_chart(ws, chart, kopf)
     zeile = _naechste_zeile(ende, kopf)
 
     # --- 2. Erloesstruktur ---
-    zeile = _sektion(ws, zeile, "Erlösstruktur (€/Jahr)")
+    zeile = _sektion(ws, zeile, _t("sektion_erloesstruktur"))
     t = betrieb[["jahr", "erloes_markt_eur", "erloes_praemie_eur"]].rename(
-        columns={"jahr": "Jahr", "erloes_markt_eur": "Markterlös",
-                 "erloes_praemie_eur": "Marktprämie"})
+        columns={"jahr": _t("spalte_jahr"), "erloes_markt_eur": _t("spalte_markterloes"),
+                 "erloes_praemie_eur": _t("spalte_marktpraemie")})
     kopf, ende = _schreibe_tabelle(ws, zeile, t,
-                                   {"Markterlös": _EUR, "Marktprämie": _EUR})
+                                   {_t("spalte_markterloes"): _EUR, _t("spalte_marktpraemie"): _EUR})
     _haenge_chart(ws, _balken_chart(ws, kopf, ende, [2, 3],
-                                    "Erlösstruktur", "€/Jahr", gestapelt=True),
+                                    _t("chart_erloesstruktur_titel"), "€/Jahr", gestapelt=True),
                   kopf)
     zeile = _naechste_zeile(ende, kopf)
 
     # --- 3. Gesamt-Cashflow (Kombi Balken + kumulierte Linie) ---
-    zeile = _sektion(ws, zeile, "Gesamt-Cashflow (€/Jahr)")
+    zeile = _sektion(ws, zeile, _t("sektion_cashflow"))
     t = df[["jahr", "cf_gesamt_eur", "cf_kumuliert_eur"]].rename(
-        columns={"jahr": "Jahr", "cf_gesamt_eur": "Cashflow",
-                 "cf_kumuliert_eur": "Kumuliert"})
+        columns={"jahr": _t("spalte_jahr"), "cf_gesamt_eur": _t("spalte_cashflow"),
+                 "cf_kumuliert_eur": _t("spalte_kumuliert")})
     kopf, ende = _schreibe_tabelle(ws, zeile, t,
-                                   {"Cashflow": _EUR, "Kumuliert": _EUR})
-    balken = _balken_chart(ws, kopf, ende, [2], "Gesamt-Cashflow", "€")
+                                   {_t("spalte_cashflow"): _EUR, _t("spalte_kumuliert"): _EUR})
+    balken = _balken_chart(ws, kopf, ende, [2], _t("chart_cashflow_titel"), "€")
     linie = LineChart()
     linie.add_data(Reference(ws, min_col=3, min_row=kopf, max_row=ende),
                    titles_from_data=True)
@@ -226,68 +240,70 @@ def _projektblatt(ws, project: PVProject, ga: GlobalAssumptions,
     zeile = _naechste_zeile(ende, kopf)
 
     # --- 4. Betriebskosten (gestapelt) ---
-    zeile = _sektion(ws, zeile, "Betriebskosten (€/Jahr)")
+    zeile = _sektion(ws, zeile, _t("sektion_betriebskosten"))
     opex_spalten = list(result.cashflow.opex_posten) + [
         "gemeindeabgabe_eur", "direktvermarktungskosten_eur"]
     opex_spalten = [c for c in opex_spalten if c in betrieb.columns]
     t = betrieb[["jahr"] + opex_spalten].rename(columns={
-        "jahr": "Jahr", "gemeindeabgabe_eur": "Gemeindeabgabe",
-        "direktvermarktungskosten_eur": "Direktvermarktung"})
+        "jahr": _t("spalte_jahr"), "gemeindeabgabe_eur": _t("spalte_gemeindeabgabe"),
+        "direktvermarktungskosten_eur": _t("spalte_direktvermarktung")})
     kopf, ende = _schreibe_tabelle(
-        ws, zeile, t, {c: _EUR for c in t.columns if c != "Jahr"})
+        ws, zeile, t, {c: _EUR for c in t.columns if c != _t("spalte_jahr")})
     _haenge_chart(ws, _balken_chart(
         ws, kopf, ende, list(range(2, len(t.columns) + 1)),
-        "Betriebskosten", "€/Jahr", gestapelt=True), kopf)
+        _t("chart_betriebskosten_titel"), "€/Jahr", gestapelt=True), kopf)
     zeile = _naechste_zeile(ende, kopf)
 
     # --- 5. Finanzierung ---
-    zeile = _sektion(ws, zeile, "Kapitaldienst und DSCR")
+    zeile = _sektion(ws, zeile, _t("sektion_kapitaldienst"))
     t = betrieb[["jahr", "zinsen_eur", "tilgung_eur", "dscr"]].rename(
-        columns={"jahr": "Jahr", "zinsen_eur": "Zinsen",
-                 "tilgung_eur": "Tilgung", "dscr": "DSCR"})
+        columns={"jahr": _t("spalte_jahr"), "zinsen_eur": _t("spalte_zinsen"),
+                 "tilgung_eur": _t("spalte_tilgung"), "dscr": _t("spalte_dscr")})
     kopf, ende = _schreibe_tabelle(ws, zeile, t, {
-        "Zinsen": _EUR, "Tilgung": _EUR, "DSCR": "0.00"})
+        _t("spalte_zinsen"): _EUR, _t("spalte_tilgung"): _EUR, _t("spalte_dscr"): "0.00"})
     _haenge_chart(ws, _balken_chart(ws, kopf, ende, [2, 3],
-                                    "Kapitaldienst", "€/Jahr", gestapelt=True),
+                                    _t("chart_kapitaldienst_titel"), "€/Jahr", gestapelt=True),
                   kopf)
-    dscr_chart = _linien_chart(ws, kopf, ende, [4], "DSCR-Verlauf", "DSCR")
+    dscr_chart = _linien_chart(ws, kopf, ende, [4], _t("chart_dscr_titel"), _t("spalte_dscr"))
     dscr_chart.y_axis.numFmt = "0.00"
     ws.add_chart(dscr_chart, f"{_CHART_SPALTE}{kopf + 18}")
     zeile = max(_naechste_zeile(ende, kopf), kopf + 37)
 
     # --- 6. NPV-Kurve ---
-    zeile = _sektion(ws, zeile, "Kapitalwert nach Diskontsatz")
+    zeile = _sektion(ws, zeile, _t("sektion_npv_kurve"))
     t = result.npv_curve.rename(columns={
-        "diskontsatz_pct": "Diskontsatz", "npv_eur": "NPV"})
+        "diskontsatz_pct": _t("spalte_diskontsatz"), "npv_eur": _t("spalte_npv")})
     kopf, ende = _schreibe_tabelle(ws, zeile, t,
-                                   {"Diskontsatz": _PCT, "NPV": _EUR})
+                                   {_t("spalte_diskontsatz"): _PCT, _t("spalte_npv"): _EUR})
     _haenge_chart(ws, _linien_chart(ws, kopf, ende, [2],
-                                    "NPV nach Diskontsatz", "€"), kopf)
+                                    _t("chart_npv_titel"), "€"), kopf)
     zeile = _naechste_zeile(ende, kopf)
 
     # --- 7. Sensitivitaet (Tornado) ---
-    zeile = _sektion(ws, zeile, "Sensitivität der EK-Rendite (±10 %)")
+    zeile = _sektion(ws, zeile, _t("sektion_sensitivitaet"))
     tornado = run_tornado(project, ga).sort_values("spanne")
     t = tornado[["name", "irr_runter", "irr_rauf"]].rename(columns={
-        "name": "Treiber", "irr_runter": "IRR −10 %", "irr_rauf": "IRR +10 %"})
+        "name": _t("spalte_treiber"), "irr_runter": _t("spalte_irr_minus10"),
+        "irr_rauf": _t("spalte_irr_plus10")})
     kopf, ende = _schreibe_tabelle(ws, zeile, t, {
-        "IRR −10 %": _PCT, "IRR +10 %": _PCT})
+        _t("spalte_irr_minus10"): _PCT, _t("spalte_irr_plus10"): _PCT})
     chart = _balken_chart(ws, kopf, ende, [2, 3],
-                          "Sensitivität EK-Rendite", "IRR", horizontal=True)
+                          _t("chart_sensitivitaet_titel"), "IRR", horizontal=True)
     chart.y_axis.numFmt = "0.0%"
     _haenge_chart(ws, chart, kopf)
     zeile = _naechste_zeile(ende, kopf)
 
     # --- 8. EAG-Sensitivitaet ---
-    zeile = _sektion(ws, zeile, "Sensitivität EAG-Zuschlagswert")
+    zeile = _sektion(ws, zeile, _t("sektion_eag_sensitivitaet"))
     sens = run_eag_sensitivity(project, ga)
     t = sens[["eag_zuschlagswert_ct_kwh", "equity_irr", "npv_eur"]].rename(
-        columns={"eag_zuschlagswert_ct_kwh": "Zuschlagswert (ct/kWh)",
-                 "equity_irr": "EK-Rendite", "npv_eur": "NPV"})
+        columns={"eag_zuschlagswert_ct_kwh": _t("spalte_zuschlagswert_ct"),
+                 "equity_irr": _t("spalte_ek_rendite"), "npv_eur": _t("spalte_npv")})
     kopf, ende = _schreibe_tabelle(ws, zeile, t, {
-        "Zuschlagswert (ct/kWh)": _CT, "EK-Rendite": _PCT, "NPV": _EUR})
+        _t("spalte_zuschlagswert_ct"): _CT, _t("spalte_ek_rendite"): _PCT,
+        _t("spalte_npv"): _EUR})
     chart = LineChart()
-    _stil(chart, "EK-Rendite nach Zuschlagswert", "IRR")
+    _stil(chart, _t("chart_eag_sensitivitaet_titel"), "IRR")
     chart.add_data(Reference(ws, min_col=2, min_row=kopf, max_row=ende),
                    titles_from_data=True)
     chart.set_categories(Reference(ws, min_col=1, min_row=kopf + 1, max_row=ende))
@@ -296,8 +312,7 @@ def _projektblatt(ws, project: PVProject, ga: GlobalAssumptions,
     zeile = _naechste_zeile(ende, kopf)
 
     # --- 9. Monte Carlo (Histogramm aus Klassen) ---
-    zeile = _sektion(ws, zeile, f"Monte-Carlo-Simulation ({n_mc} Läufe, "
-                     "Standard-Streuungen)")
+    zeile = _sektion(ws, zeile, _t("sektion_monte_carlo", n_mc=n_mc))
     mc = run_monte_carlo(project, ga, n_laeufe=n_mc,
                          sigmas=dict(MC_STANDARD_SIGMAS))
     irr = mc.irr[~np.isnan(mc.irr)]
@@ -305,14 +320,14 @@ def _projektblatt(ws, project: PVProject, ga: GlobalAssumptions,
     kanten = np.linspace(irr.min(), irr.max(), 16)
     haeufig, _ = np.histogram(irr, bins=kanten)
     t = pd.DataFrame({
-        "EK-Rendite (Klassenmitte)": (kanten[:-1] + kanten[1:]) / 2,
-        "Anzahl Läufe": haeufig,
+        _t("spalte_ek_rendite_klassenmitte"): (kanten[:-1] + kanten[1:]) / 2,
+        _t("spalte_anzahl_laeufe"): haeufig,
     })
     kopf, ende = _schreibe_tabelle(ws, zeile, t, {
-        "EK-Rendite (Klassenmitte)": _PCT})
+        _t("spalte_ek_rendite_klassenmitte"): _PCT})
     _haenge_chart(ws, _balken_chart(ws, kopf, ende, [2],
-                                    "Verteilung der EK-Rendite",
-                                    "Anzahl Läufe"), kopf)
+                                    _t("chart_mc_titel"),
+                                    _t("spalte_anzahl_laeufe")), kopf)
     for i, (name, wert) in enumerate(
         (("P10", p10), ("Median", p50), ("P90", p90))
     ):
@@ -323,16 +338,18 @@ def _projektblatt(ws, project: PVProject, ga: GlobalAssumptions,
     zeile = _naechste_zeile(ende + 5, kopf)
 
     # --- 10. Szenarienvergleich ---
-    zeile = _sektion(ws, zeile, "Marktpreisszenarien im Vergleich")
+    zeile = _sektion(ws, zeile, _t("sektion_szenarien"))
     vergleich = run_scenario_comparison(project, ga)
     kz = vergleich.kennzahlen.rename(columns={
-        "szenario": "Szenario", "equity_irr": "EK-Rendite",
-        "npv_eur": "NPV", "erloes_summe_eur": "Erlöse gesamt"})
-    kz = kz[[c for c in ("Szenario", "EK-Rendite", "NPV", "Erlöse gesamt")
+        "szenario": _t("spalte_szenario"), "equity_irr": _t("spalte_ek_rendite"),
+        "npv_eur": _t("spalte_npv"), "erloes_summe_eur": _t("spalte_erloese_gesamt")})
+    kz = kz[[c for c in (_t("spalte_szenario"), _t("spalte_ek_rendite"),
+                         _t("spalte_npv"), _t("spalte_erloese_gesamt"))
              if c in kz.columns]]
     kopf, ende = _schreibe_tabelle(ws, zeile, kz, {
-        "EK-Rendite": _PCT, "NPV": _EUR, "Erlöse gesamt": _EUR})
-    chart = _balken_chart(ws, kopf, ende, [2], "EK-Rendite je Szenario", "IRR")
+        _t("spalte_ek_rendite"): _PCT, _t("spalte_npv"): _EUR,
+        _t("spalte_erloese_gesamt"): _EUR})
+    chart = _balken_chart(ws, kopf, ende, [2], _t("chart_szenarien_titel"), "IRR")
     chart.y_axis.numFmt = "0.0%"
     _haenge_chart(ws, chart, kopf)
 
@@ -352,40 +369,41 @@ def pipeline_ergebnis_excel(
     Diagramme. `projekte`: Liste (Projekt, gewuenschter Blattname)."""
     wb = Workbook()
     ws = wb.active
-    ws.title = "Übersicht"
+    ws.title = _t("blatt_uebersicht")
     ws.sheet_view.showGridLines = False
     ws.column_dimensions["A"].width = 30
     for sp in "BCDEFGHI":
         ws.column_dimensions[sp].width = 14
-    ws.cell(row=1, column=1, value="TEA PV-Projektbewertung – "
-            "Pipeline-Ergebnisse").font = _F_TITEL
+    ws.cell(row=1, column=1, value=_t("titel_uebersicht")).font = _F_TITEL
 
     zeilen = []
     ergebnisse: list[tuple[PVProject, str]] = []
-    vergeben = {"Übersicht"}
+    vergeben = {_t("blatt_uebersicht")}
     for project, wunschname in projekte:
         kpis = run_valuation(project, ga).kpis
         zeilen.append({
-            "Projekt": project.name,
-            "Typ": ("Agri-PV" if project.anlagentyp == AnlagenTyp.AGRI_PV
-                    else "Konventionell"),
-            "Aktiv": "ja" if project.aktiv else "nein",
-            "kWp": project.nennleistung_kwp,
-            "CAPEX (€)": kpis.capex_total_eur,
-            "Eigenkapital (€)": kpis.eigenkapital_eur,
-            "EK-Rendite": kpis.equity_irr,
-            "NPV (€)": kpis.npv_eur,
-            "DSCR min": kpis.dscr_min,
+            _t("spalte_projekt"): project.name,
+            _t("spalte_typ"): (_t("typ_agri")
+                               if project.anlagentyp == AnlagenTyp.AGRI_PV
+                               else _t("typ_konventionell")),
+            _t("spalte_aktiv"): _t("spalte_ja") if project.aktiv else _t("spalte_nein"),
+            _t("spalte_kwp"): project.nennleistung_kwp,
+            _t("spalte_capex"): kpis.capex_total_eur,
+            _t("spalte_eigenkapital"): kpis.eigenkapital_eur,
+            _t("spalte_ek_rendite"): kpis.equity_irr,
+            _t("spalte_npv"): kpis.npv_eur,
+            _t("spalte_dscr_min"): kpis.dscr_min,
         })
         ergebnisse.append((project, _blattname(wunschname, vergeben)))
 
     uebersicht = pd.DataFrame(zeilen)
     kopf, ende = _schreibe_tabelle(ws, 3, uebersicht, {
-        "kWp": "#,##0", "CAPEX (€)": _EUR, "Eigenkapital (€)": _EUR,
-        "EK-Rendite": _PCT, "NPV (€)": _EUR, "DSCR min": "0.00"})
+        _t("spalte_kwp"): "#,##0", _t("spalte_capex"): _EUR,
+        _t("spalte_eigenkapital"): _EUR, _t("spalte_ek_rendite"): _PCT,
+        _t("spalte_npv"): _EUR, _t("spalte_dscr_min"): "0.00"})
     chart = BarChart()
     chart.type = "col"
-    _stil(chart, "EK-Rendite je Projekt", "IRR")
+    _stil(chart, _t("chart_irr_je_projekt_titel"), "IRR")
     chart.add_data(Reference(ws, min_col=7, min_row=kopf, max_row=ende),
                    titles_from_data=True)
     chart.set_categories(Reference(ws, min_col=1, min_row=kopf + 1,
@@ -393,9 +411,7 @@ def pipeline_ergebnis_excel(
     chart.y_axis.numFmt = "0.0%"
     ws.add_chart(chart, f"A{ende + 3}")
     ws.cell(row=ende + 21, column=1,
-            value="Je Projekt ein eigener Reiter mit allen Auswertungen; "
-                  "alle Diagramme sind native Excel-Diagramme und über die "
-                  "danebenstehenden Tabellen editierbar.").font = _F_TEXT
+            value=_t("hinweis_uebersicht")).font = _F_TEXT
 
     for project, blatt in ergebnisse:
         _projektblatt(wb.create_sheet(blatt), project, ga, n_mc)

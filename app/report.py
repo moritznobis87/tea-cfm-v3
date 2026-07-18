@@ -63,6 +63,7 @@ from engine import (
     PVProject,
 )
 from engine.analytics import MC_STANDARD_SIGMAS, MonteCarloResult, SzenarioVergleich
+from texte import txt
 
 # ---------------------------------------------------------------------------
 # Markenstil (identische Hex-Werte wie app.theme.Colors; hier ohne
@@ -802,7 +803,7 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     story.append(PageBreak())
 
     # ------------------------------------------------------- Management Summary
-    story.append(_Kapitel("1", "Management Summary"))
+    story.append(_Kapitel("1", txt("bericht.kapitel_1_titel")))
     story.append(Spacer(1, 0.2 * cm))
     story.append(_kennzahlen_kacheln([
         ("EK-RENDITE (IRR)", fmt_pct(kpis.equity_irr)),
@@ -845,7 +846,7 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     story.append(Paragraph(summary_text, _STYLE_TEXT))
     story.append(Spacer(1, 0.25 * cm))
 
-    story.append(Paragraph("Gesamt-Cashflow und Vermögensaufbau", _STYLE_H2))
+    story.append(Paragraph(txt("bericht.abschnitt_cashflow_vermoegen"), _STYLE_H2))
     story.append(_chart_gesamt_cashflow(df))
     story.append(Paragraph(
         "Abb. 1: Jährlicher Gesamt-Cashflow (Balken) und kumulierter "
@@ -855,8 +856,8 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     story.append(PageBreak())
 
     # ------------------------------------------------------------ Ergebnisrechnung
-    story.append(_Kapitel("2", "Ergebnisrechnung"))
-    story.append(Paragraph("Wertbrücke über die Gesamtlaufzeit", _STYLE_H2))
+    story.append(_Kapitel("2", txt("bericht.kapitel_2_titel")))
+    story.append(Paragraph(txt("bericht.abschnitt_wertbruecke"), _STYLE_H2))
     story.append(_chart_wertbruecke(df))
     story.append(Paragraph(
         "Abb. 2: Von den Umsatzerlösen der gesamten Betriebsdauer über "
@@ -865,7 +866,7 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
         _STYLE_CAPTION,
     ))
 
-    story.append(Paragraph("Cashflow-Übersicht (Auszug)", _STYLE_H2))
+    story.append(Paragraph(txt("bericht.abschnitt_cashflow_uebersicht"), _STYLE_H2))
     zeilen = [["Jahr", "Erlöse", "Betriebs-\nkosten", "Zinsen", "Steuer",
                "CF gesamt", "CF kumuliert"]]
     for _, r in df.iterrows():
@@ -889,8 +890,8 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     story.append(PageBreak())
 
     # -------------------------------------------------------------------- Erloese
-    story.append(_Kapitel("3", "Erlöse und Förderung"))
-    story.append(Paragraph("Vergütungssatz und Marktwert", _STYLE_H2))
+    story.append(_Kapitel("3", txt("bericht.kapitel_3_titel")))
+    story.append(Paragraph(txt("bericht.abschnitt_verguetung_marktwert"), _STYLE_H2))
     story.append(_chart_verguetung(df, ea.eag_zuschlagswert_effektiv_ct_kwh,
                                    ea.eag_foerderdauer_jahre))
     story.append(Paragraph(
@@ -900,7 +901,7 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
         "der Markt allein.",
         _STYLE_CAPTION,
     ))
-    story.append(Paragraph("Markterlös und Marktprämie", _STYLE_H2))
+    story.append(Paragraph(txt("bericht.abschnitt_markterloes_praemie"), _STYLE_H2))
     story.append(_chart_erloes_split(df))
     story.append(Paragraph(
         f"Abb. 4: Aufteilung der Erlöse. Über die Gesamtlaufzeit stammen "
@@ -911,7 +912,7 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     story.append(PageBreak())
 
     # ---------------------------------------------------------------- Finanzierung
-    story.append(_Kapitel("4", "Finanzierung"))
+    story.append(_Kapitel("4", txt("bericht.kapitel_4_titel")))
     fremdkapital = ea.capex_total_eur * (1 - ea.eigenkapitalquote_pct)
     eigenkapital = ea.capex_total_eur * ea.eigenkapitalquote_pct
     story.append(Paragraph(
@@ -924,14 +925,14 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
         _STYLE_TEXT,
     ))
     if not df.dropna(subset=["dscr"]).empty:
-        story.append(Paragraph("Schuldendienstdeckung (DSCR)", _STYLE_H2))
+        story.append(Paragraph(txt("bericht.abschnitt_dscr"), _STYLE_H2))
         story.append(_chart_dscr(df))
         story.append(Paragraph(
             f"Abb. 5: DSCR je Betriebsjahr der Kreditlaufzeit; minimaler Wert "
             f"{fmt_dscr(kpis.dscr_min)}.",
             _STYLE_CAPTION,
         ))
-        story.append(Paragraph("Schuldenprofil", _STYLE_H2))
+        story.append(Paragraph(txt("bericht.abschnitt_schuldenprofil"), _STYLE_H2))
         story.append(_chart_schuldenprofil(df, fremdkapital))
         story.append(Paragraph(
             "Abb. 6: Restschuld (Fläche) sowie Zinsen und Tilgung "
@@ -948,7 +949,7 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     }))
     story.append(Paragraph("Abb. 7: Kapital- und Investitionsstruktur.",
                            _STYLE_CAPTION))
-    story.append(Paragraph("Kapitalwert über den Diskontsatz", _STYLE_H2))
+    story.append(Paragraph(txt("bericht.abschnitt_npv_diskontsatz"), _STYLE_H2))
     story.append(_chart_npv_kurve(inputs.result.npv_curve, kpis.equity_irr))
     story.append(Paragraph(
         "Abb. 8: NPV-Kurve; die Nullstelle entspricht per Definition der "
@@ -958,8 +959,8 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     story.append(PageBreak())
 
     # ---------------------------------------------------------------- Sensitivitaet
-    story.append(_Kapitel("5", "Sensitivitätsanalyse"))
-    story.append(Paragraph("Tornado-Analyse", _STYLE_H2))
+    story.append(_Kapitel("5", txt("bericht.kapitel_5_titel")))
+    story.append(Paragraph(txt("bericht.abschnitt_tornado"), _STYLE_H2))
     story.append(_chart_tornado(inputs.tornado))
     story.append(Paragraph(
         "Abb. 9: Wirkung der Einzelvariation jedes Werttreibers um ±10 % "
@@ -968,7 +969,7 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
         "der Basis.",
         _STYLE_CAPTION,
     ))
-    story.append(Paragraph("EAG-Zuschlagswert-Varianten", _STYLE_H2))
+    story.append(Paragraph(txt("bericht.abschnitt_eag_varianten"), _STYLE_H2))
     story.append(_chart_eag_varianten(inputs.eag_sensitivitaet))
     if inputs.break_even_ct is None:
         be_text = (
@@ -1000,7 +1001,7 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     story.append(PageBreak())
 
     # ------------------------------------------------------------------- Risiko
-    story.append(_Kapitel("6", "Risikoanalyse (Monte-Carlo-Simulation)"))
+    story.append(_Kapitel("6", txt("bericht.kapitel_6_titel")))
     irr_gueltig = mc.irr_gueltig
     p10, p50, p90 = (float(np.percentile(irr_gueltig, q)) for q in (10, 50, 90))
     sigma_namen = {
@@ -1039,7 +1040,7 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     story.append(PageBreak())
 
     # ------------------------------------------------------------------ Szenarien
-    story.append(_Kapitel("7", "Szenarienvergleich"))
+    story.append(_Kapitel("7", txt("bericht.kapitel_7_titel")))
     story.append(Paragraph(
         f"Identisches Projekt, gerechnet über alle hinterlegten "
         f"Marktpreisszenarien; dem Projekt zugewiesen ist "
@@ -1071,10 +1072,10 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
         prognose_a = auk["prognose"]
         modell_a = auk.get("modell")
         df_a = auk["df"]
-        story.append(_Kapitel("8", "EAG-Ausschreibungsmodell"))
+        story.append(_Kapitel("8", txt("bericht.kapitel_8_titel")))
 
         # --- 8.1 Historie (ausfuehrlich) ---
-        story.append(Paragraph("Historie der Ausschreibungen", _STYLE_H2))
+        story.append(Paragraph(txt("bericht.abschnitt_auktion_historie"), _STYLE_H2))
         n_runden = len(df_a)
         erste = df_a["datum"].min()
         letzte_r = df_a.sort_values("datum").iloc[-1]
@@ -1170,7 +1171,7 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
         ))
 
         # --- 8.3 Modellbeschreibung mit Formeln ---
-        story.append(Paragraph("Modellbeschreibung", _STYLE_H2))
+        story.append(Paragraph(txt("bericht.abschnitt_auktion_modell"), _STYLE_H2))
         story.append(Paragraph(
             "Verteilungsfamilie. Gebote b werden als an der "
             "Preisobergrenze P<sub>max</sub> gespiegelte Inverse-Gamma-"
@@ -1256,7 +1257,7 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
         ))
 
         # --- 8.4 Prognose der naechsten Runde (beide Plots) ---
-        story.append(Paragraph("Prognose der nächsten Runde", _STYLE_H2))
+        story.append(Paragraph(txt("bericht.abschnitt_auktion_prognose"), _STYLE_H2))
         story.append(_chart_auktion_dichte(
             prognose_a, p.eag_zuschlagswert_ct_kwh,
         ))
@@ -1296,7 +1297,7 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
         story.append(PageBreak())
 
     # ---------------------------------------------------------------- Annex A
-    story.append(_Kapitel("A", "Annex: Annahmen der Berechnung"))
+    story.append(_Kapitel("A", txt("bericht.kapitel_a_titel")))
     story.append(Paragraph(
         "Vollständig aufgelöster Parametersatz dieser Berechnung "
         "(Projektmaske zusammengeführt mit den Globalen Annahmen).",
@@ -1350,7 +1351,7 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
                                              4.35 * cm], schrift=7.6))
     story.append(Paragraph("Tab. A-1: Aufgelöste Annahmen.", _STYLE_CAPTION))
 
-    story.append(Paragraph("Betriebskosten-Positionen", _STYLE_H2))
+    story.append(Paragraph(txt("bericht.abschnitt_opex_positionen"), _STYLE_H2))
     opex_zeilen = [["Position", "€/kWp/Jahr", "Index %/Jahr", "Index ab Jahr",
                     "Start Betriebsjahr"]]
     for item in ea.opex_items:
@@ -1383,7 +1384,7 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     capex_zeilen.append(["Summe", _de(capex.summe_eur),
                          _de(capex.summe_eur / p.nennleistung_kwp, 1)
                          if p.nennleistung_kwp else "—"])
-    story.append(Paragraph("Investitionskosten", _STYLE_H2))
+    story.append(Paragraph(txt("bericht.abschnitt_capex"), _STYLE_H2))
     story.append(_tabelle(capex_zeilen, breiten=[6 * cm, 5.5 * cm, 5.4 * cm],
                           schrift=7.6))
     story.append(Paragraph("Tab. A-3: Investitionskosten nach Position.",
@@ -1391,7 +1392,7 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     story.append(PageBreak())
 
     # ---------------------------------------------------------------- Annex B
-    story.append(_Kapitel("B", "Annex: Zeitreihen"))
+    story.append(_Kapitel("B", txt("bericht.kapitel_b_titel")))
     szenario = next(
         s for s in ga.marktpreisszenarien
         if s.name == ea.marktpreisszenario_name
