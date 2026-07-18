@@ -1,14 +1,19 @@
-# Example English translation (partial) demonstrating the locale
-# architecture: any key not present here falls back to German
-# automatically (see texte.py). Copy locales/de/*.yaml to a new
-# language folder and translate values to add a full language.
+# Short UI texts: navigation, header, buttons, section titles, labels
+# and help texts reused across the app.
+# Structure: one key per text; placeholders as {name}.
+
+# --- Header / app frame -------------------------------------------------------
 app_titel: "TEA PV Project Valuation"
 app_untertitel: "Economics · Sensitivity · Risk — EAG market premium model, Austria"
+
+# --- Navigation ----------------------------------------------------------------
 nav_titel: "Navigation"
 nav_portfolio: "Portfolio"
 nav_neues_projekt: "New Project"
 nav_ausschreibung: "Auction"
 nav_globale_annahmen: "Global Assumptions"
+
+# --- Common buttons --------------------------------------------------------------
 btn_speichern: "Save"
 btn_abbrechen: "Cancel"
 btn_loeschen: "Delete"
@@ -17,6 +22,101 @@ btn_duplizieren: "Duplicate"
 btn_oeffnen: "Open"
 btn_inaktiv_schalten: "Deactivate"
 btn_aktivieren: "Activate"
+btn_excel_export: "Cashflow as Excel"
+btn_pdf_bericht: "Create PDF report"
+btn_pipeline_excel: "Create Excel results report"
+btn_pipeline_excel_download: "Download pipeline results (.xlsx)"
+
+# --- Badges / status -------------------------------------------------------------
 badge_agri: "Agri-PV"
 badge_konventionell: "Conventional"
 badge_inaktiv: "Inactive"
+
+# --- Portfolio overview ------------------------------------------------------------
+portfolio_kpi_anzahl_projekte: "Projects"
+portfolio_kpi_gesamt_kwp: "Portfolio capacity"
+portfolio_kpi_gesamt_capex: "Total investment volume"
+portfolio_kpi_gesamt_ek: "Total equity"
+portfolio_kpi_ek_rendite: "Avg. equity return"
+portfolio_toggle_inaktive: "Include inactive projects ({anzahl}) in portfolio KPIs"
+portfolio_toggle_inaktive_hilfe: "Inactive projects remain saved (greyed-out cards), but are hidden from the risk-return map, ranking and comparison table. This toggle only controls the aggregated figures above."
+portfolio_analytik_titel: "Portfolio analytics"
+portfolio_tab_karte: "Risk-return map"
+portfolio_tab_ranking: "Ranking"
+portfolio_tab_tabelle: "Comparison table"
+portfolio_excel_hilfe: "Creates a workbook with one tab per project: all analyses (cashflows, revenues, OPEX, DSCR, NPV, sensitivities, Monte Carlo, scenarios) as native, editable Excel charts with data tables."
+portfolio_excel_spinner: "Calculating all projects and building charts…"
+
+# --- Project dashboard ---------------------------------------------------------
+projekt_inaktiv_hinweis: "This project is **inactive**: it remains saved but is not shown in portfolio analytics and can be excluded from the aggregated portfolio KPIs."
+projekt_loeschen_bestaetigung: "Permanently delete project „{name}“?"
+
+
+# --- Project dashboard (additional) ---------------------------------------------
+projekt_nicht_geladen: "The project could not be loaded."
+projekt_bearbeiten_titel: "Edit project"
+projekt_aktualisiert: "Project updated."
+projekt_loeschen_warnung: "Permanently delete project „{name}“?"
+projekt_angelegt_erfolg: "Project „{name}“ created and calculated."
+projekt_keine_investitionspositionen: "No investment items recorded."
+projekt_keine_sensitivitaetsdaten: "No sensitivity data available."
+projekt_variantentabelle_titel: "Variant table"
+projekt_simulation_fehlgeschlagen: "The simulation could not be run."
+projekt_keine_berechenbare_irr: "No computable IRR among the simulation runs."
+projekt_keine_marktpreisszenarien: "No market price scenarios on file."
+projekt_name_fehlt: "Please enter a project name."
+
+# --- Global assumptions -----------------------------------------------------------
+annahmen_marktpreisszenarien_titel: "Market price scenarios"
+annahmen_kein_szenario: "No market price scenario yet."
+annahmen_szenario_hinzufuegen: "Add scenario"
+annahmen_szenario_existiert_bereits: "A scenario with this name already exists."
+annahmen_standardbetriebskosten_titel: "Standard operating costs"
+annahmen_technische_standardannahmen_titel: "Standard technical assumptions"
+annahmen_foerderung_finanzierung_titel: "Support scheme, financing"
+annahmen_steuern_titel: "Taxes"
+annahmen_gespeichert: "Global assumptions saved."
+
+# --- Auction page ---------------------------------------------------------
+auktion_tab_dichte: "Density"
+auktion_tab_verteilungsfunktion: "Distribution function"
+auktion_datentabelle_titel: "Data table and model calibration"
+
+# --- Sidebar (Excel import/export) -----------------------------------------------
+sidebar_projekte_gespeichert: "Saved: {namen}"
+sidebar_excel_fehler: "Error reading the Excel file: {fehler}"
+sidebar_annahmen_uebernommen: "Global assumptions imported from Excel file."
+
+
+# --- Project dashboard: section titles ------------------------------------------
+dashboard_wertbruecke: "Value bridge over the full term"
+dashboard_gesamt_cashflow: "Total cashflow"
+dashboard_betriebskosten_position: "Operating costs (by item)"
+dashboard_operativer_cashflow: "Operating cashflow (revenue − operating costs)"
+dashboard_verguetung_marktwert_zeitverlauf: "Feed-in tariff and market value over time"
+dashboard_markterloes_vs_praemie: "Market revenue vs. market premium"
+dashboard_umsatzerloese_jahr: "Revenue by operating year"
+dashboard_dscr: "Debt service coverage (DSCR)"
+dashboard_schuldenprofil: "Debt profile"
+dashboard_kapitalstruktur: "Capital structure"
+dashboard_investitionsstruktur: "Investment structure"
+dashboard_npv_sensitivitaet: "NPV sensitivity to the discount rate"
+dashboard_tornado: "Tornado: what really drives the return?"
+dashboard_irr_landkarte: "IRR map: two drivers at once"
+dashboard_gebotsassistent: "Bid assistant: break-even EAG award value"
+dashboard_eag_varianten: "EAG award value variants (±5 % / ±10 %)"
+dashboard_monte_carlo: "Monte Carlo simulation"
+dashboard_verteilung_ek_rendite: "Equity return distribution"
+dashboard_bandbreite_cashflow: "Range of cumulative equity cashflow"
+dashboard_marktpreisszenarien_vergleich: "Market price scenarios compared"
+dashboard_kumulierter_cf_szenario: "Cumulative equity cashflow by scenario"
+auktion_historie_sektion: "Historical auctions (2022–2026)"
+auktion_verteilungen_sektion: "Estimated bid distributions of the historical rounds"
+auktion_zuschlagswert_bestimmen: "Determine award value"
+auktion_verteilung_zuschlagswerte: "Distribution of award values"
+auktion_wert_wahrscheinlichkeit: "Value ↔ probability"
+auktion_uebergabe_cashflow: "Handover to the cashflow model"
+auktion_werte_nach_risikoneigung: "Values by risk preference: {uebersicht}"
+neues_projekt_anlegen_titel: "Create new project"
+overview_projekte_titel: "Projects"
+overview_keine_projekte: "No projects yet. Start with \"New Project\"."

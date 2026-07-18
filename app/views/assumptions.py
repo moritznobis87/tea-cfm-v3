@@ -22,10 +22,11 @@ from engine import (
     TaxModus,
     TilgungsArt,
 )
+from texte import txt
 
 
 def render_assumptions() -> None:
-    st.subheader("Globale Annahmen")
+    st.subheader(txt("oberflaeche.nav_globale_annahmen"))
     st.caption(
         "Gelten für alle Projekte, sofern nicht projektspezifisch überschrieben. "
         "Änderungen wirken sich erst nach „Speichern“ auf alle Projekte aus."
@@ -34,7 +35,7 @@ def render_assumptions() -> None:
     ga = services.get_global_assumptions()
 
     # --- Marktpreisszenarien -------------------------------------------------
-    with st.expander("Marktpreisszenarien", expanded=True):
+    with st.expander(txt("oberflaeche.annahmen_marktpreisszenarien_titel"), expanded=True):
         st.caption(
             "Kurven sind nach echtem Kalenderjahr indiziert. Je Projekt wird "
             "eines dieser Szenarien ausgewählt; das Kalenderjahr, ab dem die "
@@ -138,7 +139,7 @@ def render_assumptions() -> None:
 
         edited_szenarien: dict[str, pd.DataFrame] = {}
         if not ga.marktpreisszenarien:
-            st.info("Noch kein Marktpreisszenario vorhanden.")
+            st.info(txt("oberflaeche.annahmen_kein_szenario"))
         else:
             tabs = st.tabs([s.name for s in ga.marktpreisszenarien])
             for tab, szenario in zip(tabs, ga.marktpreisszenarien, strict=True):
@@ -194,9 +195,9 @@ def render_assumptions() -> None:
             "Name des neuen Szenarios", key="neues_szenario_name",
             placeholder="z.B. Enervis 2026",
         )
-        if st.button("Szenario hinzufügen") and neuer_szenario_name.strip():
+        if st.button(txt("oberflaeche.annahmen_szenario_hinzufuegen")) and neuer_szenario_name.strip():
             if neuer_szenario_name in ga.szenario_namen:
-                st.error("Ein Szenario mit diesem Namen existiert bereits.")
+                st.error(txt("oberflaeche.annahmen_szenario_existiert_bereits"))
             else:
                 ga.marktpreisszenarien.append(
                     MarktpreisSzenario(name=neuer_szenario_name.strip())
@@ -205,7 +206,7 @@ def render_assumptions() -> None:
                 st.rerun()
 
     # --- Standardbetriebskosten ----------------------------------------------
-    with st.expander("Standardbetriebskosten"):
+    with st.expander(txt("oberflaeche.annahmen_standardbetriebskosten_titel")):
         opex_df = pd.DataFrame(
             [
                 {
@@ -266,7 +267,7 @@ def render_assumptions() -> None:
         )
 
     # --- Technische Standardannahmen -------------------------------------------
-    with st.expander("Technische Standardannahmen", expanded=True):
+    with st.expander(txt("oberflaeche.annahmen_technische_standardannahmen_titel"), expanded=True):
         st.caption("Gelten für die Produktionsberechnung aller Projekte.")
         col_deg, col_sich = st.columns(2)
         degradation = col_deg.number_input(
@@ -282,7 +283,7 @@ def render_assumptions() -> None:
         )
 
     # --- Foerderung, Finanzierung ----------------------------------------------
-    with st.expander("Förderung, Finanzierung", expanded=True):
+    with st.expander(txt("oberflaeche.annahmen_foerderung_finanzierung_titel"), expanded=True):
         col1, col2, col3 = st.columns(3)
         eag_foerderdauer = col1.number_input(
             "EAG-Förderdauer (Jahre)", min_value=1, value=ga.eag_foerderdauer_jahre
@@ -308,7 +309,7 @@ def render_assumptions() -> None:
         )
 
     # --- Steuern ---------------------------------------------------------------
-    with st.expander("Steuern", expanded=False):
+    with st.expander(txt("oberflaeche.annahmen_steuern_titel"), expanded=False):
         tax_modus_optionen = [modus.value for modus in TaxModus]
         tax_modus_labels = {
             "pauschal_auf_ebt": "Pauschal auf EBT (vereinfacht, keine AfA)",
@@ -358,7 +359,7 @@ def render_assumptions() -> None:
             )
 
     # --- Speichern ---------------------------------------------------------------
-    if st.button("Speichern", type="primary"):
+    if st.button(txt("oberflaeche.btn_speichern"), type="primary"):
         neue_szenarien = []
         for szenario in ga.marktpreisszenarien:
             edited = edited_szenarien.get(szenario.name)
@@ -436,5 +437,5 @@ def render_assumptions() -> None:
         ga.verlustvortrag_verrechnungsgrenze_pct = verlustvortrag_grenze / 100
 
         services.save_global_assumptions(ga)
-        st.success("Globale Annahmen gespeichert.")
+        st.success(txt("oberflaeche.annahmen_gespeichert"))
         st.rerun()

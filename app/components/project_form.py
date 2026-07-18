@@ -27,6 +27,7 @@ import streamlit as st
 from app import services
 from app.config import MONATE
 from engine import AnlagenTyp, CapexBreakdown, DirektvermarktungsModus, PVProject
+from texte import txt
 
 #: EPC-Vorbelegung je Anlagentyp in €/kWp (Erfahrungswerte 2025/26).
 EPC_DEFAULT_EUR_KWP = {"Agri-PV": 520.0, "Konventionell": 430.0}
@@ -329,7 +330,7 @@ def render_project_form(
     if not submitted:
         return None
     if not name.strip():
-        st.error("Bitte einen Projektnamen angeben.")
+        st.error(txt("oberflaeche.projekt_name_fehlt"))
         return None
 
     project_id = existing.id if existing else services.make_project_id(name)

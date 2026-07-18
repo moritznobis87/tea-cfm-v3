@@ -11,10 +11,11 @@ from app import services
 from app.components.project_form import render_project_form
 from app.config import STATE_SELECTED_PROJECT
 from app.views.project_detail import render_project_dashboard
+from texte import txt
 
 
 def render_new_project() -> None:
-    st.subheader("Neues Projekt anlegen")
+    st.subheader(txt("oberflaeche.neues_projekt_anlegen_titel"))
     st.caption(
         "Nur projektspezifische Angaben. Preiskurven, Standardbetriebskosten, "
         "Kreditlaufzeit und Steuerlogik werden automatisch aus den Globalen "
@@ -28,7 +29,7 @@ def render_new_project() -> None:
     save_path = services.save_project(project)
     st.session_state[STATE_SELECTED_PROJECT] = project.id
 
-    st.success(f"Projekt „{project.name}“ angelegt und berechnet.")
+    st.success(txt("oberflaeche.projekt_angelegt_erfolg", name=project.name))
     st.divider()
     render_project_dashboard(
         project, services.get_global_assumptions(), save_path

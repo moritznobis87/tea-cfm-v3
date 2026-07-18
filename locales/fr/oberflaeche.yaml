@@ -1,0 +1,122 @@
+# Textes courts de l'interface : navigation, en-tête, boutons, titres
+# de section, libellés et textes d'aide réutilisés dans toute
+# l'application. Structure : une clé par texte ; espaces réservés {name}.
+
+# --- En-tête / cadre de l'application ------------------------------------------
+app_titel: "TEA PV Évaluation de Projets"
+app_untertitel: "Rentabilité · Sensibilité · Risque — Modèle de prime de marché EAG, Autriche"
+
+# --- Navigation ----------------------------------------------------------------
+nav_titel: "Navigation"
+nav_portfolio: "Portefeuille"
+nav_neues_projekt: "Nouveau projet"
+nav_ausschreibung: "Appel d'offres"
+nav_globale_annahmen: "Hypothèses globales"
+
+# --- Boutons courants --------------------------------------------------------------
+btn_speichern: "Enregistrer"
+btn_abbrechen: "Annuler"
+btn_loeschen: "Supprimer"
+btn_ja_loeschen: "Oui, supprimer"
+btn_duplizieren: "Dupliquer"
+btn_oeffnen: "Ouvrir"
+btn_inaktiv_schalten: "Désactiver"
+btn_aktivieren: "Activer"
+btn_excel_export: "Flux de trésorerie en Excel"
+btn_pdf_bericht: "Créer le rapport PDF"
+btn_pipeline_excel: "Créer le rapport de résultats Excel"
+btn_pipeline_excel_download: "Télécharger les résultats du portefeuille (.xlsx)"
+
+# --- Badges / statut -------------------------------------------------------------
+badge_agri: "Agri-PV"
+badge_konventionell: "Conventionnel"
+badge_inaktiv: "Inactif"
+
+# --- Vue d'ensemble du portefeuille ------------------------------------------------------
+portfolio_kpi_anzahl_projekte: "Projets"
+portfolio_kpi_gesamt_kwp: "Puissance du portefeuille"
+portfolio_kpi_gesamt_capex: "Volume d'investissement total"
+portfolio_kpi_gesamt_ek: "Capitaux propres totaux"
+portfolio_kpi_ek_rendite: "Rendement moyen des capitaux propres"
+portfolio_toggle_inaktive: "Inclure les projets inactifs ({anzahl}) dans les KPI du portefeuille"
+portfolio_toggle_inaktive_hilfe: "Les projets inactifs restent enregistrés (cartes grisées), mais sont masqués de la carte rendement-risque, du classement et du tableau comparatif. Ce commutateur ne contrôle que les indicateurs cumulés ci-dessus."
+portfolio_analytik_titel: "Analyse du portefeuille"
+portfolio_tab_karte: "Carte rendement-risque"
+portfolio_tab_ranking: "Classement"
+portfolio_tab_tabelle: "Tableau comparatif"
+portfolio_excel_hilfe: "Crée un classeur avec un onglet par projet : toutes les analyses (flux de trésorerie, revenus, OPEX, DSCR, VAN, sensibilités, Monte-Carlo, scénarios) sous forme de graphiques Excel natifs et modifiables avec tableaux de données."
+portfolio_excel_spinner: "Calcul de tous les projets et création des graphiques…"
+
+# --- Tableau de bord du projet ---------------------------------------------------------
+projekt_inaktiv_hinweis: "Ce projet est **inactif** : il reste enregistré mais n'apparaît pas dans l'analyse du portefeuille et peut être exclu des KPI cumulés du portefeuille."
+projekt_loeschen_bestaetigung: "Supprimer définitivement le projet « {name} » ?"
+
+
+# --- Tableau de bord du projet (complément) ---------------------------------------------
+projekt_nicht_geladen: "Le projet n'a pas pu être chargé."
+projekt_bearbeiten_titel: "Modifier le projet"
+projekt_aktualisiert: "Projet mis à jour."
+projekt_loeschen_warnung: "Supprimer définitivement le projet « {name} » ?"
+projekt_angelegt_erfolg: "Projet « {name} » créé et calculé."
+projekt_keine_investitionspositionen: "Aucun poste d'investissement enregistré."
+projekt_keine_sensitivitaetsdaten: "Aucune donnée de sensibilité disponible."
+projekt_variantentabelle_titel: "Tableau des variantes"
+projekt_simulation_fehlgeschlagen: "La simulation n'a pas pu être exécutée."
+projekt_keine_berechenbare_irr: "Aucun TRI calculable parmi les simulations."
+projekt_keine_marktpreisszenarien: "Aucun scénario de prix de marché enregistré."
+projekt_name_fehlt: "Veuillez indiquer un nom de projet."
+
+# --- Hypothèses globales -----------------------------------------------------------
+annahmen_marktpreisszenarien_titel: "Scénarios de prix de marché"
+annahmen_kein_szenario: "Aucun scénario de prix de marché pour l'instant."
+annahmen_szenario_hinzufuegen: "Ajouter un scénario"
+annahmen_szenario_existiert_bereits: "Un scénario portant ce nom existe déjà."
+annahmen_standardbetriebskosten_titel: "Coûts d'exploitation standard"
+annahmen_technische_standardannahmen_titel: "Hypothèses techniques standard"
+annahmen_foerderung_finanzierung_titel: "Soutien public, financement"
+annahmen_steuern_titel: "Impôts"
+annahmen_gespeichert: "Hypothèses globales enregistrées."
+
+# --- Page appel d'offres ---------------------------------------------------------
+auktion_tab_dichte: "Densité"
+auktion_tab_verteilungsfunktion: "Fonction de répartition"
+auktion_datentabelle_titel: "Tableau de données et calibration du modèle"
+
+# --- Barre latérale (import/export Excel) -----------------------------------------------
+sidebar_projekte_gespeichert: "Enregistré : {namen}"
+sidebar_excel_fehler: "Erreur lors de la lecture du fichier Excel : {fehler}"
+sidebar_annahmen_uebernommen: "Hypothèses globales importées depuis le fichier Excel."
+
+
+# --- Tableau de bord du projet : titres de section ------------------------------------------
+dashboard_wertbruecke: "Pont de valeur sur toute la durée"
+dashboard_gesamt_cashflow: "Flux de trésorerie total"
+dashboard_betriebskosten_position: "Coûts d'exploitation (par poste)"
+dashboard_operativer_cashflow: "Flux de trésorerie d'exploitation (recettes − coûts d'exploitation)"
+dashboard_verguetung_marktwert_zeitverlauf: "Tarif de rachat et valeur de marché dans le temps"
+dashboard_markterloes_vs_praemie: "Recette de marché vs prime de marché"
+dashboard_umsatzerloese_jahr: "Recettes par année d'exploitation"
+dashboard_dscr: "Couverture du service de la dette (DSCR)"
+dashboard_schuldenprofil: "Profil de la dette"
+dashboard_kapitalstruktur: "Structure du capital"
+dashboard_investitionsstruktur: "Structure des investissements"
+dashboard_npv_sensitivitaet: "Sensibilité de la VAN au taux d'actualisation"
+dashboard_tornado: "Tornade : qu'est-ce qui influence vraiment le rendement ?"
+dashboard_irr_landkarte: "Carte du TRI : deux facteurs à la fois"
+dashboard_gebotsassistent: "Assistant d'offre : valeur d'attribution EAG au seuil de rentabilité"
+dashboard_eag_varianten: "Variantes de la valeur d'attribution EAG (±5 % / ±10 %)"
+dashboard_monte_carlo: "Simulation Monte-Carlo"
+dashboard_verteilung_ek_rendite: "Distribution du rendement des capitaux propres"
+dashboard_bandbreite_cashflow: "Plage du flux de trésorerie cumulé des capitaux propres"
+dashboard_marktpreisszenarien_vergleich: "Comparaison des scénarios de prix de marché"
+dashboard_kumulierter_cf_szenario: "Flux de trésorerie cumulé des capitaux propres par scénario"
+auktion_historie_sektion: "Appels d'offres historiques (2022–2026)"
+auktion_verteilungen_sektion: "Distributions d'offres estimées des tours historiques"
+auktion_zuschlagswert_bestimmen: "Déterminer la valeur d'attribution"
+auktion_verteilung_zuschlagswerte: "Distribution des valeurs d'attribution"
+auktion_wert_wahrscheinlichkeit: "Valeur ↔ probabilité"
+auktion_uebergabe_cashflow: "Transfert vers le modèle de flux de trésorerie"
+auktion_werte_nach_risikoneigung: "Valeurs selon l'appétence au risque : {uebersicht}"
+neues_projekt_anlegen_titel: "Créer un nouveau projet"
+overview_projekte_titel: "Projets"
+overview_keine_projekte: "Aucun projet pour l'instant. Commencez par « Nouveau projet »."

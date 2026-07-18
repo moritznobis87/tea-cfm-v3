@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib
 import os
+from pathlib import Path
 
 import pytest
 
@@ -55,11 +56,133 @@ class TestSpracheUndFallback:
         t = _setze_sprache("en")
         assert t.txt("oberflaeche.nav_neues_projekt") == "New Project"
 
-    def test_englisch_fehlender_schluessel_faellt_auf_deutsch_zurueck(self):
-        t = _setze_sprache("en")
-        # Nur eine Teilmenge ist in locales/en gepflegt (Demo-Datei);
-        # alles Weitere muss automatisch aus locales/de kommen.
-        assert t.txt("oberflaeche.btn_pdf_bericht") == "PDF-Bericht erstellen"
+    def test_englisch_fehlender_schluessel_faellt_auf_deutsch_zurueck(
+        self, tmp_path, monkeypatch
+    ):
+        """Simuliert eine unvollstaendige Uebersetzung ueber ein
+        isoliertes, synthetisches locales-Verzeichnis (unabhaengig vom
+        tatsaechlichen Vollstaendigkeitsgrad der ausgelieferten
+        Sprachdateien): fehlt ein Schluessel in der Zielsprache, greift
+        automatisch der deutsche Text."""
+        import texte
+
+        (tmp_path / "de").mkdir()
+        (tmp_path / "de" / "test.yaml").write_text(
+            "a: Deutscher Text A\nb: Deutscher Text B\n", encoding="utf-8"
+        )
+        (tmp_path / "xx").mkdir()
+        (tmp_path / "xx" / "test.yaml").write_text(
+            "a: XX Text A\n", encoding="utf-8"  # 'b' bewusst nicht uebersetzt
+        )
+        monkeypatch.setattr(texte, "LOCALES_DIR", tmp_path)
+        monkeypatch.setenv("TEA_SPRACHE", "xx")
+        texte.lade_texte.cache_clear()
+        assert texte.txt("test.a") == "XX Text A"
+        assert texte.txt("test.b") == "Deutscher Text B"
+        texte.lade_texte.cache_clear()
+
+    def test_alle_ausgelieferten_sprachen_vollstaendig(self):
+        """Die vier gepflegten Sprachen (de/en/fr/es) uebersetzen jeden
+        deutschen Schluessel vollstaendig - kein Schluessel fehlt und
+        keine Platzhalter weichen ab (Qualitaetssicherung der
+        Uebersetzungsdateien selbst, unabhaengig vom Fallback-
+        Mechanismus)."""
+        import re
+
+        import yaml
+
+        from texte import LOCALES_DIR, SPRACHEN
+
+        def platzhalter(text: str) -> set[str]:
+            return set(re.findall(r"\{(\w+)\}", text))
+
+        for datei in ("oberflaeche", "diagramme", "bericht", "excel"):
+            de = yaml.safe_load((LOCALES_DIR / "de" / f"{datei}.yaml").read_text())
+            for code in SPRACHEN:
+                pfad = LOCALES_DIR / code / f"{datei}.yaml"
+                assert pfad.exists(), pfad
+                inhalt = yaml.safe_load(pfad.read_text())
+                assert set(inhalt) == set(de), f"{code}/{datei}: Schlüssel weichen ab"
+                for schluessel, text_de in de.items():
+                    assert platzhalter(text_de) == platzhalter(inhalt[schluessel]), (
+                        f"{code}/{datei}.{schluessel}: Platzhalter weichen ab"
+                    )
+
+
+class TestSprachdropdownEndToEnd:
+    """End-to-End-Tests des Sprach-Dropdowns oben rechts in der
+    laufenden Streamlit-App (streamlit_app.py): Umschalten wirkt sofort
+    auf Navigation, Buttons und den PDF-Export."""
+
+    _NAV_ERWARTET = {
+        "de": ["Portfolio", "Neues Projekt", "Ausschreibung", "Globale Annahmen"],
+        "en": ["Portfolio", "New Project", "Auction", "Global Assumptions"],
+        "fr": ["Portefeuille", "Nouveau projet", "Appel d'offres",
+               "Hypothèses globales"],
+        "es": ["Cartera", "Nuevo proyecto", "Subasta", "Supuestos globales"],
+    }
+
+    @pytest.mark.parametrize("code", ["de", "en", "fr", "es"])
+    def test_dropdown_uebersetzt_navigation(self, code):
+        """Jede Sprache einzeln, mit frischer AppTest-Instanz (mehrfaches
+        Umschalten in derselben Session ist eine Einschraenkung des
+        Streamlit-Testframeworks selbst, nicht der App - siehe
+        docs/AppTest format_func caching)."""
+        from streamlit.testing.v1 import AppTest
+
+        at = AppTest.from_file(
+            str(Path(__file__).parent.parent / "streamlit_app.py"),
+            default_timeout=300,
+        )
+        at.run()
+        assert not at.exception
+        if code != "de":
+            dropdown = [
+                s for s in at.selectbox if s.key == "sprachauswahl_dropdown"
+            ][0]
+            dropdown.set_value(code)
+            at.run()
+            assert not at.exception
+        assert at.sidebar.radio[0].options == self._NAV_ERWARTET[code]
+
+    def test_pdf_export_folgt_gewaehlter_sprache(self):
+        """Der PDF-Bericht wird in der ueber das Dropdown gewaehlten
+        Sprache erzeugt - Button-Label, Kapitelueberschrift und
+        Kapitel-8-Fliesstext."""
+        import io
+
+        from pypdf import PdfReader
+        from streamlit.testing.v1 import AppTest
+
+        at = AppTest.from_file(
+            str(Path(__file__).parent.parent / "streamlit_app.py"),
+            default_timeout=300,
+        )
+        at.run()
+        dropdown = [s for s in at.selectbox if s.key == "sprachauswahl_dropdown"][0]
+        dropdown.set_value("en")
+        at.run()
+        assert not at.exception
+
+        [b for b in at.button if b.key and b.key.startswith("open_")][0].click()
+        at.run()
+        assert not at.exception
+        pdf_btn = [b for b in at.button if "PDF" in (b.label or "")][0]
+        assert pdf_btn.label == "Create PDF report"
+        pdf_btn.click()
+        at.run(timeout=300)
+        assert not at.exception
+
+        pdf_bytes = next(
+            v for k, v in at.session_state.filtered_state.items()
+            if k.startswith("pdf_bericht_") and v
+        )
+        text = "\n".join(
+            s.extract_text() for s in PdfReader(io.BytesIO(pdf_bytes)).pages
+        )
+        assert "Management Summary" in text
+        assert "EAG Auction Model" in text
+        assert "Austria has been awarding the EAG market premium" in text
 
     def test_voellig_unbekannter_schluessel_liefert_schluessel(self):
         t = _setze_sprache("de")

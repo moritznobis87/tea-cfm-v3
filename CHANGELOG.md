@@ -1,5 +1,45 @@
 # Changelog
 
+## v4.9 – Mehrsprachigkeit: DE/EN/FR/ES mit Live-Umschaltung (2026-07)
+
+### Sprachumschaltung
+- Neues Dropdown oben rechts in der Kopfzeile mit Flagge + Sprachname
+  (🇦🇹 Deutsch · 🇬🇧 English · 🇫🇷 Français · 🇪🇸 Español). Die Auswahl
+  landet in `st.session_state["tea_sprache"]` und wirkt sofort nach
+  einem Rerun auf Navigation, alle Buttons/Abschnittstitel, Diagramme
+  sowie neu erzeugte PDF- und Excel-Exporte – geprüft per
+  End-to-End-Test inkl. eines vollständig auf Englisch generierten
+  PDF-Berichts (Kapitelüberschriften und Kapitel-8-Fließtext).
+- `texte.py`: neue `SPRACHEN`-Registry (Code → Anzeigename + Flagge),
+  `aktive_sprache()` liest zuerst die Streamlit-Session (Dropdown),
+  außerhalb einer laufenden App weiterhin die Umgebungsvariable
+  `TEA_SPRACHE`. Der Streamlit-Import bleibt lazy/optional, damit
+  Engine-Schicht und Tests unverändert ohne Streamlit funktionieren.
+- Navigation auf stabile interne Codes umgestellt (`portfolio`, `neu`,
+  `auktion`, `annahmen` statt übersetzter Label-Strings als
+  Radio-Wert): Die Auswahl bleibt beim Sprachwechsel gültig, unabhängig
+  von der aktuell anzeigten Übersetzung.
+
+### Vollständige Übersetzung
+- Englisch, Französisch und Spanisch vollständig für alle vier
+  Sprachdateien ergänzt: 95 Schlüssel `oberflaeche.yaml`, 58
+  `diagramme.yaml`, 43 `bericht.yaml` (inkl. der kompletten
+  Fließtext-Absätze aus PDF-Kapitel 8), 67 `excel.yaml` – macht 263
+  Texte je Sprache, für alle vier Sprachen mit exakt identischen
+  Schlüsseln UND identischen `{platzhalter}` (per Test abgesichert).
+- Dabei zusätzlich 60 bislang unausgelagerte deutsche Literalstrings
+  gefunden und mit extrahiert: alle Abschnittstitel des
+  Projekt-Dashboards (Wertbrücke, DSCR, Tornado, IRR-Landkarte,
+  Gebotsassistent, Monte-Carlo-Sektionen etc.), der Ausschreibungsseite,
+  Erfolgs-/Fehler-/Hinweismeldungen (Projekt speichern/löschen/anlegen,
+  Excel-Import, Szenario-Verwaltung) sowie Portfolio-KPI-Labels, die in
+  einer früheren Extraktionsrunde in der Sprachdatei angelegt, aber nie
+  mit dem Code verdrahtet worden waren.
+- 9 neue Tests (Sprachregistrierung, Fallback-Mechanismus über ein
+  isoliertes synthetisches Locale-Verzeichnis, Schlüssel-/
+  Platzhalter-Vollständigkeit aller vier Sprachen, Dropdown-E2E je
+  Sprache, PDF-Export-Sprache); Suite: 153.
+
 ## v4.8 – PDF-Kapitel 8: letzte Fließtexte ausgelagert (2026-07)
 
 - Die zuvor als bekannte Lücke dokumentierten Fließtext-Absätze in

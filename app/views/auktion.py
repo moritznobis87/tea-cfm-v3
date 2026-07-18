@@ -16,6 +16,7 @@ from app.components.kpi import render_kpi_row
 from app.config import STATE_SELECTED_PROJECT
 from app.formatting import fmt_ct_kwh, fmt_number, fmt_pct
 from app.theme import section_title
+from texte import txt
 
 #: Session-Schluessel, ueber den das Projektformular den empfohlenen
 #: Gebotswert als Vorbelegung uebernimmt (manuell ueberschreibbar).
@@ -37,7 +38,7 @@ def render_auktion() -> None:
     )
 
     # --- Historie ------------------------------------------------------------
-    section_title("Historische Ausschreibungen (2022–2026)")
+    section_title(txt("oberflaeche.auktion_historie_sektion"))
     st.plotly_chart(charts.auktion_historie_chart(df), width="stretch")
     st.caption(
         "Runden bis 04/2025 waren unterzeichnet (Höchstzuschlag = "
@@ -46,7 +47,7 @@ def render_auktion() -> None:
         "Obergrenze, die Zuschlagswerte sinken und verdichten sich – exakt "
         "das in der Auktionsliteratur beschriebene Pay-as-Bid-Muster."
     )
-    section_title("Geschätzte Gebotsverteilungen der historischen Runden")
+    section_title(txt("oberflaeche.auktion_verteilungen_sektion"))
     st.caption(
         "Da die OeMAG weder Einzelgebote noch Gebotsvolumina "
         "veröffentlicht, werden die Verteilungsparameter je Runde aus den "
@@ -55,7 +56,7 @@ def render_auktion() -> None:
         "Preisobergrenze; mit dem Wettbewerb ab 07/2025 wandern die "
         "Verteilungen nach links und verdichten sich."
     )
-    tab_dichte, tab_cdf = st.tabs(["Dichte", "Verteilungsfunktion"])
+    tab_dichte, tab_cdf = st.tabs([txt("oberflaeche.auktion_tab_dichte"), txt("oberflaeche.auktion_tab_verteilungsfunktion")])
     with tab_dichte:
         st.plotly_chart(
             charts.auktion_historische_verteilungen_chart(modell, "dichte"),
@@ -69,7 +70,7 @@ def render_auktion() -> None:
             width="stretch",
         )
 
-    with st.expander("Datentabelle und Modellkalibrierung"):
+    with st.expander(txt("oberflaeche.auktion_datentabelle_titel")):
         anzeige = df.copy()
         anzeige["bezuschlagt_pct"] = (
             anzeige["bezuschlagt_mw"] / anzeige["ausgeschrieben_mw"] * 100
@@ -141,7 +142,7 @@ def render_auktion() -> None:
     st.divider()
 
     # --- Prognose naechste Runde ---------------------------------------------
-    section_title("Zuschlagswert bestimmen")
+    section_title(txt("oberflaeche.auktion_zuschlagswert_bestimmen"))
     modus_label = st.radio(
         "Grundlage des Zuschlagswerts",
         ["Letzte Ausschreibung (gesetzt)", "Prognosemodell (nächste Ausschreibung)"],
@@ -279,7 +280,7 @@ def render_auktion() -> None:
 
     col_links, col_rechts = st.columns(2)
     with col_links:
-        section_title("Verteilung der Zuschlagswerte")
+        section_title(txt("oberflaeche.auktion_verteilung_zuschlagswerte"))
         st.plotly_chart(
             charts.gebotsdichte_chart(prognose, effektiver_wert), width="stretch"
         )
@@ -292,7 +293,7 @@ def render_auktion() -> None:
                if modus == "prognose" else "")
         )
     with col_rechts:
-        section_title("Wert ↔ Wahrscheinlichkeit")
+        section_title(txt("oberflaeche.auktion_wert_wahrscheinlichkeit"))
         st.plotly_chart(
             charts.zuschlagskurve_chart(prognose,
                 prognose.zuschlagswahrscheinlichkeit(effektiver_wert),
@@ -311,12 +312,12 @@ def render_auktion() -> None:
         f"{int(z * 100)} % → {fmt_ct_kwh(prognose.empfohlenes_gebot(z))}"
         for z in (0.50, 0.60, 0.70, 0.80, 0.90, 0.95)
     )
-    st.info(f"Werte nach Risikoneigung: {uebersicht}")
+    st.info(txt("oberflaeche.auktion_werte_nach_risikoneigung", uebersicht=uebersicht))
 
     st.divider()
 
     # --- Uebergabe an das Cashflow-Modell -------------------------------------
-    section_title("Übergabe an das Cashflow-Modell")
+    section_title(txt("oberflaeche.auktion_uebergabe_cashflow"))
     st.session_state[STATE_EMPFOHLENES_GEBOT] = float(round(effektiver_wert, 2))
     st.caption(
         "Der empfohlene Wert wird neuen Projekten automatisch als "

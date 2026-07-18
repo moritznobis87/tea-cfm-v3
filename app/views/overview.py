@@ -26,7 +26,7 @@ from texte import txt
 def render_overview() -> None:
     projects = services.list_project_files()
     if not projects:
-        st.info("Noch keine Projekte angelegt. Starten Sie mit „Neues Projekt“.")
+        st.info(txt("oberflaeche.overview_keine_projekte"))
         return
 
     global_assumptions = services.get_global_assumptions()
@@ -67,11 +67,12 @@ def render_overview() -> None:
 
     render_kpi_row(
         [
-            ("Projekte", f"{len(zeilen)}"),
-            ("Portfolio-Leistung", f"{fmt_number(gesamt_kwp / 1000, 1)} MWp"),
-            ("Investitionsvolumen gesamt", fmt_eur(gesamt_capex)),
-            ("Eigenkapital gesamt", fmt_eur(gesamt_ek)),
-            ("Ø EK-Rendite", fmt_pct(mittlere_irr)),
+            (txt("oberflaeche.portfolio_kpi_anzahl_projekte"), f"{len(zeilen)}"),
+            (txt("oberflaeche.portfolio_kpi_gesamt_kwp"),
+             f"{fmt_number(gesamt_kwp / 1000, 1)} MWp"),
+            (txt("oberflaeche.portfolio_kpi_gesamt_capex"), fmt_eur(gesamt_capex)),
+            (txt("oberflaeche.portfolio_kpi_gesamt_ek"), fmt_eur(gesamt_ek)),
+            (txt("oberflaeche.portfolio_kpi_ek_rendite"), fmt_pct(mittlere_irr)),
         ],
         group="portfolio",
     )
@@ -118,12 +119,17 @@ def render_overview() -> None:
     # Zuklappbar (Standard: eingeklappt), damit die Uebersicht kompakt
     # bleibt und die Analytik nur bei Bedarf Platz einnimmt.
     with st.expander(
-        "Portfolio-Analytik (Rendite-Risiko-Landkarte · Ranking · Vergleichstabelle)",
+        f"{txt('oberflaeche.portfolio_analytik_titel')} "
+        f"({txt('oberflaeche.portfolio_tab_karte')} · "
+        f"{txt('oberflaeche.portfolio_tab_ranking')} · "
+        f"{txt('oberflaeche.portfolio_tab_tabelle')})",
         expanded=False,
     ):
-        tab_karte, tab_ranking, tab_tabelle = st.tabs(
-            ["Rendite-Risiko-Landkarte", "Ranking", "Vergleichstabelle"]
-        )
+        tab_karte, tab_ranking, tab_tabelle = st.tabs([
+            txt("oberflaeche.portfolio_tab_karte"),
+            txt("oberflaeche.portfolio_tab_ranking"),
+            txt("oberflaeche.portfolio_tab_tabelle"),
+        ])
         with tab_karte:
             st.caption(
                 "Spezifisches Invest gegen EK-Rendite; Blasengröße = "
@@ -171,7 +177,7 @@ def render_overview() -> None:
             )
 
     # --- Projektkarten ------------------------------------------------------
-    st.subheader("Projekte")
+    st.subheader(txt("oberflaeche.overview_projekte_titel"))
     cols = st.columns(min(len(zeilen), 4))
     for i, z in enumerate(zeilen):
         project = z["projekt"]

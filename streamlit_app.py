@@ -48,10 +48,12 @@ from app.views.assumptions import render_assumptions  # noqa: E402
 from app.views.auktion import render_auktion  # noqa: E402
 from app.views.new_project import render_new_project  # noqa: E402
 from app.views.overview import render_overview  # noqa: E402
-from texte import txt  # noqa: E402
+from texte import SESSION_KEY, SPRACHEN, sprachauswahl_label, txt  # noqa: E402
 
 # --- Kopfzeile (Hero) --------------------------------------------------------
-col_logo, col_title = st.columns([1, 9], vertical_alignment="center")
+col_logo, col_title, col_sprache = st.columns(
+    [1, 8, 1.4], vertical_alignment="center"
+)
 if LOGO_PATH.exists():
     col_logo.image(str(LOGO_PATH), width=84)
 col_title.markdown(
@@ -61,25 +63,51 @@ col_title.markdown(
     </div>""",
     unsafe_allow_html=True,
 )
+
+# Sprachauswahl (Flagge + Name); die Auswahl greift ueber
+# texte.aktive_sprache() ab dem naechsten Rerun ueberall in der App -
+# eigener Widget-Key, damit kein Konflikt mit dem Speicher-Schluessel
+# (SESSION_KEY) entsteht, den wir hier bewusst selbst befuellen.
+_sprachcodes = list(SPRACHEN)
+_aktuell = st.session_state.get(SESSION_KEY, _sprachcodes[0])
+_gewaehlt = col_sprache.selectbox(
+    "Sprache / Language",
+    _sprachcodes,
+    index=_sprachcodes.index(_aktuell) if _aktuell in _sprachcodes else 0,
+    format_func=sprachauswahl_label,
+    key="sprachauswahl_dropdown",
+    label_visibility="collapsed",
+)
+if _gewaehlt != _aktuell:
+    st.session_state[SESSION_KEY] = _gewaehlt
+    st.rerun()
+
 st.markdown('<div class="app-header-rule"></div>', unsafe_allow_html=True)
 
 # --- Navigation ----------------------------------------------------------------
-_NAV_PORTFOLIO = txt("oberflaeche.nav_portfolio")
-_NAV_NEU = txt("oberflaeche.nav_neues_projekt")
-_NAV_AUKTION = txt("oberflaeche.nav_ausschreibung")
-_NAV_ANNAHMEN = txt("oberflaeche.nav_globale_annahmen")
+# Stabile interne Codes als Radio-Werte (nicht die uebersetzten Labels):
+# so bleibt die Auswahl beim Sprachwechsel gueltig und Streamlit muss den
+# gespeicherten Widget-Zustand nicht verwerfen. Explizite Zuordnung zu den
+# Sprachdatei-Schluesseln (keine Namenskonvention noetig/riskant).
+_NAV_SCHLUESSEL = {
+    "portfolio": "oberflaeche.nav_portfolio",
+    "neu": "oberflaeche.nav_neues_projekt",
+    "auktion": "oberflaeche.nav_ausschreibung",
+    "annahmen": "oberflaeche.nav_globale_annahmen",
+}
 nav = st.sidebar.radio(
     txt("oberflaeche.nav_titel"),
-    [_NAV_PORTFOLIO, _NAV_NEU, _NAV_AUKTION, _NAV_ANNAHMEN],
+    list(_NAV_SCHLUESSEL),
+    format_func=lambda code: txt(_NAV_SCHLUESSEL[code]),
     key="nav",
 )
 render_import_export()
 
-if nav == _NAV_PORTFOLIO:
+if nav == "portfolio":
     render_overview()
-elif nav == _NAV_NEU:
+elif nav == "neu":
     render_new_project()
-elif nav == _NAV_AUKTION:
+elif nav == "auktion":
     render_auktion()
 else:
     render_assumptions()

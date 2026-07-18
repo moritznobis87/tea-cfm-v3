@@ -22,6 +22,7 @@ from engine.io_excel import (
     projects_to_excel,
 )
 from engine.io_yaml import load_project_yaml
+from texte import txt
 
 _XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -60,10 +61,10 @@ def render_import_export() -> None:
                 importierte = excel_to_projects(uploaded_projekte.getvalue())
                 for project in importierte:
                     services.save_project(project, PROJECTS_DIR / f"{project.id}.yaml")
-                st.success("Gespeichert: " + ", ".join(p.name for p in importierte))
+                st.success(txt("oberflaeche.sidebar_projekte_gespeichert", namen=", ".join(p.name for p in importierte)))
                 st.rerun()
             except Exception as exc:
-                st.error(f"Fehler beim Einlesen der Excel-Datei: {exc}")
+                st.error(txt("oberflaeche.sidebar_excel_fehler", fehler=exc))
 
     with st.sidebar.expander("Globale Annahmen sichern / wiederherstellen"):
         st.caption(
@@ -90,7 +91,7 @@ def render_import_export() -> None:
             try:
                 neue_ga = excel_to_global_assumptions(uploaded_ga.getvalue())
                 services.save_global_assumptions(neue_ga)
-                st.success("Globale Annahmen aus Excel-Datei übernommen.")
+                st.success(txt("oberflaeche.sidebar_annahmen_uebernommen"))
                 st.rerun()
             except Exception as exc:
-                st.error(f"Fehler beim Einlesen der Excel-Datei: {exc}")
+                st.error(txt("oberflaeche.sidebar_excel_fehler", fehler=exc))

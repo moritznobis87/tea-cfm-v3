@@ -70,12 +70,12 @@ class TestSeitenRendern:
         assert "NPV bei 7,50 %" in projekt_kpis[0]
 
     def test_neues_projekt_zeigt_formular(self, at: AppTest):
-        at.sidebar.radio[0].set_value("Neues Projekt")
+        at.sidebar.radio[0].set_value("neu")
         at.run()
         assert not at.exception
         assert len(at.get("number_input")) > 10
 
     def test_globale_annahmen_rendern(self, at: AppTest):
-        at.sidebar.radio[0].set_value("Globale Annahmen")
+        at.sidebar.radio[0].set_value("annahmen")
         at.run()
         assert not at.exception

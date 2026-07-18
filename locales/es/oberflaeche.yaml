@@ -1,0 +1,122 @@
+# Textos breves de la interfaz: navegación, cabecera, botones, títulos
+# de sección, etiquetas y textos de ayuda reutilizados en toda la
+# aplicación. Estructura: una clave por texto; marcadores {name}.
+
+# --- Cabecera / marco de la aplicación ------------------------------------------
+app_titel: "TEA PV Evaluación de Proyectos"
+app_untertitel: "Rentabilidad · Sensibilidad · Riesgo — Modelo de prima de mercado EAG, Austria"
+
+# --- Navegación ----------------------------------------------------------------
+nav_titel: "Navegación"
+nav_portfolio: "Cartera"
+nav_neues_projekt: "Nuevo proyecto"
+nav_ausschreibung: "Subasta"
+nav_globale_annahmen: "Supuestos globales"
+
+# --- Botones comunes --------------------------------------------------------------
+btn_speichern: "Guardar"
+btn_abbrechen: "Cancelar"
+btn_loeschen: "Eliminar"
+btn_ja_loeschen: "Sí, eliminar"
+btn_duplizieren: "Duplicar"
+btn_oeffnen: "Abrir"
+btn_inaktiv_schalten: "Desactivar"
+btn_aktivieren: "Activar"
+btn_excel_export: "Flujo de caja en Excel"
+btn_pdf_bericht: "Crear informe PDF"
+btn_pipeline_excel: "Crear informe de resultados en Excel"
+btn_pipeline_excel_download: "Descargar resultados de la cartera (.xlsx)"
+
+# --- Insignias / estado -------------------------------------------------------------
+badge_agri: "Agri-PV"
+badge_konventionell: "Convencional"
+badge_inaktiv: "Inactivo"
+
+# --- Resumen de la cartera ------------------------------------------------------
+portfolio_kpi_anzahl_projekte: "Proyectos"
+portfolio_kpi_gesamt_kwp: "Potencia de la cartera"
+portfolio_kpi_gesamt_capex: "Volumen de inversión total"
+portfolio_kpi_gesamt_ek: "Capital propio total"
+portfolio_kpi_ek_rendite: "Rentabilidad media del capital propio"
+portfolio_toggle_inaktive: "Incluir proyectos inactivos ({anzahl}) en los KPI de la cartera"
+portfolio_toggle_inaktive_hilfe: "Los proyectos inactivos permanecen guardados (tarjetas en gris), pero se ocultan del mapa rentabilidad-riesgo, el ranking y la tabla comparativa. Este interruptor solo controla las cifras acumuladas de arriba."
+portfolio_analytik_titel: "Análisis de la cartera"
+portfolio_tab_karte: "Mapa rentabilidad-riesgo"
+portfolio_tab_ranking: "Ranking"
+portfolio_tab_tabelle: "Tabla comparativa"
+portfolio_excel_hilfe: "Crea un libro con una pestaña por proyecto: todos los análisis (flujos de caja, ingresos, OPEX, DSCR, VAN, sensibilidades, Monte Carlo, escenarios) como gráficos de Excel nativos y editables con sus tablas de datos."
+portfolio_excel_spinner: "Calculando todos los proyectos y generando gráficos…"
+
+# --- Panel del proyecto ---------------------------------------------------------
+projekt_inaktiv_hinweis: "Este proyecto está **inactivo**: permanece guardado, pero no se muestra en el análisis de la cartera y puede excluirse de los KPI acumulados de la cartera."
+projekt_loeschen_bestaetigung: "¿Eliminar definitivamente el proyecto «{name}»?"
+
+
+# --- Panel del proyecto (adicional) ---------------------------------------------
+projekt_nicht_geladen: "No se pudo cargar el proyecto."
+projekt_bearbeiten_titel: "Editar proyecto"
+projekt_aktualisiert: "Proyecto actualizado."
+projekt_loeschen_warnung: "¿Eliminar definitivamente el proyecto «{name}»?"
+projekt_angelegt_erfolg: "Proyecto «{name}» creado y calculado."
+projekt_keine_investitionspositionen: "No se han registrado partidas de inversión."
+projekt_keine_sensitivitaetsdaten: "No hay datos de sensibilidad disponibles."
+projekt_variantentabelle_titel: "Tabla de variantes"
+projekt_simulation_fehlgeschlagen: "No se pudo ejecutar la simulación."
+projekt_keine_berechenbare_irr: "No hay TIR calculable entre las simulaciones."
+projekt_keine_marktpreisszenarien: "No hay escenarios de precio de mercado guardados."
+projekt_name_fehlt: "Introduzca un nombre de proyecto."
+
+# --- Supuestos globales -----------------------------------------------------------
+annahmen_marktpreisszenarien_titel: "Escenarios de precio de mercado"
+annahmen_kein_szenario: "Todavía no hay ningún escenario de precio de mercado."
+annahmen_szenario_hinzufuegen: "Añadir escenario"
+annahmen_szenario_existiert_bereits: "Ya existe un escenario con este nombre."
+annahmen_standardbetriebskosten_titel: "Costes operativos estándar"
+annahmen_technische_standardannahmen_titel: "Hipótesis técnicas estándar"
+annahmen_foerderung_finanzierung_titel: "Régimen de apoyo, financiación"
+annahmen_steuern_titel: "Impuestos"
+annahmen_gespeichert: "Supuestos globales guardados."
+
+# --- Página de subasta ---------------------------------------------------------
+auktion_tab_dichte: "Densidad"
+auktion_tab_verteilungsfunktion: "Función de distribución"
+auktion_datentabelle_titel: "Tabla de datos y calibración del modelo"
+
+# --- Barra lateral (importación/exportación Excel) -----------------------------------------------
+sidebar_projekte_gespeichert: "Guardado: {namen}"
+sidebar_excel_fehler: "Error al leer el archivo Excel: {fehler}"
+sidebar_annahmen_uebernommen: "Supuestos globales importados desde el archivo Excel."
+
+
+# --- Panel del proyecto: títulos de sección ------------------------------------------
+dashboard_wertbruecke: "Puente de valor a lo largo de toda la vida útil"
+dashboard_gesamt_cashflow: "Flujo de caja total"
+dashboard_betriebskosten_position: "Costes operativos (por partida)"
+dashboard_operativer_cashflow: "Flujo de caja operativo (ingresos − costes operativos)"
+dashboard_verguetung_marktwert_zeitverlauf: "Tarifa regulada y valor de mercado a lo largo del tiempo"
+dashboard_markterloes_vs_praemie: "Ingreso de mercado frente a prima de mercado"
+dashboard_umsatzerloese_jahr: "Ingresos por año de explotación"
+dashboard_dscr: "Cobertura del servicio de la deuda (DSCR)"
+dashboard_schuldenprofil: "Perfil de la deuda"
+dashboard_kapitalstruktur: "Estructura de capital"
+dashboard_investitionsstruktur: "Estructura de la inversión"
+dashboard_npv_sensitivitaet: "Sensibilidad del VAN a la tasa de descuento"
+dashboard_tornado: "Tornado: ¿qué determina realmente la rentabilidad?"
+dashboard_irr_landkarte: "Mapa de TIR: dos factores a la vez"
+dashboard_gebotsassistent: "Asistente de oferta: valor de adjudicación EAG de equilibrio"
+dashboard_eag_varianten: "Variantes del valor de adjudicación EAG (±5 % / ±10 %)"
+dashboard_monte_carlo: "Simulación Monte Carlo"
+dashboard_verteilung_ek_rendite: "Distribución de la rentabilidad del capital propio"
+dashboard_bandbreite_cashflow: "Rango del flujo de caja acumulado del capital propio"
+dashboard_marktpreisszenarien_vergleich: "Comparación de escenarios de precio de mercado"
+dashboard_kumulierter_cf_szenario: "Flujo de caja acumulado del capital propio por escenario"
+auktion_historie_sektion: "Subastas históricas (2022–2026)"
+auktion_verteilungen_sektion: "Distribuciones de ofertas estimadas de las rondas históricas"
+auktion_zuschlagswert_bestimmen: "Determinar el valor de adjudicación"
+auktion_verteilung_zuschlagswerte: "Distribución de los valores de adjudicación"
+auktion_wert_wahrscheinlichkeit: "Valor ↔ probabilidad"
+auktion_uebergabe_cashflow: "Transferencia al modelo de flujo de caja"
+auktion_werte_nach_risikoneigung: "Valores según la propensión al riesgo: {uebersicht}"
+neues_projekt_anlegen_titel: "Crear nuevo proyecto"
+overview_projekte_titel: "Proyectos"
+overview_keine_projekte: "Todavía no hay proyectos. Empiece con «Nuevo proyecto»."

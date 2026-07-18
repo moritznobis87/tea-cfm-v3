@@ -1,0 +1,180 @@
+# Texto libre del informe PDF (app/report.py): títulos de capítulos,
+# títulos de sección (H2) y los párrafos narrativos completos con los
+# pies de figura del capítulo 8 «Modelo de subasta EAG».
+# Los marcadores ({name}) coinciden exactamente con los valores
+# pasados como argumentos con nombre a txt(...) en el código.
+
+# --- Títulos de capítulos (el número se fija por separado en el código) --------
+kapitel_1_titel: "Resumen ejecutivo"
+kapitel_2_titel: "Cuenta de resultados"
+kapitel_3_titel: "Ingresos y régimen de apoyo"
+kapitel_4_titel: "Financiación"
+kapitel_5_titel: "Análisis de sensibilidad"
+kapitel_6_titel: "Análisis de riesgo (simulación Monte Carlo)"
+kapitel_7_titel: "Comparación de escenarios"
+kapitel_8_titel: "Modelo de subasta EAG"
+kapitel_a_titel: "Anexo: hipótesis del cálculo"
+kapitel_b_titel: "Anexo: series temporales"
+
+# --- Títulos de sección (H2) ------------------------------------------------------
+abschnitt_cashflow_vermoegen: "Flujo de caja total y acumulación de patrimonio"
+abschnitt_wertbruecke: "Puente de valor a lo largo de toda la vida útil"
+abschnitt_cashflow_uebersicht: "Resumen del flujo de caja (extracto)"
+abschnitt_verguetung_marktwert: "Tarifa regulada y valor de mercado"
+abschnitt_markterloes_praemie: "Ingreso de mercado y prima de mercado"
+abschnitt_dscr: "Cobertura del servicio de la deuda (DSCR)"
+abschnitt_schuldenprofil: "Perfil de la deuda"
+abschnitt_npv_diskontsatz: "Valor actual neto según la tasa de descuento"
+abschnitt_tornado: "Análisis tornado"
+abschnitt_eag_varianten: "Variantes del valor de adjudicación EAG"
+abschnitt_auktion_historie: "Historial de las subastas"
+abschnitt_auktion_fitting: "Ajuste de las funciones de distribución a las rondas históricas"
+abschnitt_auktion_modell: "Descripción del modelo"
+abschnitt_auktion_prognose: "Previsión de la próxima ronda"
+abschnitt_opex_positionen: "Partidas de costes operativos"
+abschnitt_capex: "Inversión en capital"
+
+# --- Capítulo 8 «Modelo de subasta EAG»: párrafos narrativos ---------------
+# Los marcadores coinciden exactamente con los valores previamente
+# insertados como f-strings en el código Python (cifras/fechas del
+# cálculo); el resto de cifras (históricas) del texto son datos fijos
+# y permanecen como parte del texto traducible.
+auktion_historie_intro: >-
+  Austria adjudica la prima de mercado EAG para fotovoltaica desde
+  diciembre de 2022 mediante subastas competitivas gestionadas por el
+  organismo liquidador EAG (OeMAG). El mecanismo es una subasta
+  pay-as-bid con ordenación de ofertas por precio: las ofertas se
+  ordenan de forma ascendente y se adjudican hasta la cantidad
+  licitada; cada ganador recibe su propia oferta como valor aplicable
+  durante el periodo de apoyo de 20 años. El precio máximo permitido
+  está fijado por reglamento y se ha reducido escalonadamente de 9,33
+  pasando por 8,98 hasta 7,77 ct/kWh actualmente (2026/2027). La base
+  de datos abarca {n_runden} rondas desde {erste_datum}.
+
+auktion_historie_unterzeichnet: >-
+  El historial se divide en dos regímenes claramente diferenciados.
+  Hasta abril de 2025 inclusive, las rondas estuvieron infrasuscritas:
+  el volumen de ofertas se mantuvo por debajo de la cantidad licitada,
+  cantidades residuales considerables (p. ej., 302 de 700 MW en la
+  primera ronda) quedaron sin adjudicar, y el valor de adjudicación más
+  alto se situó exactamente en el precio máximo; sin presión
+  competitiva, los participantes ofertan racionalmente cerca del máximo
+  permitido (promedios ponderados de 8,85 a 9,22 ct/kWh con un límite
+  de 9,33 ct/kWh). Este es precisamente el comportamiento descrito por
+  la literatura sobre subastas pay-as-bid (Haufe/Ehrhart 2018; Kreiss et
+  al. 2017): sin una restricción de cantidad vinculante, no existe
+  incentivo para ofertar por debajo.
+
+auktion_historie_wettbewerb: >-
+  Desde julio de 2025 la situación se ha invertido: la demanda supera
+  la cantidad licitada (el organismo liquidador EAG sigue informando de
+  un «interés enorme»), las cantidades residuales están cerca de cero y
+  el valor de adjudicación marginal se ha desligado del límite máximo:
+  cayó a lo largo de las cuatro rondas competitivas de 8,48 hasta
+  {grenzzuschlag_ct} más recientemente ({letzte_datum}), con un
+  incremento decreciente (−1,19 → −0,49 → −0,11 ct). Al mismo tiempo,
+  los valores de adjudicación se concentran: los oferentes ajustan sus
+  ofertas justo por debajo del valor de adjudicación marginal esperado
+  y aprenden de una ronda a otra. Dado que la OeMAG no publica el
+  volumen de ofertas presentado, el grado de sobresuscripción de las
+  rondas competitivas no es directamente observable y se trata en el
+  modelo como una magnitud latente.
+
+abb_14_caption: >-
+  Fig. 14: valores de adjudicación (mín./media/máx.) y precio máximo de
+  las {n_runden} rondas. Sombreado en gris: fase competitiva desde
+  07/2025 (valor de adjudicación marginal por debajo del límite).
+
+auktion_fitting_intro: >-
+  Para cada ronda, la OeMAG publica únicamente agregados de las ofertas
+  adjudicadas (mínimo, media ponderada, máximo) junto con las
+  cantidades; las ofertas individuales y el volumen de ofertas
+  permanecen desconocidos. Los métodos no paramétricos (KDE, modelos de
+  mezcla sobre ofertas brutas) quedan así descartados; en su lugar, se
+  calibra por ronda una distribución paramétrica acotada al intervalo
+  [0, precio máximo] mediante dos condiciones de momento/cuantil: la
+  media ponderada se ajusta como valor esperado (truncado en el valor
+  de adjudicación marginal para las rondas sobresuscritas), y el
+  mínimo publicado se interpreta como el cuantil del 2 % de todas las
+  ofertas (la oferta más barata gana siempre; del orden de 40 a 80
+  ofertas por ronda). Para las rondas sobresuscritas, la tasa de
+  sobresuscripción r = volumen de ofertas / cantidad licitada resulta
+  entonces implícitamente de la posición del valor de adjudicación
+  marginal en la distribución (recientemente r ≈ {wettbewerbsquote}).
+  Las distribuciones así estimadas muestran directamente el cambio de
+  régimen: concentración en el límite en las rondas infrasuscritas,
+  desplazamiento hacia la izquierda y concentración bajo competencia.
+
+abb_15_caption: >-
+  Fig. 15: distribuciones de ofertas estimadas por ronda (degradado de
+  color de gris = ronda más antigua a rojo = ronda más reciente; rondas
+  infrasuscritas discontinuas).
+
+modell_verteilungsfamilie: >-
+  Familia de distribución. Las ofertas b se modelan como una
+  distribución gamma inversa reflejada en el precio máximo
+  P<sub>max</sub>: b = P<sub>max</sub> − Y con Y ~ InvGamma(α, β). La
+  densidad cae muy abruptamente a cero hacia el límite máximo y decae
+  lentamente hacia la izquierda, exactamente la forma esperada para
+  pay-as-bid bajo competencia:
+
+modell_kalibrierung: >-
+  Calibración por ronda. Los parámetros (α, β) de cada ronda se derivan
+  de las dos condiciones (media ponderada m̄, mínimo b<sub>min</sub>,
+  valor de adjudicación marginal p<sub>m</sub>, ε = 0,02); la tasa de
+  sobresuscripción de las rondas sobresuscritas es latente:
+
+modell_punktprognose_intro: >-
+  Previsión puntual de la próxima ronda. El valor de adjudicación
+  marginal y el valor de adjudicación medio se extrapolan por separado
+  mediante extrapolación recursiva de diferencias sobre las rondas
+  competitivas. Para una serie temporal x<sub>t</sub>, las diferencias
+  se forman de manera recursiva; el orden más alto utilizado, m, se
+  mantiene constante, y todos los órdenes inferiores se prolongan
+  recursivamente, amortiguados por λ<sub>k</sub> ∈ [0, 1]
+  (predeterminado: m = 2, λ = 1):
+
+modell_punktprognose_ergebnis: >-
+  El método tiene en cuenta así tanto la tendencia como su variación:
+  si el descenso se aplana, prevé un mayor aplanamiento en lugar de una
+  extrapolación constante. El mínimo sigue un paseo aleatorio (sin
+  dinámica estable en el historial); a continuación se proyecta sobre
+  mínimo ≤ media ≤ valor de adjudicación marginal < P<sub>max</sub>, y a
+  partir de las previsiones puntuales se construye la distribución de
+  la próxima ronda (la condición de la media se pondera fuertemente, el
+  mínimo actúa como anclaje suave de la cola). {formel_zeile}
+
+modell_unsicherheit_intro: >-
+  Incertidumbre y decisión de la oferta. La incertidumbre del valor de
+  adjudicación marginal se modela como una distribución normal
+  truncada en el límite máximo alrededor de la previsión puntual (σ a
+  partir de la dispersión de las variaciones históricas entre rondas).
+  Como tomador de precios, la probabilidad de adjudicación de la
+  propia oferta y la oferta recomendada para una probabilidad objetivo
+  z vienen dadas por:
+
+modell_zuschlagsdichte_intro: >-
+  La distribución de valores de adjudicación mostrada es la densidad
+  de ofertas truncada y renormalizada en el valor de adjudicación
+  marginal:
+
+abb_16_caption: >-
+  Fig. 16: distribución prevista de la próxima ronda: densidad de los
+  valores de adjudicación (truncada en el valor de adjudicación
+  marginal {grenzzuschlag_ct}), discontinua: distribución de todas las
+  ofertas, banda gris: P10–P90 de la incertidumbre del valor de
+  adjudicación marginal; en verde: valor de proyecto asumido
+  {projektwert_ct}.
+
+abb_17_caption: >-
+  Fig. 17: valor de la oferta y probabilidad de adjudicación
+  P(valor de adjudicación marginal > oferta) sobre la incertidumbre de
+  la previsión; el valor de proyecto asumido alcanza
+  {wahrscheinlichkeit_pct}.
+
+tab_3_spalte_wahrscheinlichkeit: "Probabilidad de adjudicación objetivo"
+tab_3_spalte_gebotswert: "Valor de la oferta"
+tab_3_caption: >-
+  Tab. 3: valores de oferta recomendados según la probabilidad de
+  adjudicación deseada (cuantiles de la distribución prevista del
+  valor de adjudicación marginal).

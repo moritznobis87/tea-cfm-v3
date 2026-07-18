@@ -17,10 +17,16 @@ Texte ohne uebergebene Platzhalter werden unveraendert zurueckgegeben,
 so dass geschweifte Klammern (z. B. Plotly-Hovertemplates) unkritisch
 sind.
 
-Sprachwahl: Umgebungsvariable TEA_SPRACHE (Standard "de"). Eine
-Uebersetzung entsteht durch Kopieren des Ordners locales/de nach z. B.
-locales/en und Uebersetzen der Werte; fehlende Schluessel fallen
-automatisch auf Deutsch zurueck, ganz fehlende Schluessel liefern den
+Sprachwahl: In der laufenden App waehlt der Nutzer die Sprache ueber
+das Dropdown oben rechts (Flagge + Name); die Auswahl landet in
+st.session_state[SESSION_KEY] und wirkt sofort nach einem Rerun.
+Ausserhalb der App (Tests, Skripte, Engine-Aufrufe ohne Streamlit)
+greift die Umgebungsvariable TEA_SPRACHE (Standard "de"). Aktuell
+gepflegt: Deutsch (de), Englisch (en), Franzoesisch (fr), Spanisch
+(es) - siehe SPRACHEN. Eine weitere Uebersetzung entsteht durch
+Kopieren des Ordners locales/de nach z. B. locales/it, Uebersetzen der
+Werte und Ergaenzen in SPRACHEN; fehlende Schluessel fallen automatisch
+auf Deutsch zurueck, ganz fehlende Schluessel liefern den
 Schluesselnamen (fail-soft, kein Absturz durch Luecken).
 """
 
@@ -35,9 +41,43 @@ import yaml
 LOCALES_DIR = Path(__file__).resolve().parent / "locales"
 STANDARD_SPRACHE = "de"
 
+#: Unterstuetzte Sprachen: Code -> (Anzeigename, Flaggen-Emoji).
+#: Reihenfolge bestimmt die Reihenfolge im Sprachauswahl-Dropdown.
+SPRACHEN: dict[str, dict[str, str]] = {
+    "de": {"label": "Deutsch", "flagge": "🇦🇹"},
+    "en": {"label": "English", "flagge": "🇬🇧"},
+    "fr": {"label": "Français", "flagge": "🇫🇷"},
+    "es": {"label": "Español", "flagge": "🇪🇸"},
+}
+
+#: Session-State-Schluessel, unter dem die App-Seite (streamlit_app.py)
+#: die vom Nutzer gewaehlte Sprache ablegt.
+SESSION_KEY = "tea_sprache"
+
 
 def aktive_sprache() -> str:
+    """Ermittelt die aktive Sprache: zuerst die in der laufenden
+    Streamlit-Session gewaehlte Sprache (Dropdown oben rechts), sonst
+    die Umgebungsvariable TEA_SPRACHE, sonst Deutsch. Der
+    Streamlit-Import ist bewusst lazy/optional, damit dieses Modul auch
+    aus der Engine-Schicht (kein Streamlit) und aus Tests heraus ohne
+    laufende App funktioniert."""
+    try:
+        import streamlit as st
+
+        if SESSION_KEY in st.session_state:
+            gewaehlt = st.session_state[SESSION_KEY]
+            if gewaehlt in SPRACHEN:
+                return gewaehlt
+    except Exception:
+        pass
     return os.environ.get("TEA_SPRACHE", STANDARD_SPRACHE).strip() or STANDARD_SPRACHE
+
+
+def sprachauswahl_label(code: str) -> str:
+    """Flagge + Anzeigename fuer das Dropdown, z. B. '🇬🇧 English'."""
+    eintrag = SPRACHEN.get(code, {"label": code, "flagge": ""})
+    return f"{eintrag['flagge']} {eintrag['label']}".strip()
 
 
 @lru_cache(maxsize=4)

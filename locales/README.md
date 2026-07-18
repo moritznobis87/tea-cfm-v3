@@ -4,7 +4,10 @@ Alle sichtbaren Texte der Anwendung liegen hier als YAML, aufgeteilt
 nach Textgattung – nicht in einer einzigen riesigen Datei, damit
 verschiedene Änderungen sich nicht in die Quere kommen (z. B. jemand
 tippt UI-Buttons um, während jemand anders am PDF-Berichtstext
-schreibt) und damit die Dateien überschaubar bleiben:
+schreibt) und damit die Dateien überschaubar bleiben. Vier Sprachen
+sind vollständig gepflegt: **Deutsch (de), Englisch (en), Französisch
+(fr), Spanisch (es)** – umschaltbar über das Dropdown oben rechts in
+der App.
 
 | Datei              | Inhalt                                                              | Konsumiert von            |
 |--------------------|----------------------------------------------------------------------|----------------------------|
@@ -26,19 +29,37 @@ In der Engine-Schicht (kein Streamlit, kein Import aus `app/`) gibt es
 den schlanken Wrapper `excel_texte()` bzw. das `_t(...)`-Hilfsfunktion
 in `engine/io_ergebnis_excel.py`.
 
-## Eine neue Sprache anlegen
+## Sprachumschaltung in der App
 
-1. Ordner kopieren: `locales/de` → `locales/en` (oder beliebiges
-   Kürzel).
-2. Werte in den YAML-Dateien übersetzen (Schlüssel unverändert lassen).
-3. Aktivieren über die Umgebungsvariable `TEA_SPRACHE=en` (z. B. in
-   `.streamlit/secrets.toml`, im Deployment oder lokal vor dem Start).
+Oben rechts in der Kopfzeile sitzt ein Dropdown mit Flagge und
+Sprachname (🇦🇹 Deutsch · 🇬🇧 English · 🇫🇷 Français · 🇪🇸 Español). Die
+Auswahl landet in `st.session_state["tea_sprache"]`
+(`texte.SESSION_KEY`) und wirkt ab dem nächsten Rerun in der gesamten
+App: Navigation, sämtliche Buttons und Abschnittstitel des
+Projekt-Dashboards, Diagramme sowie neu erzeugte PDF- und
+Excel-Exporte. Alle vier Sprachen sind vollständig gepflegt – 95
+Schlüssel in `oberflaeche.yaml`, 58 in `diagramme.yaml`, 43 in
+`bericht.yaml`, 67 in `excel.yaml`, macht 263 Texte je Sprache, jeder
+davon in allen vier Sprachen mit identischen Schlüsseln und
+Platzhaltern (per Test abgesichert, siehe `tests/test_texte.py`).
 
-Eine Übersetzung muss nicht vollständig sein: Fehlt ein Schlüssel in
-der Zielsprache, greift automatisch der deutsche Text; fehlt er auch
-dort (Tippfehler o. Ä.), wird der Schlüsselname selbst angezeigt statt
-eines Absturzes. `locales/en/oberflaeche.yaml` ist bewusst nur
-teilweise befüllt und demonstriert genau dieses Verhalten.
+Außerhalb der laufenden App (Tests, Skripte, direkte Engine-Aufrufe
+ohne Streamlit-Session) greift stattdessen die Umgebungsvariable
+`TEA_SPRACHE` (Standard `de`).
+
+## Eine weitere Sprache ergänzen
+
+1. Ordner kopieren: `locales/de` → z. B. `locales/it`.
+2. Werte in allen vier YAML-Dateien übersetzen (Schlüssel und
+   `{platzhalter}` unverändert lassen).
+3. Sprachcode in `texte.py` in der `SPRACHEN`-Registry ergänzen (Code,
+   Anzeigename, Flaggen-Emoji) – erscheint danach automatisch im
+   Dropdown.
+
+Eine Übersetzung muss nicht sofort vollständig sein: Fehlt ein
+Schlüssel in der Zielsprache, greift automatisch der deutsche Text;
+fehlt er auch dort (Tippfehler o. Ä.), wird der Schlüsselname selbst
+angezeigt statt eines Absturzes.
 
 ## Texte ändern/erweitern
 

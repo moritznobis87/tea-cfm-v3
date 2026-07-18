@@ -42,7 +42,7 @@ def render_project_dashboard(
 ) -> None:
     result = services.get_valuation(file_path.stem)
     if result is None:
-        st.error("Projekt konnte nicht geladen werden.")
+        st.error(txt("oberflaeche.projekt_nicht_geladen"))
         return
     df = result.cashflow.data
     kpis = result.kpis
@@ -58,7 +58,7 @@ def render_project_dashboard(
     )
 
     # --- Aktionen ----------------------------------------------------------
-    with st.expander("Projekt bearbeiten"):
+    with st.expander(txt("oberflaeche.projekt_bearbeiten_titel")):
         updated = render_project_form(existing=project, form_key=f"edit_{project.id}")
         if updated is not None:
             # Bewusst file_path statt project.id verwenden: id und Dateiname
@@ -67,7 +67,7 @@ def render_project_dashboard(
             # ueberschreiben, nicht versehentlich eine zweite erzeugen.
             services.save_project(updated, file_path)
             st.session_state.pop(f"pdf_bericht_{file_path.stem}", None)
-            st.success("Projekt aktualisiert.")
+            st.success(txt("oberflaeche.projekt_aktualisiert"))
             st.rerun()
 
     if not project.aktiv:
@@ -93,7 +93,7 @@ def render_project_dashboard(
             st.session_state[STATE_DELETE_CANDIDATE] = file_path.stem
     with col_export:
         st.download_button(
-            "Cashflow als Excel",
+            txt("oberflaeche.btn_excel_export"),
             data=services.cashflow_to_excel(result),
             file_name=f"{services.slugify(project.name)}_cashflow.xlsx",
             mime=_XLSX_MIME,
@@ -125,7 +125,7 @@ def render_project_dashboard(
 
     # Loeschen nur nach expliziter Bestaetigung - das ist nicht rueckholbar.
     if st.session_state.get(STATE_DELETE_CANDIDATE) == file_path.stem:
-        st.warning(f"Projekt „{project.name}“ endgültig löschen?")
+        st.warning(txt("oberflaeche.projekt_loeschen_warnung", name=project.name))
         col_ja, col_nein, _ = st.columns([1, 1, 4])
         if col_ja.button(txt("oberflaeche.btn_ja_loeschen"), type="primary", key=f"del_ok_{project.id}"):
             services.delete_project(file_path.stem)
@@ -206,21 +206,21 @@ def render_project_dashboard(
 
 
 def _render_cashflow_tab(result, df) -> None:
-    section_title("Wertbrücke über die Gesamtlaufzeit")
+    section_title(txt("oberflaeche.dashboard_wertbruecke"))
     st.caption(
         "Von den Umsatzerlösen der gesamten Betriebsdauer über Kosten, "
         "Zinsen, Steuern und Finanzierung zum kumulierten Equity-Cashflow."
     )
     st.plotly_chart(charts.equity_waterfall_chart(df), width="stretch")
 
-    section_title("Gesamt-Cashflow")
+    section_title(txt("oberflaeche.dashboard_gesamt_cashflow"))
     st.caption(
         "Summe aus operativem, Investitions- und Finanzierungs-Cashflow je "
         "Jahr (Balken) sowie kumuliert über die Zeit (Linie, rechte Achse)."
     )
     st.plotly_chart(charts.total_cashflow_chart(df), width="stretch")
 
-    section_title("Betriebskosten (nach Position)")
+    section_title(txt("oberflaeche.dashboard_betriebskosten_position"))
     st.caption(
         "Klicken Sie auf einzelne Positionen in der Legende, um sie "
         "ein-/auszublenden."
@@ -229,7 +229,7 @@ def _render_cashflow_tab(result, df) -> None:
         charts.opex_stacked_chart(df, result.cashflow.opex_posten), width="stretch"
     )
 
-    section_title("Operativer Cashflow (Umsatzerlöse − Betriebskosten)")
+    section_title(txt("oberflaeche.dashboard_operativer_cashflow"))
     st.caption(
         "Vereinfachte Betrachtung vor Zinsen und Steuer. Die für "
         "EK-Rendite/NPV massgebliche Cashflow-Definition (inkl. Zinsen und "
@@ -287,7 +287,7 @@ def _render_cashflow_tab(result, df) -> None:
 def _render_revenue_tab(result, df) -> None:
     ea = result.effective_assumptions
 
-    section_title("Vergütungssatz und Marktwert im Zeitverlauf")
+    section_title(txt("oberflaeche.dashboard_verguetung_marktwert_zeitverlauf"))
     st.caption(
         "Die bernsteinfarbene Fläche zwischen Vergütungssatz und Marktwert "
         "ist die Marktprämie (MAX-Mechanismus des EAG). Nach dem Förderende "
@@ -300,7 +300,7 @@ def _render_revenue_tab(result, df) -> None:
         width="stretch",
     )
 
-    section_title("Markterlös vs. Marktprämie")
+    section_title(txt("oberflaeche.dashboard_markterloes_vs_praemie"))
     st.caption(
         "Wie viel des Erlöses kommt aus dem Stromverkauf, wie viel aus dem "
         "EAG-Zuschuss? Der Prämienanteil zeigt die Förderabhängigkeit des "
@@ -318,7 +318,7 @@ def _render_revenue_tab(result, df) -> None:
         f"Marktverkauf."
     )
 
-    section_title("Umsatzerlöse je Betriebsjahr")
+    section_title(txt("oberflaeche.dashboard_umsatzerloese_jahr"))
     st.plotly_chart(charts.revenue_chart(df), width="stretch")
 
 
@@ -335,10 +335,10 @@ def _render_financing_tab(result, df, project) -> None:
     if dscr_df.empty:
         st.info("Kein DSCR verfügbar (keine Fremdfinanzierung in diesem Projekt).")
     else:
-        section_title("Schuldendienstdeckung (DSCR)")
+        section_title(txt("oberflaeche.dashboard_dscr"))
         st.plotly_chart(charts.dscr_chart(dscr_df), width="stretch")
 
-        section_title("Schuldenprofil")
+        section_title(txt("oberflaeche.dashboard_schuldenprofil"))
         st.caption(
             "Restschuld (Fläche) sowie Zinsen und Tilgung (gestapelte Balken "
             "= Schuldendienst) über die Kreditlaufzeit."
@@ -347,7 +347,7 @@ def _render_financing_tab(result, df, project) -> None:
 
     col_kap, col_capex = st.columns(2)
     with col_kap:
-        section_title("Kapitalstruktur")
+        section_title(txt("oberflaeche.dashboard_kapitalstruktur"))
         st.plotly_chart(
             charts.kapitalstruktur_donut_chart(
                 ea.capex_total_eur * ea.eigenkapitalquote_pct, fremdkapital
@@ -355,7 +355,7 @@ def _render_financing_tab(result, df, project) -> None:
             width="stretch",
         )
     with col_capex:
-        section_title("Investitionsstruktur")
+        section_title(txt("oberflaeche.dashboard_investitionsstruktur"))
         capex = project.capex
         posten = {
             "EPC": capex.epc_eur,
@@ -371,9 +371,9 @@ def _render_financing_tab(result, df, project) -> None:
         if any(v > 0 for v in posten.values()):
             st.plotly_chart(charts.capex_donut_chart(posten), width="stretch")
         else:
-            st.info("Keine Investitionspositionen erfasst.")
+            st.info(txt("oberflaeche.projekt_keine_investitionspositionen"))
 
-    section_title("NPV-Sensitivität über den Diskontsatz")
+    section_title(txt("oberflaeche.dashboard_npv_sensitivitaet"))
     st.caption(
         "Die Nullstelle der Kurve ist per Definition die EK-Rendite (IRR)."
     )
@@ -398,7 +398,7 @@ _ACHSEN_NAMEN = {k: name for k, (name, _) in HEATMAP_ACHSEN.items()}
 
 
 def _render_sensitivity_tab(result, project, project_id: str) -> None:
-    section_title("Tornado: Was bewegt die Rendite wirklich?")
+    section_title(txt("oberflaeche.dashboard_tornado"))
     st.caption(
         "Jeder Werttreiber wird einzeln um ±10 % variiert (alle übrigen "
         "Annahmen konstant). Grün = Verbesserung, Rot = Verschlechterung "
@@ -409,7 +409,7 @@ def _render_sensitivity_tab(result, project, project_id: str) -> None:
         st.plotly_chart(charts.tornado_chart(tornado_df), width="stretch")
 
     st.divider()
-    section_title("IRR-Landkarte: zwei Treiber gleichzeitig")
+    section_title(txt("oberflaeche.dashboard_irr_landkarte"))
     st.caption(
         "EK-Rendite über ein Raster zweier frei wählbarer Treiber. Der "
         "Farbumschlag markiert die Grenze zur Ziel-Rendite."
@@ -439,7 +439,7 @@ def _render_sensitivity_tab(result, project, project_id: str) -> None:
         )
 
     st.divider()
-    section_title("Gebotsassistent: Break-even-EAG-Zuschlag")
+    section_title(txt("oberflaeche.dashboard_gebotsassistent"))
     st.caption(
         "Der minimale anzulegende Wert (ct/kWh), bei dem das Projekt die "
         "Ziel-EK-Rendite gerade noch erreicht - die wirtschaftliche "
@@ -472,10 +472,10 @@ def _render_sensitivity_tab(result, project, project_id: str) -> None:
             )
 
     st.divider()
-    section_title("EAG-Zuschlag-Varianten (±5 % / ±10 %)")
+    section_title(txt("oberflaeche.dashboard_eag_varianten"))
     sens_df = services.get_eag_sensitivity(project_id)
     if sens_df is None or sens_df.empty:
-        st.info("Keine Sensitivitätsdaten verfügbar.")
+        st.info(txt("oberflaeche.projekt_keine_sensitivitaetsdaten"))
         return
     st.plotly_chart(charts.eag_sensitivity_chart(sens_df), width="stretch")
 
@@ -491,7 +491,7 @@ def _render_sensitivity_tab(result, project, project_id: str) -> None:
     sens_display.columns = [
         "Variante", "EAG-Zuschlag (ct/kWh)", "EK-Rendite", "NPV (€)",
     ]
-    with st.expander("Variantentabelle"):
+    with st.expander(txt("oberflaeche.projekt_variantentabelle_titel")):
         st.dataframe(sens_display, width="stretch", hide_index=True)
 
 
@@ -501,7 +501,7 @@ def _render_sensitivity_tab(result, project, project_id: str) -> None:
 
 
 def _render_monte_carlo_tab(project_id: str, diskontsatz: float) -> None:
-    section_title("Monte-Carlo-Simulation")
+    section_title(txt("oberflaeche.dashboard_monte_carlo"))
     st.caption(
         "Alle Unsicherheiten gleichzeitig: Je Lauf werden Ertrag, "
         "Marktwert-Niveau, Investitions- und Betriebskosten zufällig um "
@@ -575,12 +575,12 @@ def _render_monte_carlo_tab(project_id: str, diskontsatz: float) -> None:
             project_id, n_laeufe, sigmas, diskontsatz, gebots_key
         )
     if mc is None:
-        st.error("Simulation konnte nicht ausgeführt werden.")
+        st.error(txt("oberflaeche.projekt_simulation_fehlgeschlagen"))
         return
 
     irr = mc.irr_gueltig
     if len(irr) == 0:
-        st.error("Keine berechenbare IRR in den Simulationsläufen.")
+        st.error(txt("oberflaeche.projekt_keine_berechenbare_irr"))
         return
     p10, p50, p90 = (float(np.percentile(irr, q)) for q in (10, 50, 90))
 
@@ -610,10 +610,10 @@ def _render_monte_carlo_tab(project_id: str, diskontsatz: float) -> None:
             f"Erfolgswahrscheinlichkeit konservativ als 'unter Ziel'."
         )
 
-    section_title("Verteilung der EK-Rendite")
+    section_title(txt("oberflaeche.dashboard_verteilung_ek_rendite"))
     st.plotly_chart(charts.mc_irr_histogram(irr, p10, p50, p90), width="stretch")
 
-    section_title("Bandbreite des kumulierten Equity-Cashflows")
+    section_title(txt("oberflaeche.dashboard_bandbreite_cashflow"))
     st.caption(
         "Fächer aus allen Läufen: inneres Band P25–P75, äußeres Band "
         "P10–P90, Linie = Median. Wo das äußere Band die Nulllinie "
@@ -628,7 +628,7 @@ def _render_monte_carlo_tab(project_id: str, diskontsatz: float) -> None:
 
 
 def _render_scenario_tab(result, project_id: str, diskontsatz: float) -> None:
-    section_title("Marktpreisszenarien im Vergleich")
+    section_title(txt("oberflaeche.dashboard_marktpreisszenarien_vergleich"))
     st.caption(
         "Identisches Projekt, gerechnet über alle in den Globalen Annahmen "
         "hinterlegten Marktpreisszenarien. Das im Projekt gewählte Szenario: "
@@ -636,12 +636,12 @@ def _render_scenario_tab(result, project_id: str, diskontsatz: float) -> None:
     )
     vergleich = services.get_scenario_comparison(project_id, diskontsatz)
     if vergleich is None or vergleich.kennzahlen.empty:
-        st.info("Keine Marktpreisszenarien hinterlegt.")
+        st.info(txt("oberflaeche.projekt_keine_marktpreisszenarien"))
         return
 
     st.plotly_chart(charts.scenario_bar_chart(vergleich.kennzahlen), width="stretch")
 
-    section_title("Kumulierter Equity-Cashflow je Szenario")
+    section_title(txt("oberflaeche.dashboard_kumulierter_cf_szenario"))
     st.plotly_chart(charts.scenario_cum_chart(vergleich.kum_cashflows), width="stretch")
 
     tabelle = vergleich.kennzahlen.copy()

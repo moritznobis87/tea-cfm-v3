@@ -1,0 +1,184 @@
+# Texte libre du rapport PDF (app/report.py) : titres de chapitres,
+# titres de section (H2) ainsi que les paragraphes narratifs complets
+# et les légendes de figures du chapitre 8 « Modèle d'appel d'offres
+# EAG ». Les espaces réservés ({name}) correspondent exactement aux
+# valeurs transmises comme arguments nommés à txt(...) dans le code.
+
+# --- Titres de chapitres (le numéro est défini séparément dans le code) --------
+kapitel_1_titel: "Synthèse de gestion"
+kapitel_2_titel: "Compte de résultat"
+kapitel_3_titel: "Recettes et soutien public"
+kapitel_4_titel: "Financement"
+kapitel_5_titel: "Analyse de sensibilité"
+kapitel_6_titel: "Analyse de risque (simulation Monte-Carlo)"
+kapitel_7_titel: "Comparaison des scénarios"
+kapitel_8_titel: "Modèle d'appel d'offres EAG"
+kapitel_a_titel: "Annexe : hypothèses du calcul"
+kapitel_b_titel: "Annexe : séries chronologiques"
+
+# --- Titres de section (H2) ------------------------------------------------------
+abschnitt_cashflow_vermoegen: "Flux de trésorerie total et constitution de patrimoine"
+abschnitt_wertbruecke: "Pont de valeur sur toute la durée"
+abschnitt_cashflow_uebersicht: "Aperçu des flux de trésorerie (extrait)"
+abschnitt_verguetung_marktwert: "Tarif de rachat et valeur de marché"
+abschnitt_markterloes_praemie: "Recette de marché et prime de marché"
+abschnitt_dscr: "Couverture du service de la dette (DSCR)"
+abschnitt_schuldenprofil: "Profil de la dette"
+abschnitt_npv_diskontsatz: "Valeur actuelle nette selon le taux d'actualisation"
+abschnitt_tornado: "Analyse tornado"
+abschnitt_eag_varianten: "Variantes de la valeur d'attribution EAG"
+abschnitt_auktion_historie: "Historique des appels d'offres"
+abschnitt_auktion_fitting: "Ajustement des fonctions de distribution aux tours historiques"
+abschnitt_auktion_modell: "Description du modèle"
+abschnitt_auktion_prognose: "Prévision du prochain tour"
+abschnitt_opex_positionen: "Postes de coûts d'exploitation"
+abschnitt_capex: "Dépenses d'investissement"
+
+# --- Chapitre 8 « Modèle d'appel d'offres EAG » : paragraphes narratifs ---------------
+# Les espaces réservés correspondent exactement aux valeurs
+# précédemment insérées sous forme de f-string dans le code Python
+# (chiffres/dates issus du calcul) ; tous les autres chiffres
+# (historiques) du texte sont des faits établis et restent partie du
+# texte traduisible.
+auktion_historie_intro: >-
+  L'Autriche attribue la prime de marché EAG pour le photovoltaïque
+  depuis décembre 2022 via des appels d'offres concurrentiels organisés
+  par l'organisme de règlement EAG (OeMAG). Le mécanisme est une
+  enchère pay-as-bid avec classement des offres par prix : les offres
+  sont classées par ordre croissant et attribuées jusqu'à la quantité
+  mise en appel d'offres ; chaque lauréat reçoit sa propre valeur
+  d'offre comme valeur applicable sur la durée de soutien de 20 ans. Le
+  prix plafond autorisé est fixé par voie réglementaire et a été abaissé
+  progressivement de 9,33 via 8,98 à 7,77 ct/kWh actuellement
+  (2026/2027). La base de données comprend {n_runden} tours depuis
+  {erste_datum}.
+
+auktion_historie_unterzeichnet: >-
+  L'historique se divise en deux régimes clairement distincts. Jusqu'en
+  avril 2025 inclus, les tours étaient sous-souscrits : le volume
+  d'offres restait inférieur à la quantité mise en appel d'offres, des
+  quantités résiduelles importantes (p. ex. 302 sur 700 MW lors du
+  premier tour) sont restées non attribuées, et la valeur d'attribution
+  la plus élevée se situait exactement au prix plafond – sans pression
+  concurrentielle, les participants offrent rationnellement près du
+  maximum autorisé (moyennes pondérées de 8,85 à 9,22 ct/kWh pour un
+  plafond de 9,33 ct/kWh). C'est exactement le comportement décrit par
+  la littérature sur les enchères pay-as-bid (Haufe/Ehrhart 2018 ;
+  Kreiss et al. 2017) : sans contrainte de quantité contraignante, il
+  n'existe aucune incitation à sous-enchérir.
+
+auktion_historie_wettbewerb: >-
+  Depuis juillet 2025, la situation s'est inversée : la demande dépasse
+  la quantité mise en appel d'offres (l'organisme de règlement EAG
+  continue de signaler un « intérêt énorme »), les quantités résiduelles
+  sont proches de zéro et la valeur d'attribution marginale se détache
+  du plafond – elle est passée sur les quatre tours concurrentiels de
+  8,48 à {grenzzuschlag_ct} récemment ({letzte_datum}), avec un pas de
+  variation décroissant (−1,19 → −0,49 → −0,11 ct). Parallèlement, les
+  valeurs d'attribution se concentrent : les soumissionnaires « ajustent
+  à la baisse » leurs offres juste en dessous de la valeur d'attribution
+  marginale attendue et apprennent d'un tour à l'autre. Comme l'OeMAG ne
+  publie pas le volume d'offres soumis, le degré de sursouscription des
+  tours concurrentiels n'est pas directement observable et est traité
+  dans le modèle comme une grandeur latente.
+
+abb_14_caption: >-
+  Fig. 14 : valeurs d'attribution (min/moy./max) et prix plafond pour
+  l'ensemble des {n_runden} tours. Zone grisée : phase concurrentielle
+  à partir de 07/2025 (valeur d'attribution marginale sous le plafond).
+
+auktion_fitting_intro: >-
+  Pour chaque tour, l'OeMAG ne publie que des agrégats des offres
+  attribuées (minimum, moyenne pondérée, maximum) ainsi que les
+  quantités – les offres individuelles et le volume d'offres restent
+  inconnus. Les méthodes non paramétriques (estimation par noyau,
+  modèles de mélange sur les offres brutes) sont donc exclues ; à la
+  place, une distribution paramétrique bornée à l'intervalle [0, prix
+  plafond] est calibrée pour chaque tour via deux conditions de
+  moment/quantile : la moyenne pondérée est ajustée comme espérance
+  (tronquée à la valeur d'attribution marginale pour les tours
+  sursouscrits), et le minimum publié est interprété comme le quantile
+  à 2 % de toutes les offres (l'offre la moins chère l'emporte toujours ;
+  de l'ordre de 40 à 80 offres par tour). Pour les tours sursouscrits, le
+  taux de sursouscription r = volume d'offres / quantité mise en appel
+  d'offres découle alors implicitement de la position de la valeur
+  d'attribution marginale dans la distribution (récemment r ≈
+  {wettbewerbsquote}). Les distributions ainsi estimées montrent
+  directement le changement de régime : concentration au plafond pour
+  les tours sous-souscrits, décalage vers la gauche et concentration
+  sous concurrence.
+
+abb_15_caption: >-
+  Fig. 15 : distributions d'offres estimées par tour (dégradé de
+  couleur du gris = tour le plus ancien au rouge = tour le plus récent ;
+  tours sous-souscrits en pointillés).
+
+modell_verteilungsfamilie: >-
+  Famille de distribution. Les offres b sont modélisées comme une
+  distribution inverse-gamma reflétée au prix plafond P<sub>max</sub> :
+  b = P<sub>max</sub> − Y avec Y ~ InvGamma(α, β). La densité chute très
+  rapidement vers zéro à l'approche du plafond et décroît lentement vers
+  la gauche – exactement l'image attendue pour un système pay-as-bid
+  sous concurrence :
+
+modell_kalibrierung: >-
+  Calibration par tour. Les paramètres (α, β) de chaque tour découlent
+  des deux conditions (moyenne pondérée m̄, minimum b<sub>min</sub>,
+  valeur d'attribution marginale p<sub>m</sub>, ε = 0,02) ; le taux de
+  sursouscription des tours sursouscrits est latent :
+
+modell_punktprognose_intro: >-
+  Prévision ponctuelle du prochain tour. La valeur d'attribution
+  marginale et la valeur d'attribution moyenne sont chacune
+  extrapolées séparément par extrapolation récursive des différences
+  sur les tours concurrentiels. Pour une série temporelle x<sub>t</sub>,
+  les différences sont formées de manière récursive ; l'ordre le plus
+  élevé utilisé, m, reste constant, et tous les ordres inférieurs sont
+  prolongés récursivement – amortis par λ<sub>k</sub> ∈ [0, 1] (par
+  défaut : m = 2, λ = 1) :
+
+modell_punktprognose_ergebnis: >-
+  La méthode tient ainsi compte à la fois de la tendance et de son
+  évolution : si la baisse s'atténue, elle anticipe un nouvel
+  aplatissement plutôt qu'une extrapolation constante. Le minimum suit
+  une marche aléatoire (aucune dynamique stable dans l'historique) ;
+  le résultat est ensuite projeté sur minimum ≤ moyenne ≤ valeur
+  d'attribution marginale < P<sub>max</sub>, et la distribution du
+  prochain tour est construite à partir des prévisions ponctuelles (la
+  condition de moyenne fortement pondérée, le minimum servant d'ancrage
+  souple pour la queue de distribution). {formel_zeile}
+
+modell_unsicherheit_intro: >-
+  Incertitude et décision d'offre. L'incertitude de la valeur
+  d'attribution marginale est modélisée comme une distribution normale
+  tronquée au plafond autour de la prévision ponctuelle (σ issu de la
+  dispersion des variations historiques d'un tour à l'autre). En tant
+  que preneur de prix, la probabilité d'attribution de sa propre offre
+  et l'offre recommandée pour une probabilité cible z sont données
+  par :
+
+modell_zuschlagsdichte_intro: >-
+  La distribution des valeurs d'attribution représentée est la densité
+  des offres tronquée et renormalisée à la valeur d'attribution
+  marginale :
+
+abb_16_caption: >-
+  Fig. 16 : distribution prévisionnelle du prochain tour – densité des
+  valeurs d'attribution (tronquée à la valeur d'attribution marginale
+  {grenzzuschlag_ct}), en pointillés : distribution de toutes les
+  offres, bande grise : P10–P90 de l'incertitude de la valeur
+  d'attribution marginale ; en vert : valeur de projet retenue
+  {projektwert_ct}.
+
+abb_17_caption: >-
+  Fig. 17 : valeur de l'offre et probabilité d'attribution
+  P(valeur d'attribution marginale > offre) sur l'incertitude de
+  prévision ; la valeur de projet retenue atteint
+  {wahrscheinlichkeit_pct}.
+
+tab_3_spalte_wahrscheinlichkeit: "Probabilité d'attribution cible"
+tab_3_spalte_gebotswert: "Valeur de l'offre"
+tab_3_caption: >-
+  Tab. 3 : valeurs d'offre recommandées selon la probabilité
+  d'attribution souhaitée (quantiles de la distribution prévisionnelle
+  de la valeur d'attribution marginale).

@@ -1,0 +1,165 @@
+# Free text of the PDF report (app/report.py): chapter headings,
+# section titles (H2) and the full narrative paragraphs and figure
+# captions of chapter 8 "EAG Auction Model".
+# Placeholders ({name}) exactly match the values passed as keyword
+# arguments to txt(...) in the code.
+
+# --- Chapter headings (number is set separately in code) --------
+kapitel_1_titel: "Management Summary"
+kapitel_2_titel: "Results Statement"
+kapitel_3_titel: "Revenue and Support Scheme"
+kapitel_4_titel: "Financing"
+kapitel_5_titel: "Sensitivity Analysis"
+kapitel_6_titel: "Risk Analysis (Monte Carlo Simulation)"
+kapitel_7_titel: "Scenario Comparison"
+kapitel_8_titel: "EAG Auction Model"
+kapitel_a_titel: "Annex: Assumptions Used"
+kapitel_b_titel: "Annex: Time Series"
+
+# --- Section titles (H2) ------------------------------------------------------
+abschnitt_cashflow_vermoegen: "Total cashflow and equity build-up"
+abschnitt_wertbruecke: "Value bridge over the full term"
+abschnitt_cashflow_uebersicht: "Cashflow overview (excerpt)"
+abschnitt_verguetung_marktwert: "Feed-in tariff and market value"
+abschnitt_markterloes_praemie: "Market revenue and market premium"
+abschnitt_dscr: "Debt service coverage (DSCR)"
+abschnitt_schuldenprofil: "Debt profile"
+abschnitt_npv_diskontsatz: "Net present value by discount rate"
+abschnitt_tornado: "Tornado analysis"
+abschnitt_eag_varianten: "EAG award value variants"
+abschnitt_auktion_historie: "History of the auctions"
+abschnitt_auktion_fitting: "Fitting distribution functions to the historical rounds"
+abschnitt_auktion_modell: "Model description"
+abschnitt_auktion_prognose: "Forecast for the next round"
+abschnitt_opex_positionen: "Operating cost items"
+abschnitt_capex: "Capital expenditure"
+
+# --- Chapter 8 "EAG Auction Model": narrative paragraphs ---------------
+# Placeholders exactly match the values previously inserted as f-string
+# interpolations in the Python code (figures/dates from the
+# calculation); all other (historical) figures in the text are fixed
+# facts and remain part of the translatable prose.
+auktion_historie_intro: >-
+  Austria has been awarding the EAG market premium for photovoltaics
+  since December 2022 through competitive auctions run by the EAG
+  settlement agency (OeMAG). The mechanism is a pay-as-bid auction with
+  price-ranked bidding: bids are ranked in ascending order and awarded
+  up to the tendered volume; each winner receives their own bid as the
+  applicable feed-in value over the 20-year support period. The
+  permissible ceiling price is fixed by ordinance and has been lowered
+  in steps from 9.33 via 8.98 to currently 7.77 ct/kWh (2026/2027). The
+  data set comprises {n_runden} rounds since {erste_datum}.
+
+auktion_historie_unterzeichnet: >-
+  The history splits into two clearly separated regimes. Through April
+  2025, rounds were undersubscribed: the bid volume stayed below the
+  tendered volume, substantial residual volumes (e.g. 302 of 700 MW in
+  the first round) went unawarded, and the highest award value sat
+  exactly at the price cap – with no competitive pressure, participants
+  rationally bid close to the permissible maximum (volume-weighted
+  averages of 8.85 to 9.22 ct/kWh against a cap of 9.33 ct/kWh). This is
+  precisely the behaviour described by the auction literature on
+  pay-as-bid schemes (Haufe/Ehrhart 2018; Kreiss et al. 2017): without a
+  binding volume constraint, there is no incentive to underbid.
+
+auktion_historie_wettbewerb: >-
+  Since July 2025 the picture has flipped: demand exceeds the tendered
+  volume (the EAG settlement agency continues to report "enormous
+  interest"), residual volumes are close to zero and the marginal award
+  value has decoupled from the cap – it fell over the four competitive
+  rounds from 8.48 to most recently {grenzzuschlag_ct} ({letzte_datum}),
+  with a shrinking step size (−1.19 → −0.49 → −0.11 ct). At the same
+  time, award values are concentrating: bidders shade their bids just
+  below the expected marginal award value and learn across rounds.
+  Since OeMAG does not publish the submitted bid volume, the
+  oversubscription ratio of the competitive rounds is not directly
+  observable and is treated in the model as a latent quantity.
+
+abb_14_caption: >-
+  Fig. 14: Award values (min/avg/max) and price cap across all
+  {n_runden} rounds. Shaded grey: competitive phase from 07/2025
+  onward (marginal award value below the cap).
+
+auktion_fitting_intro: >-
+  For each round, OeMAG publishes only aggregates of the awarded bids
+  (minimum, volume-weighted average, maximum) along with the volumes –
+  individual bids and bid volumes remain unknown. Non-parametric
+  methods (KDE, mixture models on raw bids) are therefore ruled out;
+  instead, a parametric distribution bounded to the interval [0, price
+  cap] is calibrated per round via two moment/quantile conditions: the
+  volume-weighted average is matched as the expected value (truncated
+  at the marginal award value for oversubscribed rounds), and the
+  published minimum is interpreted as the 2% quantile of all bids (the
+  cheapest bid always wins; on the order of 40–80 bids per round). For
+  oversubscribed rounds, the oversubscription ratio r = bid volume /
+  tendered volume then follows implicitly from where the marginal award
+  value falls in the distribution (most recently r ≈
+  {wettbewerbsquote}). The distributions estimated this way show the
+  regime shift directly: clustering at the cap in undersubscribed
+  rounds, a leftward shift and concentration under competition.
+
+abb_15_caption: >-
+  Fig. 15: Estimated bid distributions per round (colour gradient from
+  grey = oldest to red = most recent round; undersubscribed rounds
+  dashed).
+
+modell_verteilungsfamilie: >-
+  Distribution family. Bids b are modelled as an inverse-gamma
+  distribution mirrored at the price cap P<sub>max</sub>: b =
+  P<sub>max</sub> − Y with Y ~ InvGamma(α, β). The density drops very
+  steeply to zero towards the cap and tapers off slowly to the left –
+  exactly the picture expected for pay-as-bid under competition:
+
+modell_kalibrierung: >-
+  Calibration per round. The parameters (α, β) for each round follow
+  from two conditions (volume-weighted average m̄, minimum
+  b<sub>min</sub>, marginal award value p<sub>m</sub>, ε = 0.02); the
+  oversubscription ratio of oversubscribed rounds is latent:
+
+modell_punktprognose_intro: >-
+  Point forecast for the next round. The marginal award value and the
+  average award value are each extrapolated separately using recursive
+  difference extrapolation over the competitive rounds. For a time
+  series x<sub>t</sub>, differences are formed recursively; the highest
+  order used, m, is held constant, and all lower orders are extended
+  recursively – damped by λ<sub>k</sub> ∈ [0, 1] (default: m = 2, λ = 1):
+
+modell_punktprognose_ergebnis: >-
+  The method thus accounts for both the trend and its change: if the
+  decline is flattening, it expects further flattening rather than a
+  constant extrapolation. The minimum follows a random walk (no stable
+  dynamics in the history); the result is then projected onto minimum ≤
+  average ≤ marginal award value < P<sub>max</sub>, and the distribution
+  for the next round is built from the point forecasts (the average
+  condition weighted heavily, the minimum serving as a soft tail
+  anchor). {formel_zeile}
+
+modell_unsicherheit_intro: >-
+  Uncertainty and bid decision. The uncertainty of the marginal award
+  value is modelled as a normal distribution truncated at the cap
+  around the point forecast (σ from the spread of historical
+  round-to-round changes). As a price taker, the award probability of
+  one's own bid and the recommended bid for a target probability z are
+  given by:
+
+modell_zuschlagsdichte_intro: >-
+  The distribution of award values shown is the bid density truncated
+  and renormalised at the marginal award value:
+
+abb_16_caption: >-
+  Fig. 16: Forecast distribution for the next round – density of award
+  values (truncated at the marginal award value {grenzzuschlag_ct}),
+  dashed: distribution of all bids, grey band: P10–P90 of the marginal
+  award value uncertainty; green: assumed project value
+  {projektwert_ct}.
+
+abb_17_caption: >-
+  Fig. 17: Bid value and award probability P(marginal award value >
+  bid) over the forecast uncertainty; the assumed project value
+  reaches {wahrscheinlichkeit_pct}.
+
+tab_3_spalte_wahrscheinlichkeit: "Target award probability"
+tab_3_spalte_gebotswert: "Bid value"
+tab_3_caption: >-
+  Tab. 3: Recommended bid values by desired award probability
+  (quantiles of the forecast marginal-award-value distribution).
