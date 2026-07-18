@@ -284,7 +284,8 @@ def excel_to_global_assumptions(file_bytes: bytes) -> GlobalAssumptions:
 # ---------------------------------------------------------------------------
 
 PROJEKT_SPALTEN = [
-    "id", "name", "inbetriebnahme_jahr", "inbetriebnahme_monat", "anlagentyp",
+    "id", "name", "aktiv", "inbetriebnahme_jahr", "inbetriebnahme_monat",
+    "anlagentyp",
     "nennleistung_kwp", "vollbenutzungsstunden_kwh_kwp", "pacht_eur_kwp_jahr",
     "fremdkapitalzins_pct", "eigenkapitalquote_pct", "eag_zuschlagswert_ct_kwh",
     "gemeindeabgabe_eur_mwh", "direktvermarktungskosten_eur_mwh",
@@ -301,6 +302,7 @@ def projects_to_excel(projects: list[PVProject]) -> bytes:
         {
             "id": p.id,
             "name": p.name,
+            "aktiv": p.aktiv,
             "inbetriebnahme_jahr": p.inbetriebnahme_jahr,
             "inbetriebnahme_monat": p.inbetriebnahme_monat,
             "anlagentyp": p.anlagentyp.value,
@@ -338,7 +340,9 @@ def projects_to_excel(projects: list[PVProject]) -> bytes:
 def excel_to_projects(file_bytes: bytes) -> list[PVProject]:
     df = pd.read_excel(io.BytesIO(file_bytes), sheet_name="Projekte", engine="openpyxl")
 
-    fehlende_spalten = set(PROJEKT_SPALTEN) - set(df.columns)
+    # "aktiv" ist optional, damit aeltere Export-Dateien (vor v4.5)
+    # weiterhin importierbar bleiben (Fallback: aktiv).
+    fehlende_spalten = set(PROJEKT_SPALTEN) - {"aktiv"} - set(df.columns)
     if fehlende_spalten:
         raise ValueError(f"Spalten fehlen in der Excel-Datei: {fehlende_spalten}")
 
@@ -350,6 +354,8 @@ def excel_to_projects(file_bytes: bytes) -> list[PVProject]:
             PVProject(
                 id=str(r["id"]),
                 name=str(r["name"]),
+                aktiv=bool(r.get("aktiv", True))
+                if not pd.isna(r.get("aktiv", True)) else True,
                 inbetriebnahme_jahr=int(r["inbetriebnahme_jahr"]),
                 inbetriebnahme_monat=int(r["inbetriebnahme_monat"]),
                 anlagentyp=AnlagenTyp(r["anlagentyp"]),

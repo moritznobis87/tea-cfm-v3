@@ -1,5 +1,60 @@
 # Changelog
 
+## v4.6 – Excel-Ergebnisbericht für die gesamte Pipeline (2026-07)
+
+- Neuer Export auf der Portfolio-Seite ("Excel-Ergebnisbericht
+  erstellen"): eine Arbeitsmappe mit Blatt **Übersicht** (Kennzahlen
+  aller Projekte inkl. Aktiv-Kennzeichnung, IRR-Diagramm) plus **je
+  Projekt ein eigener Reiter**.
+- Alle Auswertungen als **native, editierbare Excel-Diagramme** (keine
+  Bilder), jeweils mit dem Datengerüst als Tabelle daneben: Vergütung/
+  Marktwert, Erlösstruktur (gestapelt), Gesamt-Cashflow (Balken +
+  kumulierte Linie), Betriebskosten (gestapelt), Kapitaldienst +
+  DSCR-Verlauf, NPV-Kurve, Sensitivitäts-Tornado (±10 %),
+  EAG-Zuschlagswert-Sensitivität, Monte-Carlo-Histogramm (300 Läufe,
+  inkl. P10/Median/P90) und Szenarienvergleich – 11 Diagramme je
+  Projektblatt.
+- KPI-Kopf je Reiter (Leistung, Zuschlagswert, CAPEX, EK, IRR, NPV,
+  DSCR min, Amortisation); inaktive Projekte enthalten und im Titel/
+  in der Übersicht markiert; eindeutige Blattnamen bei
+  Namenskollisionen. Engine-Funktion `pipeline_ergebnis_excel` separat
+  testbar; 4 neue Tests; Suite: 132.
+
+## v4.5 – PDF-Kapitel 8 wissenschaftlich & Projekte inaktiv schaltbar (2026-07)
+
+### PDF-Bericht: Kapitel 8 neu strukturiert
+- Ausführliche Beschreibung der Ausschreibungshistorie (Mechanismus,
+  beide Regime, Zahlenverlauf, Literaturbezug), danach Abb. 14
+  (historische Werte).
+- Neuer Abschnitt "Anpassung der Verteilungsfunktionen": textliche
+  Erklärung der Kalibrierung aus den Aggregaten (inkl. latenter
+  Wettbewerbsquote) plus Abb. 15 mit den geschätzten Verteilungen
+  aller 15 Runden (Farbverlauf alt→neu, unterzeichnete gestrichelt).
+- Modellbeschreibung mit allen mathematischen Formeln in
+  LaTeX-Schreibweise (Matplotlib-Mathtext, sauber gesetzt):
+  gespiegelte Inverse-Gamma-Dichte, Kalibrierbedingungen und latentes
+  r, Differenzenextrapolation (Rekursion), trunkierte
+  Grenzzuschlag-Verteilung, P(Zuschlag | Gebot), b(z) sowie die
+  Dichte der Zuschlagswerte.
+- Beide Prognose-Plots wie im Tool: Abb. 16 (Verteilung der
+  Zuschlagswerte mit P10–P90-Band und Projektwert) und Abb. 17
+  (Wert ↔ Zuschlagswahrscheinlichkeit mit Einordnung des
+  Projektwerts), danach die Empfehlungstabelle.
+
+### Projekte: löschen & inaktiv schalten
+- Löschen (mit Bestätigungsdialog) existiert im Projekt-Dashboard
+  neben Duplizieren.
+- Neu: Projekte lassen sich **inaktiv schalten** (Button im Dashboard,
+  jederzeit reaktivierbar, YAML-persistiert). Inaktive Projekte
+  erscheinen als **grau hinterlegte Karten** mit "Inaktiv"-Badge,
+  werden aus Rendite-Risiko-Landkarte, Ranking und Vergleichstabelle
+  ausgeblendet und sind standardmäßig aus den kumulierten
+  Portfolio-KPIs herausgerechnet (Schalter "in Portfolio-KPIs
+  berücksichtigen" holt sie optional zurück) – Pipeline-Bereinigung
+  ohne Löschen.
+- Excel-Export/-Import um die Spalte "aktiv" erweitert (optional,
+  ältere Dateien bleiben importierbar). 2 neue Tests; Suite: 128.
+
 ## v4.4 – Kosteninflation auf alle Kostenpositionen (2026-07)
 
 - Behoben: Die Inflation wirkte bisher nur auf die Marktwerte und drei

@@ -126,6 +126,10 @@ class PVProject(BaseModel):
 
     id: str
     name: str
+    # Inaktive Projekte bleiben erhalten, werden aber aus der Portfolio-
+    # Analytik ausgeblendet und koennen aus den kumulierten KPIs
+    # herausgerechnet werden - Pipeline-Bereinigung ohne Loeschen.
+    aktiv: bool = True
     inbetriebnahme_jahr: int = Field(default_factory=lambda: datetime.now().year + 1)
     inbetriebnahme_monat: int = Field(ge=1, le=12, default=1)
 

@@ -45,10 +45,27 @@ def render_overview() -> None:
         )
 
     # --- Portfolio-KPIs ------------------------------------------------------
-    gesamt_kwp = sum(z["projekt"].nennleistung_kwp for z in zeilen)
-    gesamt_capex = sum(z["kpis"].capex_total_eur for z in zeilen)
-    gesamt_ek = sum(z["kpis"].eigenkapital_eur for z in zeilen)
-    irr_werte = [z["kpis"].equity_irr for z in zeilen if z["kpis"].equity_irr is not None]
+    aktive = [z for z in zeilen if z["projekt"].aktiv]
+    inaktive_anzahl = len(zeilen) - len(aktive)
+    if inaktive_anzahl:
+        mit_inaktiven = st.toggle(
+            f"Inaktive Projekte ({inaktive_anzahl}) in den Portfolio-KPIs "
+            f"berücksichtigen",
+            value=False, key="portfolio_mit_inaktiven",
+            help="Inaktive Projekte bleiben erhalten (graue Karten), sind "
+                 "aber aus Rendite-Risiko-Landkarte, Ranking und "
+                 "Vergleichstabelle ausgeblendet. Dieser Schalter steuert "
+                 "nur die kumulierten Kennzahlen oben.",
+        )
+    else:
+        mit_inaktiven = False
+    kpi_basis = zeilen if mit_inaktiven else aktive
+
+    gesamt_kwp = sum(z["projekt"].nennleistung_kwp for z in kpi_basis)
+    gesamt_capex = sum(z["kpis"].capex_total_eur for z in kpi_basis)
+    gesamt_ek = sum(z["kpis"].eigenkapital_eur for z in kpi_basis)
+    irr_werte = [z["kpis"].equity_irr for z in kpi_basis
+                 if z["kpis"].equity_irr is not None]
     mittlere_irr = sum(irr_werte) / len(irr_werte) if irr_werte else None
 
     render_kpi_row(
@@ -80,9 +97,30 @@ def render_overview() -> None:
                     else 0
                 ),
             }
-            for z in zeilen
+            for z in aktive
         ]
     )
+
+    col_xl1, col_xl2 = st.columns([1.6, 3])
+    if col_xl1.button("Excel-Ergebnisbericht erstellen", width="stretch",
+                      help="Erstellt eine Arbeitsmappe mit einem Reiter je "
+                           "Projekt: alle Auswertungen (Cashflows, Erlöse, "
+                           "OPEX, DSCR, NPV, Sensitivitäten, Monte Carlo, "
+                           "Szenarien) als native, editierbare "
+                           "Excel-Diagramme samt Datentabellen."):
+        with st.spinner("Berechne alle Projekte und erstelle Diagramme…"):
+            st.session_state["pipeline_excel"] = services.build_pipeline_excel()
+    if st.session_state.get("pipeline_excel"):
+        from datetime import date as _date
+
+        col_xl2.download_button(
+            "Pipeline-Ergebnisse herunterladen (.xlsx)",
+            data=st.session_state["pipeline_excel"],
+            file_name=f"pipeline_ergebnisse_{_date.today().isoformat()}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument"
+                 ".spreadsheetml.sheet",
+            width="stretch",
+        )
 
     # Zuklappbar (Standard: eingeklappt), damit die Uebersicht kompakt
     # bleibt und die Analytik nur bei Bedarf Platz einnimmt.
@@ -130,7 +168,7 @@ def render_overview() -> None:
                         else None,
                         "Payback (Jahr)": z["kpis"].payback_jahre,
                     }
-                    for z in zeilen
+                    for z in aktive
                 ]
             )
             st.dataframe(
@@ -147,7 +185,11 @@ def render_overview() -> None:
         kpis = z["kpis"]
         ist_agri = project.anlagentyp == AnlagenTyp.AGRI_PV
         typ_badge = badge("Agri-PV", "agri") if ist_agri else badge("Konventionell", "konv")
+        if not project.aktiv:
+            typ_badge += " " + badge("Inaktiv", "inaktiv")
         selected_cls = " selected" if z["id"] == selected else ""
+        if not project.aktiv:
+            selected_cls += " inaktiv"
         with cols[i % len(cols)]:
             st.markdown(
                 f"""<div class="project-card{selected_cls}">

@@ -205,6 +205,16 @@ _CSS = f"""
         transition: transform 140ms ease, box-shadow 140ms ease,
                     border-color 140ms ease;
     }}
+    .project-card.inaktiv {{
+        background: #f1f3f2;
+        opacity: 0.62;
+        filter: grayscale(0.55);
+        border-style: dashed;
+    }}
+    .badge-inaktiv {{
+        background: #e4e7e6;
+        color: #6b7a76;
+    }}
     .project-card:hover {{
         transform: translateY(-2px);
         border-color: {Colors.NEUTRAL};

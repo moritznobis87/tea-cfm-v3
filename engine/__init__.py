@@ -32,6 +32,7 @@ from .auktion import (
     vergleiche_familien,
 )
 from .cashflow import CashflowTimeseries
+from .io_ergebnis_excel import pipeline_ergebnis_excel
 from .models import (
     AnlagenTyp,
     CapexBreakdown,
@@ -56,6 +57,7 @@ from .pipeline import (
 from .sensitivity import run_eag_sensitivity
 
 __all__ = [
+    "pipeline_ergebnis_excel",
     "Ausschreibung",
     "AuktionsModell",
     "GebotsPrognose",

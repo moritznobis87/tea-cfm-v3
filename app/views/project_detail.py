@@ -69,7 +69,21 @@ def render_project_dashboard(
             st.success("Projekt aktualisiert.")
             st.rerun()
 
-    _, col_dup, col_del, col_export, col_pdf = st.columns([1.6, 1, 1, 1.8, 1.8])
+    if not project.aktiv:
+        st.info(
+            "Dieses Projekt ist **inaktiv**: Es bleibt erhalten, wird aber "
+            "in der Portfolio-Analytik nicht angezeigt und kann aus den "
+            "kumulierten Portfolio-KPIs herausgerechnet werden."
+        )
+    col_aktiv, col_dup, col_del, col_export, col_pdf = st.columns(
+        [1.6, 1, 1, 1.8, 1.8]
+    )
+    with col_aktiv:
+        aktiv_label = "Inaktiv schalten" if project.aktiv else "Aktivieren"
+        if st.button(aktiv_label, key=f"aktiv_{project.id}", width="stretch"):
+            project.aktiv = not project.aktiv
+            services.save_project(project, file_path)
+            st.rerun()
     with col_dup:
         if st.button("Duplizieren", key=f"dup_{project.id}", width="stretch"):
             kopie = services.duplicate_project(file_path.stem)

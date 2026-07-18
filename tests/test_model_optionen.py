@@ -381,3 +381,35 @@ class TestKostenInflation:
         for item in ausgeliefert.opex_standard:
             assert item.index_pct_pa == pytest.approx(0.02)
             assert item.indexierung_ab_jahr == 1
+
+
+class TestProjektInaktiv:
+    """Inaktive Projekte bleiben erhalten (Pipeline-Bereinigung ohne
+    Loeschen): Standard aktiv, Persistenz ueber YAML- und Excel-
+    Roundtrip, Legacy-Dateien ohne Feld laden als aktiv."""
+
+    def test_standard_aktiv_und_yaml_roundtrip(self, project, tmp_path):
+        from engine.io_yaml import load_project_yaml, save_project_yaml
+
+        assert project.aktiv is True
+        project.aktiv = False
+        pfad = tmp_path / "p.yaml"
+        save_project_yaml(project, pfad)
+        assert load_project_yaml(pfad).aktiv is False
+        # Legacy-Datei ohne Feld -> aktiv
+        inhalt = pfad.read_text()
+        pfad.write_text("\n".join(
+            z for z in inhalt.splitlines() if not z.startswith("aktiv:")
+        ))
+        assert load_project_yaml(pfad).aktiv is True
+
+    def test_excel_roundtrip(self, project):
+        from engine.io_excel import excel_to_projects, projects_to_excel
+
+        inaktiv = project.model_copy(deep=True)
+        inaktiv.id = "p-inaktiv"
+        inaktiv.aktiv = False
+        geladen = excel_to_projects(projects_to_excel([project, inaktiv]))
+        nach_id = {p.id: p for p in geladen}
+        assert nach_id[project.id].aktiv is True
+        assert nach_id["p-inaktiv"].aktiv is False

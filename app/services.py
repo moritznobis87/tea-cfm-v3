@@ -421,7 +421,8 @@ def _auktions_paket_fuer_bericht() -> dict | None:
         formel = (f"Stützstellen Grenzzuschlag: {maxes} ct ⇒ Prognose "
                   f"{_de(prognose.grenzzuschlag_zentral_ct)} ct; Ø-Prognose "
                   f"{_de(prognose.mittel_prognose_ct)} ct.")
-        return {"df": df, "prognose": prognose, "formel_zeile": formel}
+        return {"df": df, "prognose": prognose, "modell": modell,
+                "formel_zeile": formel}
     except Exception:
         return None
 
@@ -501,3 +502,16 @@ def get_auktions_validierung(familie: str = AUKTIONS_FAMILIE):
 
     runden, _ = get_ausschreibungen()
     return vergleiche_familien(runden), validiere_einschritt(runden, familie)
+
+
+def build_pipeline_excel(n_mc: int = 300) -> bytes:
+    """Ergebnis-Export der gesamten Pipeline: Blatt 'Übersicht' plus je
+    Projekt ein Reiter mit allen Auswertungen als native Excel-
+    Diagramme (inaktive Projekte enthalten und markiert)."""
+    from engine import pipeline_ergebnis_excel
+
+    projekte = [
+        (get_project(pid), get_project(pid).name)
+        for pid in list_project_files()
+    ]
+    return pipeline_ergebnis_excel(projekte, get_global_assumptions(), n_mc=n_mc)
