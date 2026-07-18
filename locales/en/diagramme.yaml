@@ -69,3 +69,6 @@ annotation_grenzzuschlag_p10_p90: "Marginal award value P10–P90"
 annotation_wettbewerbsphase: "Competitive phase"
 chart_zuschlagskurve_titel: "Bid ↔ award probability"
 serie_arbeitspunkt: "Operating point"
+
+serie_gemeindeabgabe: "Municipal levy"
+serie_direktvermarktung: "Direct marketing"

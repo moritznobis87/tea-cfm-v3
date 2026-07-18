@@ -67,7 +67,7 @@ def render_overview() -> None:
 
     render_kpi_row(
         [
-            (txt("oberflaeche.portfolio_kpi_anzahl_projekte"), f"{len(zeilen)}"),
+            (txt("oberflaeche.portfolio_kpi_anzahl_projekte"), f"{len(kpi_basis)}"),
             (txt("oberflaeche.portfolio_kpi_gesamt_kwp"),
              f"{fmt_number(gesamt_kwp / 1000, 1)} MWp"),
             (txt("oberflaeche.portfolio_kpi_gesamt_capex"), fmt_eur(gesamt_capex)),

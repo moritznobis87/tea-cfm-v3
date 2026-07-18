@@ -1,5 +1,46 @@
 # Changelog
 
+## v4.11 – Sprach-Dropdown: kompaktes Flagge+Kürzel-Format (2026-07)
+
+- Das Sprach-Dropdown zeigt jetzt Flagge + Länderkürzel statt des vollen
+  Sprachnamens: 🇦🇹 DE · 🇬🇧 EN · 🇫🇷 FR · 🇪🇸 ES (vorher: 🇦🇹 Deutsch,
+  🇬🇧 English, 🇫🇷 Français, 🇪🇸 Español). Kompakter in der Kopfzeile,
+  funktional unverändert – Umschaltverhalten und Fallback-Mechanismus
+  sind unberührt.
+
+## v4.10 – Drei gemeldete Fehler behoben (2026-07)
+
+- **Gemeindeabgabe im Betriebskosten-Chart nicht sichtbar:** Ursache war
+  kein Datenfehler (der Balken war immer da, mit korrektem Wert), sondern
+  fehlender Farbkontrast – die feste Farbe `#7B241C` lag optisch fast
+  identisch neben den benachbarten `OPEX_SCALE`-Warmtönen (Pacht
+  `#873600`, Sonstiges `#A04000`) und "verschwand" dadurch im Stack.
+  Gemeindeabgabe und Direktvermarktung erhalten jetzt Farben aus der
+  Ink-Grün-Familie (`Colors.INK` / `Colors.INK_SOFT`) statt der
+  Warmton-Skala – klar unterscheidbar unabhängig davon, wie viele
+  Standard-OPEX-Positionen konfiguriert sind. Beide Serien zusätzlich
+  über die Sprachdatei übersetzt (`diagramme.serie_gemeindeabgabe`/
+  `serie_direktvermarktung`).
+- **Projektanzahl-KPI ignorierte den Inaktiv-Filter:** Die "Projekte"-
+  Kachel zählte immer `len(zeilen)` (alle Projekte) statt der gefilterten
+  `kpi_basis`, während alle anderen Portfolio-KPIs (Leistung, CAPEX, EK,
+  Ø-Rendite) korrekt auf aktive Projekte reduzierten. Jetzt konsistent.
+- **KPI-Schriftgrößen passten "manchmal" nicht:** Das bestehende
+  JS-Anpassungsskript maß Textbreiten nur beim initialen Laden (fixe
+  Timeouts + Resize-Event). Spätere Layoutverschiebungen ohne
+  `window.resize`-Event – Sidebar auf-/zuklappen, Tab- oder
+  Expander-Wechsel, ein Rerun mit anderen Werten – ließen die einmal
+  gesetzte Schriftgröße veralten. Ein `ResizeObserver` auf der KPI-Zeile
+  und ein `MutationObserver` auf dem Dokument stoßen jetzt bei jeder
+  relevanten Änderung einen entprellten Re-Fit an. Zusätzliches
+  CSS-Sicherheitsnetz: `text-overflow: ellipsis` auf `.kpi-value`, falls
+  eine Anpassung doch einmal minimal zu spät kommt – sauberes Abschneiden
+  statt hartem, unleserlichem Clip.
+- 6 neue Regressionstests (Farbkontrast, Datenintegrität, Projektanzahl-
+  Filter inkl. Testisolation mit Cleanup, CSS- und JS-Vorhandensein);
+  Suite: 158, zweifach hintereinander lauffähig ohne Seiteneffekte auf
+  die Projektdateien.
+
 ## v4.9 – Mehrsprachigkeit: DE/EN/FR/ES mit Live-Umschaltung (2026-07)
 
 ### Sprachumschaltung

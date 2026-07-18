@@ -10,10 +10,17 @@ Standardgroesse ist als Maximum fixiert; bei kurzen Werten waechst die
 Schrift also nicht darueber hinaus.
 
 Technik: Streamlit kann Schriftgroessen nicht selbst an Textbreiten
-anpassen; ein kleines Skript (ueber components.html, unsichtbarer iframe)
+anpassen; ein kleines Skript (ueber st.iframe, unsichtbarer 1px-Rahmen)
 misst im Eltern-Dokument scrollWidth vs. clientWidth der Wert-Elemente
-einer Gruppe und setzt die gemeinsame Groesse. Es laeuft erneut bei
-Fensteraenderung und nach dem Laden der Webfonts.
+einer Gruppe und setzt die gemeinsame Groesse. Damit das nicht nur beim
+ersten Rendern passt, sondern auch nach spaeteren Layoutverschiebungen
+(Sidebar auf-/zuklappen, Tab-/Expander-Wechsel, ein weiterer Streamlit-
+Rerun mit anderen Werten) korrekt bleibt, beobachtet ein ResizeObserver
+die KPI-Zeile selbst und ein MutationObserver das Dokument - beide
+stossen bei jeder relevanten Aenderung einen entprellten Re-Fit an,
+statt sich (wie zuvor) nur auf ein festes Zeitfenster nach dem Laden zu
+verlassen. Zusaetzliches Sicherheitsnetz: `text-overflow: ellipsis` in
+app/theme.py, falls eine Anpassung einmal minimal zu spaet kommt.
 """
 
 from __future__ import annotations
@@ -55,22 +62,52 @@ _FIT_SCRIPT = """
         els.forEach(el => { el.style.fontSize = size + "px"; });
     }
 
+    // Entprellter Re-Fit: mehrere Ausloeser (Resize, DOM-Aenderungen durch
+    // Streamlit-Reruns, Sidebar/Tab/Expander-Umschaltungen) koennen kurz
+    // hintereinander feuern; ein Timer buendelt sie zu einem fit()-Aufruf.
+    const key = "__kpiFit_" + GROUP;
+    function fitDebounced() {
+        clearTimeout(P[key + "_t"]);
+        P[key + "_t"] = setTimeout(fit, 60);
+    }
+
     fit();
     P.requestAnimationFrame(fit);
     setTimeout(fit, 150);
     setTimeout(fit, 600);
     if (doc.fonts && doc.fonts.ready) doc.fonts.ready.then(fit);
 
-    // Resize-Listener nur einmal pro Gruppe registrieren (Reruns erzeugen
-    // neue iframes; fit() fragt das DOM jedes Mal frisch ab, der alte
-    // Listener bleibt daher gueltig).
-    const key = "__kpiFit_" + GROUP;
+    // Diese Beobachter (nicht nur der initiale Timeout-Fahrplan) sind der
+    // eigentliche Grund, warum die Schrift bisher "manchmal" nicht passte:
+    // Sidebar-Toggle, Tab-/Expander-Wechsel oder ein spaeterer Streamlit-
+    // Rerun aendern die verfuegbare Breite NACH der letzten Messung, ohne
+    // ein 'resize'-Event auf dem window auszuloesen. ResizeObserver auf der
+    // KPI-Zeile selbst und MutationObserver auf dem Dokument fangen genau
+    // diese Faelle ab und stossen einen frischen fit() an. Pro Gruppe nur
+    // einmal registrieren (Reruns erzeugen neue iframes, der Beobachter
+    // bleibt aber gueltig und fragt live).
     if (!P[key]) {
         P[key] = true;
-        P.addEventListener("resize", function () {
-            clearTimeout(P[key + "_t"]);
-            P[key + "_t"] = setTimeout(fit, 120);
+        P.addEventListener("resize", fitDebounced);
+
+        const resizeObs = new P.ResizeObserver(fitDebounced);
+        const mutationObs = new P.MutationObserver(fitDebounced);
+        function beobachteZeile() {
+            const els = doc.querySelectorAll(
+                '.kpi-value[data-kpi-group="' + GROUP + '"]'
+            );
+            els.forEach(el => {
+                const zeile = el.closest(".kpi-row") || el.parentElement;
+                if (zeile) resizeObs.observe(zeile);
+            });
+        }
+        beobachteZeile();
+        mutationObs.observe(doc.body, {
+            childList: true, subtree: true, characterData: true,
         });
+        // Nach DOM-Mutationen (z.B. Rerun ersetzt die Zeile durch neue
+        // Knoten) erneut an den frischen Elementen beobachten.
+        P[key + "_reobs"] = setInterval(beobachteZeile, 1000);
     }
 })();
 </script>

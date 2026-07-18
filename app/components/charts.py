@@ -50,14 +50,18 @@ def opex_stacked_chart(df: pd.DataFrame, opex_posten: list[str]) -> go.Figure:
             hovertemplate=_EUR_HOVER + "<extra>%{fullData.name}</extra>",
         )
     fig.add_bar(
-        x=df["jahr"], y=df["gemeindeabgabe_eur"], name="Gemeindeabgabe",
-        marker_color="#7B241C",
-        hovertemplate=_EUR_HOVER + "<extra>Gemeindeabgabe</extra>",
+        x=df["jahr"], y=df["gemeindeabgabe_eur"],
+        name=txt("diagramme.serie_gemeindeabgabe"),
+        marker_color=Colors.INK,
+        hovertemplate=_EUR_HOVER
+        + f"<extra>{txt('diagramme.serie_gemeindeabgabe')}</extra>",
     )
     fig.add_bar(
-        x=df["jahr"], y=df["direktvermarktungskosten_eur"], name="Direktvermarktung",
-        marker_color="#4D5656",
-        hovertemplate=_EUR_HOVER + "<extra>Direktvermarktung</extra>",
+        x=df["jahr"], y=df["direktvermarktungskosten_eur"],
+        name=txt("diagramme.serie_direktvermarktung"),
+        marker_color=Colors.INK_SOFT,
+        hovertemplate=_EUR_HOVER
+        + f"<extra>{txt('diagramme.serie_direktvermarktung')}</extra>",
     )
     fig.update_layout(
         barmode="stack", yaxis_title="€", xaxis_title=txt("diagramme.achse_betriebsjahr"), height=420

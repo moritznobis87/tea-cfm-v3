@@ -75,9 +75,9 @@ def aktive_sprache() -> str:
 
 
 def sprachauswahl_label(code: str) -> str:
-    """Flagge + Anzeigename fuer das Dropdown, z. B. '🇬🇧 English'."""
+    """Flagge + Länderkürzel für das Dropdown, z. B. '🇬🇧 EN'."""
     eintrag = SPRACHEN.get(code, {"label": code, "flagge": ""})
-    return f"{eintrag['flagge']} {eintrag['label']}".strip()
+    return f"{eintrag['flagge']} {code.upper()}".strip()
 
 
 @lru_cache(maxsize=4)

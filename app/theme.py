@@ -184,6 +184,9 @@ _CSS = f"""
         line-height: 1.25;
         white-space: nowrap;
         overflow: hidden;
+        text-overflow: ellipsis;    /* Sicherheitsnetz, falls die JS-Anpassung
+                                       einen Reflow (Sidebar/Expander/Tab) einmal
+                                       nicht rechtzeitig einholt */
     }}
     /* 1px-iframes (Schriftgroessen-Skript, siehe app/components/kpi.py)
        samt Container aus dem Layoutfluss nehmen, damit kein Leerraum

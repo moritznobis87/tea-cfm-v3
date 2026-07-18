@@ -70,3 +70,6 @@ annotation_grenzzuschlag_p10_p90: "Valor de adjudicación marginal P10–P90"
 annotation_wettbewerbsphase: "Fase competitiva"
 chart_zuschlagskurve_titel: "Oferta ↔ probabilidad de adjudicación"
 serie_arbeitspunkt: "Punto de trabajo"
+
+serie_gemeindeabgabe: "Tasa municipal"
+serie_direktvermarktung: "Venta directa"

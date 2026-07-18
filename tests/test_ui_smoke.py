@@ -79,3 +79,117 @@ class TestSeitenRendern:
         at.sidebar.radio[0].set_value("annahmen")
         at.run()
         assert not at.exception
+
+
+class TestKPIUndChartBugfixes:
+    """Regressionstests fuer drei gemeldete Fehler: Gemeindeabgabe im
+    gestapelten Betriebskosten-Chart farblich nicht unterscheidbar von
+    Nachbarpositionen, Projektanzahl-KPI reagiert nicht auf den
+    Inaktiv-Filter, Schriftgroessen-Skript der KPI-Kacheln ohne
+    Ellipsis-Sicherheitsnetz."""
+
+    def test_gemeindeabgabe_farblich_unterscheidbar(self, project, global_assumptions):
+        """Gemeindeabgabe/Direktvermarktung erhalten Farben ausserhalb der
+        OPEX_SCALE-Warmtonfamilie, damit sie sich nicht mit den
+        Standard-OPEX-Segmenten (Pacht, Sonstiges etc.) optisch
+        vermischen - unabhaengig von der Anzahl konfigurierter
+        Standardpositionen."""
+        from app.components import charts
+        from app.theme import Colors
+        from engine import run_valuation
+
+        result = run_valuation(project, global_assumptions)
+        fig = charts.opex_stacked_chart(
+            result.cashflow.data, result.cashflow.opex_posten
+        )
+        namen = {tr.name: tr.marker.color for tr in fig.data}
+        assert namen["Gemeindeabgabe"] not in Colors.OPEX_SCALE
+        assert namen["Direktvermarktung"] not in Colors.OPEX_SCALE
+        assert namen["Gemeindeabgabe"] != namen["Direktvermarktung"]
+        # Beide klar von der letzten (dunkelsten) OPEX-Warmton-Farbe
+        # unterscheidbar, mit der sie im Stack direkt angrenzen.
+        assert namen["Gemeindeabgabe"] not in (
+            Colors.OPEX_SCALE[len(result.cashflow.opex_posten) - 1 :]
+        )
+
+    def test_gemeindeabgabe_werte_im_chart_vorhanden(
+        self, project, global_assumptions
+    ):
+        """Die Datenwerte selbst waren nie das Problem - Regressionsschutz,
+        dass der Trace weiterhin die korrekten, nicht-trivialen Werte
+        traegt."""
+        from app.components import charts
+        from engine import run_valuation
+
+        result = run_valuation(project, global_assumptions)
+        fig = charts.opex_stacked_chart(
+            result.cashflow.data, result.cashflow.opex_posten
+        )
+        trace = next(tr for tr in fig.data if tr.name == "Gemeindeabgabe")
+        assert any(v and v > 0 for v in trace.y)
+
+    def test_projektanzahl_kpi_respektiert_inaktiv_filter(self, at):
+        """Kernbug: die 'Projekte'-Kachel zaehlte immer alle Projekte,
+        unabhaengig vom Inaktiv-Status - jetzt folgt sie derselben
+        gefilterten Basis wie die uebrigen Portfolio-KPIs.
+
+        Der Toggle schreibt auf die echte Projektdatei auf der Platte
+        (data/projects/*.yaml) - try/finally stellt sicher, dass der
+        Ausgangszustand unabhaengig vom Testergebnis wiederhergestellt
+        wird, damit nachfolgende Tests nicht von einem versehentlich
+        inaktiv gebliebenen Projekt beeinflusst werden."""
+        import re
+
+        def kpi_werte(app):
+            markup = " ".join(
+                m.value for m in app.markdown
+                if m.value and "kpi-value" in m.value
+            )
+            return re.findall(r'data-kpi-group="portfolio"[^>]*>([^<]+)<', markup)
+
+        vorher = kpi_werte(at)
+        [b for b in at.button if b.key and b.key.startswith("open_")][0].click()
+        at.run()
+        assert not at.exception
+        btn = [b for b in at.button if b.key and b.key.startswith("aktiv_")][0]
+        assert btn.label == "Inaktiv schalten", (
+            "Projekt war vor dem Test bereits inaktiv - Testisolation verletzt"
+        )
+        try:
+            btn.click()
+            at.run()
+            assert not at.exception
+            nachher = kpi_werte(at)
+            # Alle fuenf KPIs (inkl. Projektanzahl an Position 0) muessen
+            # sich gemeinsam veraendern, wenn ein Projekt inaktiv wird.
+            assert vorher[0] != nachher[0], (
+                "Projektanzahl reagiert nicht auf Inaktiv-Filter"
+            )
+            assert int(nachher[0]) == int(vorher[0]) - 1
+        finally:
+            btn_zurueck = [
+                b for b in at.button if b.key and b.key.startswith("aktiv_")
+            ][0]
+            if btn_zurueck.label == "Aktivieren":
+                btn_zurueck.click()
+                at.run()
+
+    def test_kpi_value_hat_ellipsis_sicherheitsnetz(self):
+        """CSS-Sicherheitsnetz: falls die JS-Anpassung einen Reflow einmal
+        nicht rechtzeitig einholt, muss der Wert sauber mit '…'
+        abgeschnitten werden statt hart (unleserlich) geclippt."""
+        from app.theme import _CSS
+
+        block = _CSS[_CSS.index(".kpi-card .kpi-value"):]
+        block = block[:block.index("}")]
+        assert "text-overflow: ellipsis" in block
+        assert "overflow: hidden" in block
+
+    def test_kpi_fit_skript_beobachtet_layoutwechsel(self):
+        """Das Schriftgroessen-Skript verlaesst sich nicht mehr nur auf
+        feste Timeouts, sondern beobachtet Groessen-/DOM-Aenderungen
+        aktiv weiter (Sidebar/Tab/Expander-Wechsel, spaetere Reruns)."""
+        from app.components.kpi import _FIT_SCRIPT
+
+        assert "ResizeObserver" in _FIT_SCRIPT
+        assert "MutationObserver" in _FIT_SCRIPT

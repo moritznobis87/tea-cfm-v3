@@ -70,3 +70,6 @@ annotation_grenzzuschlag_p10_p90: "Grenzzuschlag P10–P90"
 annotation_wettbewerbsphase: "Wettbewerbsphase"
 chart_zuschlagskurve_titel: "Gebot ↔ Zuschlagswahrscheinlichkeit"
 serie_arbeitspunkt: "Arbeitspunkt"
+
+serie_gemeindeabgabe: "Gemeindeabgabe"
+serie_direktvermarktung: "Direktvermarktung"
