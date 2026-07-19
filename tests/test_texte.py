@@ -137,10 +137,10 @@ class TestSprachdropdownEndToEnd:
         at.run()
         assert not at.exception
         if code != "de":
-            dropdown = [
-                s for s in at.selectbox if s.key == "sprachauswahl_dropdown"
+            knopf = [
+                b for b in at.button if b.key == f"sprachauswahl_{code}"
             ][0]
-            dropdown.set_value(code)
+            knopf.click()
             at.run()
             assert not at.exception
         assert at.sidebar.radio[0].options == self._NAV_ERWARTET[code]
@@ -159,8 +159,7 @@ class TestSprachdropdownEndToEnd:
             default_timeout=300,
         )
         at.run()
-        dropdown = [s for s in at.selectbox if s.key == "sprachauswahl_dropdown"][0]
-        dropdown.set_value("en")
+        [b for b in at.button if b.key == "sprachauswahl_en"][0].click()
         at.run()
         assert not at.exception
 
@@ -335,10 +334,56 @@ class TestWeitereSeitenUebersetzt:
         )
         at.run()
         assert not at.exception
-        dropdown = [s for s in at.selectbox if s.key == "sprachauswahl_dropdown"][0]
-        dropdown.set_value("en")
+        [b for b in at.button if b.key == "sprachauswahl_en"][0].click()
         at.run()
         assert not at.exception
         labels = [e.label for e in at.sidebar.expander]
         assert any("Save / restore projects" in (lbl or "") for lbl in labels)
         assert any("Save / restore global assumptions" in (lbl or "") for lbl in labels)
+
+
+class TestFlaggenIcons:
+    """Regressionstest fuer den Wechsel von Emoji-Flaggen (nicht auf
+    allen Systemen/Browsern darstellbar, insbesondere Windows) auf
+    echte Bild-Icons im Sprach-Popover."""
+
+    def test_vier_flaggendateien_vorhanden_und_gueltig(self):
+        from PIL import Image
+
+        from app.config import FLAGS_DIR
+        from texte import SPRACHEN
+
+        for eintrag in SPRACHEN.values():
+            pfad = FLAGS_DIR / f"{eintrag['flagge']}.png"
+            assert pfad.exists(), pfad
+            with Image.open(pfad) as bild:
+                assert bild.format == "PNG"
+                assert bild.width > 0 and bild.height > 0
+
+    def test_popover_zeigt_flaggenbilder_und_schaltet_um(self):
+        """5 Bilder im Baum (1 Logo + 4 Flaggen) belegen, dass echte
+        Bild-Icons statt Emoji im Popover eingebettet sind; die
+        Sprachumschaltung per Button-Klick funktioniert weiterhin."""
+        from streamlit.testing.v1 import AppTest
+
+        at = AppTest.from_file(
+            str(Path(__file__).parent.parent / "streamlit_app.py"),
+            default_timeout=300,
+        )
+        at.run()
+        assert not at.exception
+        assert len(list(at.image)) == 5
+
+        sprach_buttons = [
+            b for b in at.button if b.key and b.key.startswith("sprachauswahl_")
+        ]
+        assert len(sprach_buttons) == 4
+        assert {b.key for b in sprach_buttons} == {
+            "sprachauswahl_de", "sprachauswahl_en",
+            "sprachauswahl_fr", "sprachauswahl_es",
+        }
+
+        [b for b in at.button if b.key == "sprachauswahl_en"][0].click()
+        at.run()
+        assert not at.exception
+        assert "New Project" in at.sidebar.radio[0].options

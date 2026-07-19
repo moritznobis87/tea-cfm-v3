@@ -44,6 +44,7 @@ apply_theme()
 # set_page_config der allererste Streamlit-Befehl des Skripts ist, und die
 # Views fuehren beim Import bereits Streamlit-Code aus (Caching-Dekoratoren).
 from app.components.sidebar import render_import_export  # noqa: E402
+from app.config import FLAGS_DIR  # noqa: E402
 from app.views.assumptions import render_assumptions  # noqa: E402
 from app.views.auktion import render_auktion  # noqa: E402
 from app.views.new_project import render_new_project  # noqa: E402
@@ -64,23 +65,36 @@ col_title.markdown(
     unsafe_allow_html=True,
 )
 
-# Sprachauswahl (Flagge + Name); die Auswahl greift ueber
-# texte.aktive_sprache() ab dem naechsten Rerun ueberall in der App -
-# eigener Widget-Key, damit kein Konflikt mit dem Speicher-Schluessel
-# (SESSION_KEY) entsteht, den wir hier bewusst selbst befuellen.
+# Sprachauswahl als Popover mit echten Flaggen-Bildicons (assets/flags/):
+# Emoji-Flaggen werden je nach Betriebssystem/Browser/Schriftart oft
+# nicht dargestellt (u.a. verbreitet unter Windows), und st.selectbox
+# kann grundsaetzlich keine Bilder in seinen Optionen anzeigen (nur
+# Text via format_func) - st.popover erlaubt dagegen beliebigen Inhalt,
+# hier eine Zeile Bild+Button je Sprache. Trigger nutzt ein Material-
+# Icon (":material/..."), das Streamlit selbst mitliefert und damit
+# ebenfalls unabhaengig von der System-Emoji-Schrift zuverlaessig
+# rendert.
 _sprachcodes = list(SPRACHEN)
 _aktuell = st.session_state.get(SESSION_KEY, _sprachcodes[0])
-_gewaehlt = col_sprache.selectbox(
-    "Sprache / Language",
-    _sprachcodes,
-    index=_sprachcodes.index(_aktuell) if _aktuell in _sprachcodes else 0,
-    format_func=sprachauswahl_label,
-    key="sprachauswahl_dropdown",
-    label_visibility="collapsed",
-)
-if _gewaehlt != _aktuell:
-    st.session_state[SESSION_KEY] = _gewaehlt
-    st.rerun()
+if _aktuell not in _sprachcodes:
+    _aktuell = _sprachcodes[0]
+with col_sprache.popover(
+    sprachauswahl_label(_aktuell), icon=":material/language:",
+    use_container_width=True,
+):
+    for code in _sprachcodes:
+        col_flagge, col_knopf = st.columns([1, 3], vertical_alignment="center")
+        flaggen_pfad = FLAGS_DIR / f"{SPRACHEN[code]['flagge']}.png"
+        if flaggen_pfad.exists():
+            col_flagge.image(str(flaggen_pfad), width=28)
+        if col_knopf.button(
+            SPRACHEN[code]["label"],
+            key=f"sprachauswahl_{code}",
+            type="primary" if code == _aktuell else "secondary",
+            width="stretch",
+        ) and code != _aktuell:
+            st.session_state[SESSION_KEY] = code
+            st.rerun()
 
 st.markdown('<div class="app-header-rule"></div>', unsafe_allow_html=True)
 

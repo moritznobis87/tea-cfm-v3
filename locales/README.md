@@ -31,11 +31,16 @@ in `engine/io_ergebnis_excel.py`.
 
 ## Sprachumschaltung in der App
 
-Oben rechts in der Kopfzeile sitzt ein Dropdown mit Flagge und
-Länderkürzel (🇦🇹 DE · 🇬🇧 EN · 🇫🇷 FR · 🇪🇸 ES). Die Auswahl landet in
-`st.session_state["tea_sprache"]` (`texte.SESSION_KEY`) und wirkt ab
-dem nächsten Rerun in der **gesamten** App: Navigation, Sidebar
-(Sichern/Wiederherstellen), sämtliche Formulare, das komplette
+Oben rechts in der Kopfzeile öffnet ein Symbol (Weltkugel-Icon) ein
+Popover mit den vier Sprachen – jede Zeile zeigt die echte
+Flaggen-Grafik (`assets/flags/*.png`) neben dem Sprachnamen. Bewusst
+kein `st.selectbox` mit Emoji-Flaggen: Emoji-Länderflaggen werden auf
+etlichen Systemen (u. a. verbreitet unter Windows) und in manchen
+Browsern gar nicht dargestellt, und `st.selectbox` kann ohnehin keine
+Bilder in seinen Optionen zeigen, nur Text. Ein Klick auf eine Sprache
+landet in `st.session_state["tea_sprache"]` (`texte.SESSION_KEY`) und
+wirkt ab dem nächsten Rerun in der **gesamten** App: Navigation,
+Sidebar (Sichern/Wiederherstellen), sämtliche Formulare, das komplette
 Projekt-Dashboard, die Ausschreibungsseite, Globale Annahmen,
 Diagramme sowie neu erzeugte PDF- und Excel-Exporte. Alle vier
 Sprachen sind vollständig gepflegt – 696 Schlüssel je Sprache (382 UI-
@@ -54,8 +59,9 @@ ohne Streamlit-Session) greift stattdessen die Umgebungsvariable
 2. Werte in allen vier YAML-Dateien übersetzen (Schlüssel und
    `{platzhalter}` unverändert lassen).
 3. Sprachcode in `texte.py` in der `SPRACHEN`-Registry ergänzen (Code,
-   Anzeigename, Flaggen-Emoji) – erscheint danach automatisch im
-   Dropdown.
+   Anzeigename, Flaggen-Dateiname) und eine passende Flaggengrafik
+   unter `assets/flags/<dateiname>.png` ablegen – erscheint danach
+   automatisch im Popover.
 
 Eine Übersetzung muss nicht sofort vollständig sein: Fehlt ein
 Schlüssel in der Zielsprache, greift automatisch der deutsche Text;

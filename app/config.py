@@ -21,6 +21,9 @@ ASSETS_DIR = ROOT_DIR / "assets"
 LOGO_PATH = ASSETS_DIR / "TRI_Logo_Pure_RGB_Red.png"
 #: Beschnittene, quadratische Logovariante fuer den Browser-Tab.
 FAVICON_PATH = ASSETS_DIR / "favicon.png"
+#: Ordner mit den Flaggen-Icons fuer den Sprachumschalter (siehe
+#: texte.SPRACHEN fuer die Zuordnung Sprachcode -> Dateiname).
+FLAGS_DIR = ASSETS_DIR / "flags"
 
 APP_TITLE = "TEA PV-Projektbewertung"
 

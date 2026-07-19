@@ -1,5 +1,27 @@
 # Changelog
 
+## v4.13 – Sprachumschalter: echte Flaggen-Icons statt Emoji (2026-07)
+
+- Emoji-Länderflaggen (🇦🇹 🇬🇧 🇫🇷 🇪🇸) werden auf etlichen Systemen und
+  in manchen Browsern nicht dargestellt (u. a. verbreitet unter
+  Windows, das keine regionalen Indikatorsymbole in vielen
+  System-Schriftarten unterstützt) – zusätzlich kann `st.selectbox`
+  ohnehin keine Bilder in seinen Optionen zeigen, nur Text. Der
+  Sprachumschalter wurde deshalb von `st.selectbox` auf ein
+  `st.popover` mit **echten PNG-Flaggen-Icons** umgebaut
+  (`assets/flags/{at,gb,fr,es}.png`, lokal generiert, keine externe
+  Netzwerkabhängigkeit im Betrieb).
+- Trigger-Button zeigt das aktuelle Länderkürzel mit Streamlits
+  eingebautem Material-Icon (`:material/language:`) statt eines
+  Emojis – ebenfalls unabhängig von der System-Schriftart zuverlässig
+  darstellbar. Popover-Inhalt: eine Zeile Flagge + Sprachname je
+  Sprache, aktuell aktive Sprache farblich hervorgehoben.
+- Funktional unverändert: Ein Klick setzt weiterhin
+  `st.session_state["tea_sprache"]` und wirkt sofort auf die gesamte
+  App. 2 neue Tests (Flaggendateien vorhanden und gültige PNGs,
+  Popover bettet 4 Bilder + Umschaltung funktioniert); bestehende
+  Dropdown-Tests auf Button-Klicks umgestellt; Suite: 165.
+
 ## v4.12 – Vollständige Übersetzung: alle verbliebenen Texte erfasst (2026-07)
 
 - Gründliche Neuvermessung der gesamten App ergab 226 weitere

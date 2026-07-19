@@ -41,13 +41,18 @@ import yaml
 LOCALES_DIR = Path(__file__).resolve().parent / "locales"
 STANDARD_SPRACHE = "de"
 
-#: Unterstuetzte Sprachen: Code -> (Anzeigename, Flaggen-Emoji).
-#: Reihenfolge bestimmt die Reihenfolge im Sprachauswahl-Dropdown.
+#: Unterstuetzte Sprachen: Code -> (Anzeigename, Flaggen-Dateiname).
+#: Die Flaggen liegen als PNG unter assets/flags/<flagge>.png (siehe
+#: app.config.FLAGS_DIR) - Emoji-Flaggen werden je nach Betriebssystem/
+#: Browser/Schriftart oft nicht dargestellt (z. B. Windows verbreitet)
+#: und st.selectbox kann ohnehin keine Bilder in seinen Optionen
+#: anzeigen; der Sprachumschalter in streamlit_app.py baut deshalb
+#: einen eigenen Dropdown ueber st.popover mit echten Bild-Icons.
 SPRACHEN: dict[str, dict[str, str]] = {
-    "de": {"label": "Deutsch", "flagge": "🇦🇹"},
-    "en": {"label": "English", "flagge": "🇬🇧"},
-    "fr": {"label": "Français", "flagge": "🇫🇷"},
-    "es": {"label": "Español", "flagge": "🇪🇸"},
+    "de": {"label": "Deutsch", "flagge": "at"},
+    "en": {"label": "English", "flagge": "gb"},
+    "fr": {"label": "Français", "flagge": "fr"},
+    "es": {"label": "Español", "flagge": "es"},
 }
 
 #: Session-State-Schluessel, unter dem die App-Seite (streamlit_app.py)
@@ -75,9 +80,11 @@ def aktive_sprache() -> str:
 
 
 def sprachauswahl_label(code: str) -> str:
-    """Flagge + Länderkürzel für das Dropdown, z. B. '🇬🇧 EN'."""
-    eintrag = SPRACHEN.get(code, {"label": code, "flagge": ""})
-    return f"{eintrag['flagge']} {code.upper()}".strip()
+    """Länderkürzel für Popover-Trigger/Bild-Alt-Text, z. B. 'EN'.
+    Die Flagge selbst wird als Bild-Icon dargestellt (siehe
+    streamlit_app.py) - Emoji-Flaggen werden je nach Betriebssystem/
+    Browser nicht zuverlässig gerendert."""
+    return code.upper()
 
 
 @lru_cache(maxsize=4)
