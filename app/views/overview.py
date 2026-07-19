@@ -131,11 +131,7 @@ def render_overview() -> None:
             txt("oberflaeche.portfolio_tab_tabelle"),
         ])
         with tab_karte:
-            st.caption(
-                "Spezifisches Invest gegen EK-Rendite; Blasengröße = "
-                "Anlagenleistung. Oben links steht das effiziente Portfolio: "
-                "hohe Rendite bei niedrigem spezifischem Invest."
-            )
+            st.caption(txt("oberflaeche.overview_bubble_hilfe"))
             st.plotly_chart(
                 charts.portfolio_bubble_chart(analytik, selected), width="stretch"
             )

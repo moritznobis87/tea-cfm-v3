@@ -29,7 +29,7 @@ def _signed_colors(values: pd.Series) -> list[str]:
 def revenue_chart(df: pd.DataFrame) -> go.Figure:
     fig = go.Figure()
     fig.add_bar(
-        x=df["jahr"], y=df["erloes_eur"], name="Umsatzerlöse",
+        x=df["jahr"], y=df["erloes_eur"], name=txt("diagramme.serie_umsatzerloese"),
         marker_color=Colors.POSITIVE, hovertemplate=_EUR_HOVER + "<extra></extra>",
     )
     fig.update_layout(
@@ -91,7 +91,7 @@ def financing_cashflow_chart(df: pd.DataFrame) -> go.Figure:
     kreditaufnahme = df["cf_finanzierung_eur"] + df["tilgung_eur"]
     fig = go.Figure()
     fig.add_bar(
-        x=df["jahr"], y=kreditaufnahme, name="Kreditaufnahme",
+        x=df["jahr"], y=kreditaufnahme, name=txt("diagramme.serie_kreditaufnahme"),
         marker_color=Colors.POSITIVE, hovertemplate=_EUR_HOVER + "<extra></extra>",
     )
     fig.add_bar(
@@ -246,9 +246,15 @@ def equity_waterfall_chart(df: pd.DataFrame) -> go.Figure:
                 "relative", "relative", "relative", "total",
             ],
             x=[
-                "Umsatzerlöse", "Betriebskosten", "Zinsen", "Steuern",
-                "Operativer CF", "Investition", "Kreditaufnahme", "Tilgung",
-                "Equity-Cashflow",
+                txt("diagramme.serie_umsatzerloese"),
+                txt("diagramme.serie_betriebskosten"),
+                txt("diagramme.serie_zinsen_waterfall"),
+                txt("diagramme.serie_steuern"),
+                txt("diagramme.serie_operativer_cf"),
+                txt("diagramme.serie_investition"),
+                txt("diagramme.serie_kreditaufnahme"),
+                txt("diagramme.serie_tilgung"),
+                txt("diagramme.serie_equity_cashflow"),
             ],
             y=[erloese, opex, zinsen, steuern, 0, capex, kredit, tilgung, 0],
             connector=dict(line=dict(color=Colors.LINE, width=1)),
@@ -281,16 +287,16 @@ def verguetung_chart(
         name=txt("diagramme.serie_verguetungssatz"), mode="lines",
         line=dict(color=Colors.INK, width=2.5),
         fill="tonexty", fillcolor="rgba(138, 166, 160, 0.25)",
-        hovertemplate="%{y:,.2f} ct/kWh<extra>Vergütungssatz</extra>",
+        hovertemplate="%{y:,.2f} ct/kWh<extra>" + txt("diagramme.serie_verguetungssatz") + "</extra>",
     )
     fig.add_hline(
         y=eag_zuschlag_ct, line_dash="dot", line_color=Colors.BRAND,
-        annotation_text="EAG-Zuschlagswert (nominal fix)",
+        annotation_text=txt("diagramme.annotation_eag_zuschlagswert_fix"),
         annotation_font_color=Colors.BRAND,
     )
     fig.add_vline(
         x=foerderdauer_jahre + 0.5, line_dash="dash", line_color=Colors.MUTED,
-        annotation_text="Förderende", annotation_position="top",
+        annotation_text=txt("diagramme.serie_foerderende"), annotation_position="top",
     )
     fig.update_layout(
         height=420, xaxis_title=txt("diagramme.achse_betriebsjahr"), yaxis_title="ct/kWh",
@@ -308,12 +314,12 @@ def revenue_split_chart(df: pd.DataFrame) -> go.Figure:
     fig.add_bar(
         x=betrieb["jahr"], y=betrieb["erloes_markt_eur"], name=txt("diagramme.serie_markterloes"),
         marker_color=Colors.POSITIVE,
-        hovertemplate=_EUR_HOVER + "<extra>Markterlös</extra>",
+        hovertemplate=_EUR_HOVER + f"<extra>{txt('diagramme.serie_markterloes')}</extra>",
     )
     fig.add_bar(
         x=betrieb["jahr"], y=betrieb["erloes_praemie_eur"], name=txt("diagramme.serie_marktpraemie") + " (EAG)",
         marker_color=Colors.NEUTRAL,
-        hovertemplate=_EUR_HOVER + "<extra>Marktprämie</extra>",
+        hovertemplate=_EUR_HOVER + f"<extra>{txt('diagramme.serie_marktpraemie')}</extra>",
     )
     fig.update_layout(
         barmode="stack", height=400, xaxis_title=txt("diagramme.achse_betriebsjahr"), yaxis_title="€",
@@ -458,7 +464,7 @@ def mc_irr_histogram(irr_werte, p10: float, p50: float, p90: float) -> go.Figure
     fig.add_histogram(
         x=[v * 100 for v in irr_werte], nbinsx=40,
         marker=dict(color=Colors.NEUTRAL, line=dict(color=Colors.PAPER, width=1)),
-        hovertemplate="%{x} %: %{y} Läufe<extra></extra>",
+        hovertemplate="%{x} %: %{y} " + txt("diagramme.achse_anzahl_laeufe") + "<extra></extra>",
     )
     for wert, name, farbe in [
         (p10, "P10", Colors.NEGATIVE),
@@ -470,8 +476,8 @@ def mc_irr_histogram(irr_werte, p10: float, p50: float, p90: float) -> go.Figure
             annotation_text=f"{name} {fmt_pct(wert)}", annotation_font_color=farbe,
         )
     fig.update_layout(
-        height=400, xaxis=dict(title="EK-Rendite", ticksuffix=" %"),
-        yaxis_title="Anzahl Läufe", showlegend=False, bargap=0.05,
+        height=400, xaxis=dict(title=txt("diagramme.achse_irr_kurz"), ticksuffix=" %"),
+        yaxis_title=txt("diagramme.achse_anzahl_laeufe"), showlegend=False, bargap=0.05,
     )
     return fig
 
@@ -508,7 +514,7 @@ def mc_fan_chart(mc) -> go.Figure:
     )
     fig.add_hline(y=0, line_dash="dot", line_color=Colors.MUTED)
     fig.update_layout(
-        height=420, xaxis_title="Jahr", yaxis_title="Kumulierter Equity-Cashflow (€)",
+        height=420, xaxis_title=txt("diagramme.achse_jahr_kurz"), yaxis_title=txt("diagramme.achse_kumulierter_cf"),
         hovermode="x unified",
     )
     return fig
@@ -544,7 +550,7 @@ def scenario_cum_chart(kum_df: pd.DataFrame) -> go.Figure:
         )
     fig.add_hline(y=0, line_dash="dot", line_color=Colors.MUTED)
     fig.update_layout(
-        height=400, xaxis_title="Jahr", yaxis_title="Kumulierter Equity-Cashflow (€)",
+        height=400, xaxis_title=txt("diagramme.achse_jahr_kurz"), yaxis_title=txt("diagramme.achse_kumulierter_cf"),
         hovermode="x unified",
     )
     return fig

@@ -25,7 +25,7 @@ from datetime import datetime
 import streamlit as st
 
 from app import services
-from app.config import MONATE
+from app.config import monate
 from engine import AnlagenTyp, CapexBreakdown, DirektvermarktungsModus, PVProject
 from texte import txt
 
@@ -65,23 +65,19 @@ def render_project_form(
 
     col_ibn1, col_ibn2 = st.columns(2)
     inbetriebnahme_jahr = col_ibn1.number_input(
-        "Inbetriebnahme – Jahr", min_value=2000, max_value=2100,
+        txt("oberflaeche.formular_ibn_jahr_label"), min_value=2000, max_value=2100,
         value=existing.inbetriebnahme_jahr if existing else datetime.now().year + 1,
         step=1, key=f"{form_key}_ibn_jahr_live",
     )
     inbetriebnahme_monat_label = col_ibn2.selectbox(
-        "Inbetriebnahme – Monat", MONATE,
+        txt("oberflaeche.formular_ibn_monat_label"), monate(),
         index=(existing.inbetriebnahme_monat - 1) if existing else 0,
         key=f"{form_key}_ibn_monat_live",
     )
-    inbetriebnahme_monat = MONATE.index(inbetriebnahme_monat_label) + 1
-    st.caption(
-        "ℹ️ Bestimmt das erste (anteilige) Betriebsjahr, die Cashflow-Daten "
-        "und ab welchem Kalenderjahr die Marktpreiskurve des gewählten "
-        "Szenarios (siehe unten) verwendet wird."
-    )
+    inbetriebnahme_monat = monate().index(inbetriebnahme_monat_label) + 1
+    st.caption(txt("oberflaeche.formular_ibn_monat_hilfe"))
 
-    st.markdown("**Investkosten**")
+    st.markdown(txt("oberflaeche.formular_investkosten_titel"))
     capex_defaults = existing.capex if existing else CapexBreakdown()
     capex_einheit = st.radio(
         "Einheit", options=["€/kWp", "€"], horizontal=True,
@@ -205,14 +201,13 @@ def render_project_form(
                 "Direktvermarktungskosten (€/MWh)", min_value=0.0,
                 value=direktvermarktung_default, step=0.1,
                 key=f"{form_key}_direktvermarktung",
-                help="Kosten für Bilanzkreis, Prognose, Marktzugang - "
-                     "üblicherweise ca. 1 €/MWh (0,1 ct/kWh).",
+                help=txt("oberflaeche.formular_direktvermarktung_hilfe"),
             )
         if anlagentyp_label == "Konventionell":
-            st.caption(
-                f"Konventionell: automatischer Abschlag von 25 % wird angewendet "
-                f"→ effektiv {eag_zuschlag * 0.75:.2f} ct/kWh"
-            )
+            st.caption(txt(
+                "oberflaeche.formular_konventionell_abschlag_hinweis",
+                wert=f"{eag_zuschlag * 0.75:.2f}",
+            ))
 
         szenario_namen = global_assumptions.szenario_namen or ["Aurora 10/25"]
         default_szenario = existing.marktpreisszenario if existing else szenario_namen[0]
@@ -222,10 +217,9 @@ def render_project_form(
             else 0
         )
         marktpreisszenario = st.selectbox(
-            "Marktpreisszenario", szenario_namen, index=szenario_index,
-            key=f"{form_key}_marktpreisszenario",
-            help="Bestimmt die Marktwert-Solar- und Anteil-negativer-Stunden-"
-                 "Kurve für dieses Projekt (siehe Globale Annahmen).",
+            txt("oberflaeche.formular_marktpreisszenario_label"), szenario_namen,
+            index=szenario_index, key=f"{form_key}_marktpreisszenario",
+            help=txt("oberflaeche.formular_marktpreisszenario_hilfe"),
         )
 
         if pacht_einheit == "€/ha/Jahr":
@@ -237,7 +231,8 @@ def render_project_form(
                     else 10.0
                 )
             flaeche_ha = st.number_input(
-                "Projektfläche (ha)", min_value=0.01, step=0.5, key=flaeche_key,
+                txt("oberflaeche.formular_projektflaeche_label"),
+                min_value=0.01, step=0.5, key=flaeche_key,
             )
 
             pacht_ha_key = f"{form_key}_pacht_ha"
@@ -317,13 +312,14 @@ def render_project_form(
         )
         c9, _, _, _ = st.columns(4)
         poenale = capex_feld(
-            c9, "Pönale + Puffer",
+            c9, txt("oberflaeche.formular_capex_poenale"),
             capex_defaults.poenale_puffer_eur if existing else 35000.0,
             "poenale",
         )
 
         button_label = (
-            "Änderungen speichern" if existing else "Projekt anlegen und berechnen"
+            txt("oberflaeche.formular_btn_speichern") if existing
+            else txt("oberflaeche.formular_btn_anlegen")
         )
         submitted = st.form_submit_button(button_label, type="primary")
 

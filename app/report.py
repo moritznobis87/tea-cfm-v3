@@ -165,13 +165,13 @@ def _chart_gesamt_cashflow(df: pd.DataFrame) -> Image:
 
 def _chart_wertbruecke(df: pd.DataFrame) -> Image:
     posten = [
-        ("Umsatz-\nerlöse", float(df["erloes_eur"].sum())),
-        ("Betriebs-\nkosten", -float(df["opex_gesamt_eur"].sum())),
-        ("Zinsen", -float(df["zinsen_eur"].sum())),
-        ("Steuern", -float(df["steuer_eur"].sum())),
-        ("Investition", float(df["cf_invest_eur"].sum())),
-        ("Kredit-\naufnahme", float(df.loc[df["jahr"] == 0, "cf_finanzierung_eur"].iloc[0])),
-        ("Tilgung", -float(df["tilgung_eur"].sum())),
+        (txt("bericht.chart_umsatzerloese_label"), float(df["erloes_eur"].sum())),
+        (txt("bericht.chart_betriebskosten_label"), -float(df["opex_gesamt_eur"].sum())),
+        (txt("diagramme.serie_zinsen_waterfall"), -float(df["zinsen_eur"].sum())),
+        (txt("diagramme.serie_steuern"), -float(df["steuer_eur"].sum())),
+        (txt("diagramme.serie_investition"), float(df["cf_invest_eur"].sum())),
+        (txt("bericht.chart_kreditaufnahme_label"), float(df.loc[df["jahr"] == 0, "cf_finanzierung_eur"].iloc[0])),
+        (txt("diagramme.serie_tilgung"), -float(df["tilgung_eur"].sum())),
     ]
     fig, ax = _fig(6.2)
     fmt, einheit = _eur_achse(posten[0][1])
@@ -188,9 +188,9 @@ def _chart_wertbruecke(df: pd.DataFrame) -> Image:
                 xytext=(0, 4), ha="center", color=INK, fontsize=8.5,
                 fontweight="bold")
     ax.set_xticks(range(len(posten) + 1))
-    ax.set_xticklabels([n for n, _ in posten] + ["Equity-\nCashflow"], fontsize=7.5)
+    ax.set_xticklabels([n for n, _ in posten] + [txt("bericht.chart_equity_cashflow_label")], fontsize=7.5)
     ax.yaxis.set_major_formatter(fmt)
-    ax.set_ylabel(f"Summe Laufzeit ({einheit})")
+    ax.set_ylabel(f"{txt('bericht.chart_summe_laufzeit')} ({einheit})")
     ax.axhline(0, color=MUTED, linewidth=0.8)
     return _fig_zu_bild(fig)
 
@@ -199,21 +199,21 @@ def _chart_verguetung(df: pd.DataFrame, zuschlag_ct: float, dauer: int) -> Image
     betrieb = df[df["jahr"] >= 1]
     fig, ax = _fig()
     ax.plot(betrieb["jahr"], betrieb["marktwert_nominal_ct_kwh"], color=NEUTRAL,
-            linewidth=1.4, label="Marktwert Solar (nominal)")
+            linewidth=1.4, label=txt("bericht.chart_marktwert_solar_nominal"))
     ax.plot(betrieb["jahr"], betrieb["verguetungssatz_ct_kwh"], color=INK,
-            linewidth=1.8, label="Vergütungssatz")
+            linewidth=1.8, label=txt("diagramme.serie_verguetungssatz"))
     ax.fill_between(
         betrieb["jahr"], betrieb["marktwert_nominal_ct_kwh"],
         betrieb["verguetungssatz_ct_kwh"], color=NEUTRAL, alpha=0.25,
-        label="Marktprämie",
+        label=txt("diagramme.serie_marktpraemie"),
     )
     ax.axhline(zuschlag_ct, color=BRAND, linewidth=1.1, linestyle="--",
-               label="EAG-Zuschlagswert (nominal fix)")
+               label=txt("diagramme.annotation_eag_zuschlagswert_fix"))
     ax.axvline(dauer + 0.5, color=MUTED, linewidth=0.9, linestyle=":")
-    ax.annotate("Förderende", (dauer + 0.5, ax.get_ylim()[1]),
+    ax.annotate(txt("diagramme.serie_foerderende"), (dauer + 0.5, ax.get_ylim()[1]),
                 textcoords="offset points", xytext=(4, -10), color=MUTED,
                 fontsize=7.5)
-    ax.set_xlabel("Betriebsjahr")
+    ax.set_xlabel(txt("diagramme.achse_betriebsjahr"))
     ax.set_ylabel("ct/kWh")
     ax.legend(loc="upper left", ncol=2)
     return _fig_zu_bild(fig)
@@ -224,13 +224,13 @@ def _chart_erloes_split(df: pd.DataFrame) -> Image:
     fig, ax = _fig()
     fmt, einheit = _eur_achse(betrieb["erloes_eur"].max())
     ax.bar(betrieb["jahr"], betrieb["erloes_markt_eur"], color=POSITIVE,
-           width=0.72, label="Markterlös")
+           width=0.72, label=txt("diagramme.serie_markterloes"))
     ax.bar(betrieb["jahr"], betrieb["erloes_praemie_eur"],
            bottom=betrieb["erloes_markt_eur"], color=NEUTRAL, width=0.72,
-           label="Marktprämie (EAG)")
+           label=txt("bericht.chart_marktpraemie_eag"))
     ax.yaxis.set_major_formatter(fmt)
-    ax.set_ylabel(f"Erlöse ({einheit})")
-    ax.set_xlabel("Betriebsjahr")
+    ax.set_ylabel(f"{txt('bericht.chart_erloese_label')} ({einheit})")
+    ax.set_xlabel(txt("diagramme.achse_betriebsjahr"))
     ax.legend(loc="upper right")
     return _fig_zu_bild(fig)
 
@@ -353,7 +353,7 @@ def _chart_mc_histogramm(mc: MonteCarloResult, p10: float, p50: float,
                     textcoords="offset points", xytext=(2, -10), color=farbe,
                     fontsize=7.5)
     ax.set_xlabel("EK-Rendite (%)")
-    ax.set_ylabel("Anzahl Läufe")
+    ax.set_ylabel(txt("diagramme.achse_anzahl_laeufe"))
     return _fig_zu_bild(fig)
 
 
@@ -485,7 +485,7 @@ def _chart_auktion_historie(df) -> Image:
     ax.plot(x, df["preisobergrenze_ct"], color=BRAND, linewidth=1.2,
             linestyle="--", label="Preisobergrenze")
     ax.plot(x, df["zuschlag_max_ct"], color=INK, linewidth=1.8, marker="o",
-            markersize=3, label="Höchster Zuschlag")
+            markersize=3, label=txt("diagramme.serie_hoechster_zuschlag"))
     ax.plot(x, df["zuschlag_mittel_ct"], color=INK_SOFT, linewidth=1.6,
             marker="o", markersize=3, label="Ø Zuschlag (gewichtet)")
     ax.plot(x, df["zuschlag_min_ct"], color=NEUTRAL, linewidth=1.2,
@@ -746,19 +746,24 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     story.append(Spacer(1, 1.0 * cm))
 
     steckbrief = [
-        ["Anlagentyp", typ, "Marktpreisszenario", ea.marktpreisszenario_name],
-        ["Nennleistung", fmt_kwp(p.nennleistung_kwp), "EAG-Zuschlagswert",
+        [txt("bericht.deckblatt_anlagentyp"), typ,
+         txt("bericht.deckblatt_marktpreisszenario"), ea.marktpreisszenario_name],
+        [txt("bericht.deckblatt_nennleistung"), fmt_kwp(p.nennleistung_kwp),
+         txt("bericht.deckblatt_eag_zuschlagswert"),
          fmt_ct_kwh(p.eag_zuschlagswert_ct_kwh)
-         + (f" (effektiv {fmt_ct_kwh(p.eag_zuschlagswert_effektiv_ct_kwh)})"
+         + (txt("bericht.deckblatt_effektiv_suffix",
+               wert=fmt_ct_kwh(p.eag_zuschlagswert_effektiv_ct_kwh))
             if p.anlagentyp == AnlagenTyp.KONVENTIONELL else "")],
-        ["Inbetriebnahme", f"{p.inbetriebnahme_monat:02d}/{p.inbetriebnahme_jahr}",
-         "Betrachtungszeitraum", f"{ea.betriebsdauer_jahre} Betriebsjahre"],
-        ["Spezifischer Ertrag",
+        [txt("bericht.deckblatt_inbetriebnahme"),
+         f"{p.inbetriebnahme_monat:02d}/{p.inbetriebnahme_jahr}",
+         txt("bericht.deckblatt_betrachtungszeitraum"),
+         txt("bericht.deckblatt_betriebsjahre", n=ea.betriebsdauer_jahre)],
+        [txt("bericht.deckblatt_spezifischer_ertrag"),
          f"{_de(p.vollbenutzungsstunden_kwh_kwp)} kWh/kWp",
-         "Regel negative Preise",
-         "6-Stunden-Regel (Österreich)"
+         txt("bericht.deckblatt_regel_negative_preise"),
+         txt("bericht.deckblatt_regel_6h")
          if ea.negative_stunden_regel == NegativeStundenRegel.SECHS_STUNDEN
-         else "1-Stunden-Regel (Deutschland)"],
+         else txt("bericht.deckblatt_regel_1h")],
     ]
     deck_tabelle = Table(steckbrief, colWidths=[3.6 * cm, 4.6 * cm, 4.2 * cm,
                                                 _INHALT_B - 12.4 * cm])
@@ -778,25 +783,14 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     story.append(deck_tabelle)
     story.append(Spacer(1, 7.2 * cm))
     story.append(Paragraph(
-        f"Stand: {heute} · Erstellt mit TEA PV-Projektbewertung · "
-        f"Berechnungsgrundlage: EAG-Marktprämienmodell (gleitende "
-        f"Marktprämie), nominale Cashflow-Rechnung",
-        _STYLE_CAPTION,
+        txt("bericht.deckblatt_stand_zeile", datum=heute), _STYLE_CAPTION,
     ))
-    story.append(Paragraph(
-        "Indikative Modellrechnung auf Basis der in Annex A und B "
-        "dokumentierten Annahmen. Diese Unterlage dient der internen "
-        "Entscheidungsvorbereitung; sie ist kein Angebot und keine Anlage-, "
-        "Steuer- oder Rechtsberatung. Die Ergebnisse hängen wesentlich von "
-        "den getroffenen Annahmen ab, insbesondere von Marktpreisprognosen "
-        "und regulatorischen Rahmenbedingungen.",
-        _STYLE_CAPTION,
-    ))
+    story.append(Paragraph(txt("bericht.deckblatt_disclaimer"), _STYLE_CAPTION))
     story.append(NextPageTemplate("inhalt"))
     story.append(PageBreak())
 
     # ---------------------------------------------------------- Inhaltsverzeichnis
-    story.append(Paragraph("Inhalt", _STYLE_H1))
+    story.append(Paragraph(txt("bericht.inhaltsverzeichnis_titel"), _STYLE_H1))
     toc = TableOfContents()
     toc.levelStyles = [_STYLE_TOC]
     story.append(toc)
@@ -825,50 +819,45 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     mc = inputs.monte_carlo
     prob_ziel = mc.wahrscheinlichkeit_irr_ueber(inputs.ziel_irr_pct)
 
-    summary_text = (
-        f"Das Projekt {p.name} ({typ}, {fmt_kwp(p.nennleistung_kwp)}, "
-        f"Inbetriebnahme {p.inbetriebnahme_monat:02d}/{p.inbetriebnahme_jahr}) "
-        f"erreicht auf Basis des Marktpreisszenarios "
-        f"„{ea.marktpreisszenario_name}“ eine Eigenkapitalrendite von "
-        f"<b>{fmt_pct(kpis.equity_irr)}</b> und liegt damit "
-        f"{_de(abs(irr_delta) * 100, 2)} Prozentpunkte "
-        f"{'über' if irr_delta >= 0 else 'unter'} der Zielrendite von "
-        f"{_de(inputs.ziel_irr_pct * 100, 1)} %. Der Kapitalwert bei einem "
-        f"Diskontsatz von {_de(inputs.diskontsatz_pct * 100, 1)} % beträgt "
-        f"{fmt_eur(inputs.npv_eur)}. "
-        f"Der Schuldendienst ist über die gesamte Kreditlaufzeit "
-        f"{'gedeckt (min. DSCR ' + fmt_dscr(kpis.dscr_min) + ')' if dscr_ok else 'NICHT durchgängig gedeckt (min. DSCR ' + fmt_dscr(kpis.dscr_min) + ')'}. "
-        f"Über die Betriebsdauer stammen {fmt_pct(praemien_anteil, 1)} der "
-        f"Erlöse aus der EAG-Marktprämie. In der Monte-Carlo-Simulation "
-        f"({mc.n_laeufe} Läufe) wird die Zielrendite in "
-        f"{fmt_pct(prob_ziel, 0)} der Läufe erreicht."
+    dscr_status = txt(
+        "bericht.summary_dscr_gedeckt" if dscr_ok else "bericht.summary_dscr_nicht_gedeckt",
+        dscr=fmt_dscr(kpis.dscr_min),
+    )
+    summary_text = txt(
+        "bericht.summary_text",
+        name=p.name, typ=typ, leistung=fmt_kwp(p.nennleistung_kwp),
+        monat=f"{p.inbetriebnahme_monat:02d}", jahr=p.inbetriebnahme_jahr,
+        szenario=ea.marktpreisszenario_name, irr=fmt_pct(kpis.equity_irr),
+        differenz=_de(abs(irr_delta) * 100, 2),
+        richtung=txt("bericht.summary_richtung_ueber") if irr_delta >= 0
+        else txt("bericht.summary_richtung_unter"),
+        ziel=_de(inputs.ziel_irr_pct * 100, 1),
+        diskontsatz=_de(inputs.diskontsatz_pct * 100, 1),
+        npv=fmt_eur(inputs.npv_eur), dscr_status=dscr_status,
+        praemien_anteil=fmt_pct(praemien_anteil, 1), n_laeufe=mc.n_laeufe,
+        prob_ziel=fmt_pct(prob_ziel, 0),
     )
     story.append(Paragraph(summary_text, _STYLE_TEXT))
     story.append(Spacer(1, 0.25 * cm))
 
     story.append(Paragraph(txt("bericht.abschnitt_cashflow_vermoegen"), _STYLE_H2))
     story.append(_chart_gesamt_cashflow(df))
-    story.append(Paragraph(
-        "Abb. 1: Jährlicher Gesamt-Cashflow (Balken) und kumulierter "
-        "Equity-Cashflow (Linie). Jahr 0 = Investitionszeitpunkt.",
-        _STYLE_CAPTION,
-    ))
+    story.append(Paragraph(txt("bericht.abb_1_caption"), _STYLE_CAPTION))
     story.append(PageBreak())
 
     # ------------------------------------------------------------ Ergebnisrechnung
     story.append(_Kapitel("2", txt("bericht.kapitel_2_titel")))
     story.append(Paragraph(txt("bericht.abschnitt_wertbruecke"), _STYLE_H2))
     story.append(_chart_wertbruecke(df))
-    story.append(Paragraph(
-        "Abb. 2: Von den Umsatzerlösen der gesamten Betriebsdauer über "
-        "Betriebskosten, Zinsen, Steuern und Finanzierung zum kumulierten "
-        "Equity-Cashflow.",
-        _STYLE_CAPTION,
-    ))
+    story.append(Paragraph(txt("bericht.abb_2_caption"), _STYLE_CAPTION))
 
     story.append(Paragraph(txt("bericht.abschnitt_cashflow_uebersicht"), _STYLE_H2))
-    zeilen = [["Jahr", "Erlöse", "Betriebs-\nkosten", "Zinsen", "Steuer",
-               "CF gesamt", "CF kumuliert"]]
+    zeilen = [[
+        txt("bericht.tab_1_col_jahr"), txt("bericht.tab_1_col_erloese"),
+        txt("bericht.tab_1_col_betriebskosten"), txt("bericht.tab_1_col_zinsen"),
+        txt("bericht.tab_1_col_steuer"), txt("bericht.tab_1_col_cf_gesamt"),
+        txt("bericht.tab_1_col_cf_kumuliert"),
+    ]]
     for _, r in df.iterrows():
         zeilen.append([
             str(int(r["jahr"])),
@@ -882,11 +871,7 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
                    _de(df["cf_gesamt_eur"].sum()), "—"])
     story.append(_tabelle(zeilen, breiten=[1.4 * cm] + [(_INHALT_B - 1.4 * cm) / 6] * 6,
                           schrift=7.2))
-    story.append(Paragraph(
-        "Tab. 1: Alle Beträge in €. Vollständige Zeitreihe inkl. AfA, "
-        "Verlustvortrag und Tilgung über den Excel-Export der App.",
-        _STYLE_CAPTION,
-    ))
+    story.append(Paragraph(txt("bericht.tab_1_caption"), _STYLE_CAPTION))
     story.append(PageBreak())
 
     # -------------------------------------------------------------------- Erloese
@@ -894,66 +879,54 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     story.append(Paragraph(txt("bericht.abschnitt_verguetung_marktwert"), _STYLE_H2))
     story.append(_chart_verguetung(df, ea.eag_zuschlagswert_effektiv_ct_kwh,
                                    ea.eag_foerderdauer_jahre))
-    story.append(Paragraph(
-        "Abb. 3: Gleitende Marktprämie nach EAG: Vergütet wird das Maximum "
-        "aus Marktwert und (nominal fixem) EAG-Zuschlagswert; die Fläche "
-        "zwischen den Kurven ist die Marktprämie. Nach dem Förderende trägt "
-        "der Markt allein.",
-        _STYLE_CAPTION,
-    ))
+    story.append(Paragraph(txt("bericht.abb_3_caption"), _STYLE_CAPTION))
     story.append(Paragraph(txt("bericht.abschnitt_markterloes_praemie"), _STYLE_H2))
     story.append(_chart_erloes_split(df))
-    story.append(Paragraph(
-        f"Abb. 4: Aufteilung der Erlöse. Über die Gesamtlaufzeit stammen "
-        f"{fmt_pct(praemien_anteil, 1)} der Erlöse "
-        f"({fmt_eur(praemie_gesamt)}) aus der Marktprämie.",
-        _STYLE_CAPTION,
-    ))
+    story.append(Paragraph(txt(
+        "bericht.abb_4_caption", praemien_anteil=fmt_pct(praemien_anteil, 1),
+        betrag=fmt_eur(praemie_gesamt),
+    ), _STYLE_CAPTION))
     story.append(PageBreak())
 
     # ---------------------------------------------------------------- Finanzierung
     story.append(_Kapitel("4", txt("bericht.kapitel_4_titel")))
     fremdkapital = ea.capex_total_eur * (1 - ea.eigenkapitalquote_pct)
     eigenkapital = ea.capex_total_eur * ea.eigenkapitalquote_pct
-    story.append(Paragraph(
-        f"Finanzierungsstruktur: {fmt_pct(ea.eigenkapitalquote_pct, 0)} "
-        f"Eigenkapital ({fmt_eur(eigenkapital)}), "
-        f"{fmt_pct(1 - ea.eigenkapitalquote_pct, 0)} Fremdkapital "
-        f"({fmt_eur(fremdkapital)}) zu {fmt_pct(ea.fremdkapitalzins_pct)} über "
-        f"{ea.kreditlaufzeit_jahre} Jahre ({ea.tilgungsart.value}"
-        f"{', tilgungsfreies Anlaufjahr' if ea.tilgungsfreies_anlaufjahr else ''}).",
-        _STYLE_TEXT,
-    ))
+    story.append(Paragraph(txt(
+        "bericht.finanzierungsstruktur_text",
+        ek_pct=fmt_pct(ea.eigenkapitalquote_pct, 0), ek_betrag=fmt_eur(eigenkapital),
+        fk_pct=fmt_pct(1 - ea.eigenkapitalquote_pct, 0), fk_betrag=fmt_eur(fremdkapital),
+        fk_zins=fmt_pct(ea.fremdkapitalzins_pct), laufzeit=ea.kreditlaufzeit_jahre,
+        tilgungsart=ea.tilgungsart.value,
+        anlaufjahr_suffix=txt("bericht.finanzierungsstruktur_anlaufjahr_suffix")
+        if ea.tilgungsfreies_anlaufjahr else "",
+    ), _STYLE_TEXT))
     if not df.dropna(subset=["dscr"]).empty:
         story.append(Paragraph(txt("bericht.abschnitt_dscr"), _STYLE_H2))
         story.append(_chart_dscr(df))
         story.append(Paragraph(
-            f"Abb. 5: DSCR je Betriebsjahr der Kreditlaufzeit; minimaler Wert "
-            f"{fmt_dscr(kpis.dscr_min)}.",
+            txt("bericht.abb_5_caption", dscr_min=fmt_dscr(kpis.dscr_min)),
             _STYLE_CAPTION,
         ))
         story.append(Paragraph(txt("bericht.abschnitt_schuldenprofil"), _STYLE_H2))
         story.append(_chart_schuldenprofil(df, fremdkapital))
-        story.append(Paragraph(
-            "Abb. 6: Restschuld (Fläche) sowie Zinsen und Tilgung "
-            "(Schuldendienst) über die Kreditlaufzeit.",
-            _STYLE_CAPTION,
-        ))
+        story.append(Paragraph(txt("bericht.abb_6_caption"), _STYLE_CAPTION))
     capex = p.capex
     story.append(_chart_strukturen(eigenkapital, fremdkapital, {
-        "EPC": capex.epc_eur, "Netzanschluss": capex.netzanschluss_eur,
-        "Trasse": capex.trasse_eur, "Widmung": capex.widmung_eur,
-        "Genehmigung": capex.genehmigung_eur,
-        "Sonstige": capex.sonstige_extern_eur, "AGM": capex.agm_eur,
-        "M&A": capex.m_and_a_eur, "Pönale/Puffer": capex.poenale_puffer_eur,
+        "EPC": capex.epc_eur,
+        txt("oberflaeche.projekt_capex_netzanschluss"): capex.netzanschluss_eur,
+        txt("oberflaeche.projekt_capex_trasse"): capex.trasse_eur,
+        txt("oberflaeche.projekt_capex_widmung"): capex.widmung_eur,
+        txt("oberflaeche.projekt_capex_genehmigung"): capex.genehmigung_eur,
+        txt("bericht.capex_sonstige"): capex.sonstige_extern_eur,
+        "AGM": capex.agm_eur, "M&A": capex.m_and_a_eur,
+        txt("bericht.capex_poenale_puffer_kurz"): capex.poenale_puffer_eur,
     }))
-    story.append(Paragraph("Abb. 7: Kapital- und Investitionsstruktur.",
-                           _STYLE_CAPTION))
+    story.append(Paragraph(txt("bericht.abb_7_caption"), _STYLE_CAPTION))
     story.append(Paragraph(txt("bericht.abschnitt_npv_diskontsatz"), _STYLE_H2))
     story.append(_chart_npv_kurve(inputs.result.npv_curve, kpis.equity_irr))
     story.append(Paragraph(
-        "Abb. 8: NPV-Kurve; die Nullstelle entspricht per Definition der "
-        "EK-Rendite (IRR).",
+        txt("bericht.abb_8_caption"),
         _STYLE_CAPTION,
     ))
     story.append(PageBreak())
@@ -962,41 +935,26 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     story.append(_Kapitel("5", txt("bericht.kapitel_5_titel")))
     story.append(Paragraph(txt("bericht.abschnitt_tornado"), _STYLE_H2))
     story.append(_chart_tornado(inputs.tornado))
-    story.append(Paragraph(
-        "Abb. 9: Wirkung der Einzelvariation jedes Werttreibers um ±10 % "
-        "auf die EK-Rendite (alle übrigen Annahmen konstant), sortiert nach "
-        "Spannweite. Grün: Verbesserung, Rot: Verschlechterung gegenüber "
-        "der Basis.",
-        _STYLE_CAPTION,
-    ))
+    story.append(Paragraph(txt("bericht.abb_9_caption"), _STYLE_CAPTION))
     story.append(Paragraph(txt("bericht.abschnitt_eag_varianten"), _STYLE_H2))
     story.append(_chart_eag_varianten(inputs.eag_sensitivitaet))
+    ziel_str = _de(inputs.ziel_irr_pct * 100, 1)
     if inputs.break_even_ct is None:
-        be_text = (
-            f"Die Zielrendite von {_de(inputs.ziel_irr_pct * 100, 1)} % ist "
-            f"im untersuchten Gebotsbereich (bis 15 ct/kWh) nicht erreichbar."
-        )
+        be_text = txt("bericht.be_text_nicht_erreichbar", ziel=ziel_str)
     elif inputs.break_even_ct <= 0.5:
-        be_text = (
-            f"Die Zielrendite von {_de(inputs.ziel_irr_pct * 100, 1)} % wird "
-            f"bereits ohne nennenswerte Prämie erreicht – der Marktwert "
-            f"trägt das Projekt allein."
-        )
+        be_text = txt("bericht.be_text_ohne_praemie", ziel=ziel_str)
     else:
         puffer_ct = p.eag_zuschlagswert_ct_kwh - inputs.break_even_ct
-        be_text = (
-            f"Break-even-Gebot: Für eine Zielrendite von "
-            f"{_de(inputs.ziel_irr_pct * 100, 1)} % ist ein anzulegender "
-            f"Wert von mindestens <b>{fmt_ct_kwh(inputs.break_even_ct)}</b> "
-            f"erforderlich. Gegenüber dem angesetzten Zuschlagswert von "
-            f"{fmt_ct_kwh(p.eag_zuschlagswert_ct_kwh)} besteht damit ein "
-            f"{'Puffer' if puffer_ct >= 0 else 'Fehlbetrag'} von "
-            f"{fmt_ct_kwh(abs(puffer_ct))}."
+        be_text = txt(
+            "bericht.be_text_breakeven", ziel=ziel_str,
+            breakeven=fmt_ct_kwh(inputs.break_even_ct),
+            angesetzt=fmt_ct_kwh(p.eag_zuschlagswert_ct_kwh),
+            label=txt("bericht.be_puffer") if puffer_ct >= 0
+            else txt("bericht.be_fehlbetrag"),
+            differenz=fmt_ct_kwh(abs(puffer_ct)),
         )
     story.append(Paragraph(
-        "Abb. 10: EK-Rendite bei Variation des EAG-Zuschlagswerts um "
-        "±5 % / ±10 %. " + be_text,
-        _STYLE_CAPTION,
+        txt("bericht.abb_10_caption", be_text=be_text), _STYLE_CAPTION,
     ))
     story.append(PageBreak())
 
@@ -1005,58 +963,48 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     irr_gueltig = mc.irr_gueltig
     p10, p50, p90 = (float(np.percentile(irr_gueltig, q)) for q in (10, 50, 90))
     sigma_namen = {
-        "produktion": "Spezifischer Ertrag", "marktwert": "Marktwert-Niveau",
-        "capex": "Investitionskosten", "opex": "Betriebskosten",
+        "produktion": txt("bericht.sigma_produktion"),
+        "marktwert": txt("bericht.sigma_marktwert"),
+        "capex": txt("bericht.sigma_capex"), "opex": txt("bericht.sigma_opex"),
     }
     sigma_text = ", ".join(
         f"{sigma_namen[k]} ±{_de(s * 100, 0)} %"
         for k, s in MC_STANDARD_SIGMAS.items()
     )
-    story.append(Paragraph(
-        f"Simultane Zufallsvariation der wesentlichen Werttreiber über "
-        f"{mc.n_laeufe} vollständige Bewertungsläufe "
-        f"(Normalverteilung um die Basisannahme; Standardabweichungen: "
-        f"{sigma_text}; fester Startwert für Reproduzierbarkeit).",
-        _STYLE_TEXT,
-    ))
+    story.append(Paragraph(txt(
+        "bericht.mc_methodik_text", n_laeufe=mc.n_laeufe, sigma_text=sigma_text,
+    ), _STYLE_TEXT))
     story.append(_kennzahlen_kacheln([
-        ("P10 (KONSERVATIV)", fmt_pct(p10)),
-        ("P50 (MEDIAN)", fmt_pct(p50)),
-        ("P90 (OPTIMISTISCH)", fmt_pct(p90)),
-        (f"P(IRR ≥ {_de(inputs.ziel_irr_pct * 100, 1)} %)",
+        (txt("bericht.mc_kachel_p10"), fmt_pct(p10)),
+        (txt("bericht.mc_kachel_p50"), fmt_pct(p50)),
+        (txt("bericht.mc_kachel_p90"), fmt_pct(p90)),
+        (txt("bericht.mc_kachel_p_irr", ziel=_de(inputs.ziel_irr_pct * 100, 1)),
          fmt_pct(prob_ziel, 0)),
-        (f"NPV-MEDIAN ({_de(inputs.diskontsatz_pct * 100, 1)} %)",
+        (txt("bericht.mc_kachel_npv_median",
+            satz=_de(inputs.diskontsatz_pct * 100, 1)),
          fmt_eur(float(np.median(mc.npv)))),
     ]))
     story.append(Spacer(1, 0.3 * cm))
     story.append(_chart_mc_histogramm(mc, p10, p50, p90))
-    story.append(Paragraph("Abb. 11: Verteilung der EK-Rendite.", _STYLE_CAPTION))
+    story.append(Paragraph(txt("bericht.abb_11_caption"), _STYLE_CAPTION))
     story.append(_chart_mc_faecher(mc))
-    story.append(Paragraph(
-        "Abb. 12: Bandbreite des kumulierten Equity-Cashflows (inneres Band "
-        "P25–P75, äußeres Band P10–P90, Linie = Median).",
-        _STYLE_CAPTION,
-    ))
+    story.append(Paragraph(txt("bericht.abb_12_caption"), _STYLE_CAPTION))
     story.append(PageBreak())
 
     # ------------------------------------------------------------------ Szenarien
     story.append(_Kapitel("7", txt("bericht.kapitel_7_titel")))
     story.append(Paragraph(
-        f"Identisches Projekt, gerechnet über alle hinterlegten "
-        f"Marktpreisszenarien; dem Projekt zugewiesen ist "
-        f"„{ea.marktpreisszenario_name}“.",
+        txt("bericht.szenarien_intro_text", szenario=ea.marktpreisszenario_name),
         _STYLE_TEXT,
     ))
     story.append(_chart_szenarien(inputs.szenarien))
-    story.append(Paragraph(
-        "Abb. 13: EK-Rendite je Szenario (links) und kumulierter "
-        "Equity-Cashflow im Zeitverlauf (rechts).",
-        _STYLE_CAPTION,
-    ))
+    story.append(Paragraph(txt("bericht.abb_13_caption"), _STYLE_CAPTION))
     kz = inputs.szenarien.kennzahlen
-    zeilen = [["Szenario", "EK-Rendite",
-               f"NPV bei {_de(inputs.diskontsatz_pct * 100, 1)} %",
-               "Erlöse gesamt"]]
+    zeilen = [[
+        txt("bericht.tab_2_col_szenario"), txt("bericht.tab_2_col_ek_rendite"),
+        txt("bericht.tab_2_col_npv_bei", satz=_de(inputs.diskontsatz_pct * 100, 1)),
+        txt("bericht.tab_2_col_erloese_gesamt"),
+    ]]
     for _, r in kz.iterrows():
         zeilen.append([r["szenario"], fmt_pct(r["equity_irr"]),
                        fmt_eur(r["npv_eur"]), fmt_eur(r["erloes_gesamt_eur"])])
@@ -1188,62 +1136,71 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
 
     # ---------------------------------------------------------------- Annex A
     story.append(_Kapitel("A", txt("bericht.kapitel_a_titel")))
-    story.append(Paragraph(
-        "Vollständig aufgelöster Parametersatz dieser Berechnung "
-        "(Projektmaske zusammengeführt mit den Globalen Annahmen).",
-        _STYLE_TEXT,
-    ))
+    story.append(Paragraph(txt("bericht.annex_a_intro"), _STYLE_TEXT))
     ga = inputs.global_assumptions
     dv_relativ = str(ga.direktvermarktung_modus.value) == "relativ_marktwert"
+    t_a = "bericht."
     annahmen = [
-        ["Parameter", "Wert", "Parameter", "Wert"],
-        ["Nennleistung", fmt_kwp(ea.nennleistung_kwp),
-         "Eigenkapitalquote", fmt_pct(ea.eigenkapitalquote_pct, 0)],
-        ["Spezifischer Ertrag",
+        [txt(t_a + "annex_a_col_parameter"), txt(t_a + "annex_a_col_wert"),
+         txt(t_a + "annex_a_col_parameter"), txt(t_a + "annex_a_col_wert")],
+        [txt(t_a + "annex_a_nennleistung"), fmt_kwp(ea.nennleistung_kwp),
+         txt(t_a + "annex_a_eigenkapitalquote"), fmt_pct(ea.eigenkapitalquote_pct, 0)],
+        [txt(t_a + "annex_a_spezifischer_ertrag"),
          f"{_de(ea.vollbenutzungsstunden_kwh_kwp)} kWh/kWp",
-         "Fremdkapitalzins", fmt_pct(ea.fremdkapitalzins_pct)],
-        ["Degradation", f"{fmt_pct(ea.degradation_pct_pa)} p.a.",
-         "Kreditlaufzeit",
-         f"{ea.kreditlaufzeit_jahre} Jahre ({ea.tilgungsart.value})"],
-        ["Sicherheitsabschlag", fmt_pct(ea.sicherheitsabschlag_pct),
-         "Tilgungsfreies Anlaufjahr",
-         "Ja" if ea.tilgungsfreies_anlaufjahr else "Nein"],
-        ["Betrachtungsdauer", f"{ea.betriebsdauer_jahre} Jahre",
-         "Steuermodus / Steuersatz",
+         txt(t_a + "annex_a_fremdkapitalzins"), fmt_pct(ea.fremdkapitalzins_pct)],
+        [txt(t_a + "annex_a_degradation"), f"{fmt_pct(ea.degradation_pct_pa)} p.a.",
+         txt(t_a + "annex_a_kreditlaufzeit"),
+         txt(t_a + "annex_a_kreditlaufzeit_wert", jahre=ea.kreditlaufzeit_jahre,
+            tilgungsart=ea.tilgungsart.value)],
+        [txt(t_a + "annex_a_sicherheitsabschlag"), fmt_pct(ea.sicherheitsabschlag_pct),
+         txt(t_a + "annex_a_tilgungsfreies_anlaufjahr"),
+         txt(t_a + "annex_a_ja") if ea.tilgungsfreies_anlaufjahr
+         else txt(t_a + "annex_a_nein")],
+        [txt(t_a + "annex_a_betrachtungsdauer"),
+         txt(t_a + "annex_a_betrachtungsdauer_wert", jahre=ea.betriebsdauer_jahre),
+         txt(t_a + "annex_a_steuermodus_steuersatz"),
          f"{ea.tax_modus.value} / {fmt_pct(ea.steuersatz_pct, 0)}"],
-        ["EAG-Zuschlag (effektiv)",
+        [txt(t_a + "annex_a_eag_zuschlag_effektiv"),
          fmt_ct_kwh(ea.eag_zuschlagswert_effektiv_ct_kwh),
-         "AfA-Nutzungsdauer", f"{ga.afa_nutzungsdauer_jahre} Jahre"],
-        ["Förderdauer", f"{ea.eag_foerderdauer_jahre} Jahre",
-         "CAPEX gesamt", fmt_eur(ea.capex_total_eur)],
-        ["Inflation Marktwerte",
-         f"{fmt_pct(ea.marktpreis_inflation_pct_pa)} p.a. "
-         f"ab {ea.marktpreis_inflation_basisjahr}",
-         "Gemeindeabgabe", f"{_de(p.gemeindeabgabe_eur_mwh, 2)} €/MWh"],
-        ["Regel negative Preise",
-         "6h (Österreich)" if ea.negative_stunden_regel
-         == NegativeStundenRegel.SECHS_STUNDEN else "1h (Deutschland)",
-         "Direktvermarktung",
-         f"{fmt_pct(ga.direktvermarktung_pct_marktwert, 0)} vom Marktwert"
+         txt(t_a + "annex_a_afa_nutzungsdauer"),
+         txt(t_a + "annex_a_afa_nutzungsdauer_wert", jahre=ga.afa_nutzungsdauer_jahre)],
+        [txt(t_a + "annex_a_foerderdauer"),
+         txt(t_a + "annex_a_foerderdauer_wert", jahre=ea.eag_foerderdauer_jahre),
+         txt(t_a + "annex_a_capex_gesamt"), fmt_eur(ea.capex_total_eur)],
+        [txt(t_a + "annex_a_inflation_marktwerte"),
+         txt(t_a + "annex_a_inflation_marktwerte_wert",
+            pct=fmt_pct(ea.marktpreis_inflation_pct_pa),
+            basisjahr=ea.marktpreis_inflation_basisjahr),
+         txt(t_a + "annex_a_gemeindeabgabe"),
+         f"{_de(p.gemeindeabgabe_eur_mwh, 2)} €/MWh"],
+        [txt(t_a + "annex_a_regel_negative_preise"),
+         txt(t_a + "annex_a_regel_6h_kurz") if ea.negative_stunden_regel
+         == NegativeStundenRegel.SECHS_STUNDEN else txt(t_a + "annex_a_regel_1h_kurz"),
+         txt(t_a + "annex_a_direktvermarktung"),
+         txt(t_a + "annex_a_direktvermarktung_relativ",
+            pct=fmt_pct(ga.direktvermarktung_pct_marktwert, 0))
          if dv_relativ
          else f"{_de(p.direktvermarktungskosten_eur_mwh, 2)} €/MWh"],
-        ["Gewichtung neg. Stunden",
+        [txt(t_a + "annex_a_gewichtung_neg_stunden"),
          fmt_pct(ea.negative_stunden_gewichtung_pct, 0),
-         "Negativstunden-Modus",
-         "Abregelung" if ea.negative_stunden_modus
-         == NegativeStundenModus.ABREGELUNG else "Rückfall auf Marktwert"],
-        ["Pacht", f"{_de(p.pacht_eur_kwp_jahr, 2)} €/kWp/Jahr",
-         "Kosteninflation",
-         f"{fmt_pct(ea.kosten_inflation_pct_pa)} p.a. "
-         f"(Pacht, Gemeindeabgabe, Direktvermarktung)"],
+         txt(t_a + "annex_a_negativstunden_modus"),
+         txt(t_a + "annex_a_abregelung_kurz") if ea.negative_stunden_modus
+         == NegativeStundenModus.ABREGELUNG else txt(t_a + "annex_a_rueckfall_marktwert")],
+        [txt(t_a + "annex_a_pacht"), f"{_de(p.pacht_eur_kwp_jahr, 2)} €/kWp/Jahr",
+         txt(t_a + "annex_a_kosteninflation"),
+         txt(t_a + "annex_a_kosteninflation_wert",
+            pct=fmt_pct(ea.kosten_inflation_pct_pa))],
     ]
     story.append(_tabelle(annahmen, breiten=[4.1 * cm, 4.35 * cm, 4.1 * cm,
                                              4.35 * cm], schrift=7.6))
-    story.append(Paragraph("Tab. A-1: Aufgelöste Annahmen.", _STYLE_CAPTION))
+    story.append(Paragraph(txt("bericht.tab_a1_caption"), _STYLE_CAPTION))
 
     story.append(Paragraph(txt("bericht.abschnitt_opex_positionen"), _STYLE_H2))
-    opex_zeilen = [["Position", "€/kWp/Jahr", "Index %/Jahr", "Index ab Jahr",
-                    "Start Betriebsjahr"]]
+    opex_zeilen = [[
+        txt("bericht.annex_a_col_position"), txt("bericht.annex_a_col_eur_kwp_jahr"),
+        txt("bericht.annex_a_col_index_pct"), txt("bericht.annex_a_col_index_ab_jahr"),
+        txt("bericht.annex_a_col_start_betriebsjahr"),
+    ]]
     for item in ea.opex_items:
         opex_zeilen.append([
             item.name, _de(item.basiswert_eur_kwp, 2),
@@ -1252,33 +1209,33 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
         ])
     story.append(_tabelle(opex_zeilen, breiten=[5.5 * cm] +
                           [(_INHALT_B - 5.5 * cm) / 4] * 4, schrift=7.6))
-    story.append(Paragraph(
-        "Tab. A-2: Standardbetriebskosten zzgl. produktionsabhängiger "
-        "Positionen (Gemeindeabgabe, Direktvermarktung) und Pacht.",
-        _STYLE_CAPTION,
-    ))
+    story.append(Paragraph(txt("bericht.tab_a2_caption"), _STYLE_CAPTION))
 
-    capex_zeilen = [["Position", "Betrag (€)", "€/kWp"]]
+    capex_zeilen = [[
+        txt("bericht.annex_a_col_position"), txt("bericht.annex_a_col_betrag"),
+        "€/kWp",
+    ]]
     for name, wert in [
-        ("EPC", capex.epc_eur), ("Netzanschluss", capex.netzanschluss_eur),
-        ("Trasse", capex.trasse_eur), ("Widmung", capex.widmung_eur),
-        ("Genehmigung", capex.genehmigung_eur),
-        ("Sonstige extern", capex.sonstige_extern_eur),
+        ("EPC", capex.epc_eur),
+        (txt("oberflaeche.projekt_capex_netzanschluss"), capex.netzanschluss_eur),
+        (txt("oberflaeche.projekt_capex_trasse"), capex.trasse_eur),
+        (txt("oberflaeche.projekt_capex_widmung"), capex.widmung_eur),
+        (txt("oberflaeche.projekt_capex_genehmigung"), capex.genehmigung_eur),
+        (txt("bericht.capex_sonstige") + " extern", capex.sonstige_extern_eur),
         ("AGM", capex.agm_eur), ("M&A", capex.m_and_a_eur),
-        ("Pönale + Puffer", capex.poenale_puffer_eur),
+        (txt("oberflaeche.formular_capex_poenale"), capex.poenale_puffer_eur),
     ]:
         capex_zeilen.append([
             name, _de(wert),
             _de(wert / p.nennleistung_kwp, 1) if p.nennleistung_kwp else "—",
         ])
-    capex_zeilen.append(["Summe", _de(capex.summe_eur),
+    capex_zeilen.append([txt("bericht.annex_a_capex_summe"), _de(capex.summe_eur),
                          _de(capex.summe_eur / p.nennleistung_kwp, 1)
                          if p.nennleistung_kwp else "—"])
     story.append(Paragraph(txt("bericht.abschnitt_capex"), _STYLE_H2))
     story.append(_tabelle(capex_zeilen, breiten=[6 * cm, 5.5 * cm, 5.4 * cm],
                           schrift=7.6))
-    story.append(Paragraph("Tab. A-3: Investitionskosten nach Position.",
-                           _STYLE_CAPTION))
+    story.append(Paragraph(txt("bericht.tab_a3_caption"), _STYLE_CAPTION))
     story.append(PageBreak())
 
     # ---------------------------------------------------------------- Annex B
@@ -1289,19 +1246,18 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     )
     basis = ea.marktpreis_inflation_basisjahr
     inflation = ea.marktpreis_inflation_pct_pa
-    story.append(Paragraph(
-        f"Verwendetes Marktpreisszenario „{szenario.name}“: Marktwerte real "
-        f"(Preisbasis {basis}) und nominal (inflationiert mit "
-        f"{fmt_pct(inflation)} p.a.) sowie Erzeugungsmengen in Stunden "
-        f"negativer Preise je Regel. Angewendet wird die "
-        f"{'6h' if ea.negative_stunden_regel == NegativeStundenRegel.SECHS_STUNDEN else '1h'}-Zeitreihe.",
-        _STYLE_TEXT,
-    ))
+    story.append(Paragraph(txt(
+        "bericht.annex_b_intro", szenario=szenario.name, basis=basis,
+        inflation=fmt_pct(inflation),
+        regel="6h" if ea.negative_stunden_regel == NegativeStundenRegel.SECHS_STUNDEN
+        else "1h",
+    ), _STYLE_TEXT))
     jahre = sorted(szenario.marktwert_solar_ct_kwh_je_kalenderjahr)
-    ts_zeilen = [["Kalender-\njahr", "Marktwert real\n(ct/kWh)",
-                  "Marktwert nominal\n(ct/kWh)",
-                  "Menge negativ 6h\n(% der Erzeugung)",
-                  "Menge negativ 1h\n(% der Erzeugung)"]]
+    ts_zeilen = [[
+        txt("bericht.annex_b_col_kalenderjahr"), txt("bericht.annex_b_col_marktwert_real"),
+        txt("bericht.annex_b_col_marktwert_nominal"), txt("bericht.annex_b_col_menge_neg_6h"),
+        txt("bericht.annex_b_col_menge_neg_1h"),
+    ]]
     for jahr in jahre:
         real = szenario.marktwert_solar_ct_kwh_je_kalenderjahr[jahr]
         nominal = real * (1 + inflation) ** (jahr - basis)
@@ -1312,18 +1268,15 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
         ])
     story.append(_tabelle(ts_zeilen, breiten=[2.3 * cm] +
                           [(_INHALT_B - 2.3 * cm) / 4] * 4, schrift=6.9))
-    story.append(Paragraph(
-        "Tab. B-1: Zeitreihen des verwendeten Szenarios.", _STYLE_CAPTION,
-    ))
+    story.append(Paragraph(txt("bericht.tab_b1_caption"), _STYLE_CAPTION))
     story.append(PageBreak())
 
-    story.append(Paragraph("Marktwerte aller hinterlegten Szenarien (real)",
-                           _STYLE_H2))
+    story.append(Paragraph(txt("bericht.annex_b_alle_szenarien_titel"), _STYLE_H2))
     alle_jahre = sorted({
         j for s in ga.marktpreisszenarien
         for j in s.marktwert_solar_ct_kwh_je_kalenderjahr
     })
-    kopf = ["Kalenderjahr"] + [s.name for s in ga.marktpreisszenarien]
+    kopf = [txt("bericht.annex_b_col_kalenderjahr_kurz")] + [s.name for s in ga.marktpreisszenarien]
     mw_zeilen = [kopf]
     for jahr in alle_jahre:
         mw_zeilen.append([str(jahr)] + [
@@ -1335,11 +1288,7 @@ def build_pdf_report(inputs: ReportInputs) -> bytes:
     story.append(_tabelle(mw_zeilen, breiten=[2.6 * cm] +
                           [(_INHALT_B - 2.6 * cm) / (n_spalten - 1)] * (n_spalten - 1),
                           schrift=6.9))
-    story.append(Paragraph(
-        "Tab. B-2: Marktwert Solar (real, ct/kWh) je Szenario – Grundlage "
-        "des Szenarienvergleichs in Kapitel 7.",
-        _STYLE_CAPTION,
-    ))
+    story.append(Paragraph(txt("bericht.tab_b2_caption"), _STYLE_CAPTION))
 
     doc.multiBuild(story)
     return puffer.getvalue()

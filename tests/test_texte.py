@@ -281,3 +281,64 @@ class TestBerichtKapitel8Ausgelagert:
         )
         assert "Österreich vergibt die EAG-Marktprämie" in text
         assert "Seit Juli 2025 ist das Bild gekippt" in text
+
+
+class TestWeitereSeitenUebersetzt:
+    """Stichproben auf Seiten jenseits der Navigation/des PDF-Exports, die
+    in einer nachtraeglichen, gruendlicheren Uebersetzungsrunde ergaenzt
+    wurden (Formular, Ausschreibungsseite, Globale Annahmen, Sidebar)."""
+
+    @pytest.mark.parametrize(
+        "code,nav_code,erwartet",
+        [
+            ("es", "neu", "Crear nuevo proyecto"),
+            ("es", "auktion", "Simulación de subasta EAG"),
+            ("fr", "annahmen", "Scénarios de prix de marché"),
+            ("en", "neu", "Create new project"),
+        ],
+    )
+    def test_seite_uebersetzt(self, code, nav_code, erwartet, monkeypatch):
+        """Sprache ueber TEA_SPRACHE statt Dropdown gesetzt: isoliert die
+        eigentliche Frage (rendert die Seite korrekt uebersetzt?) von der
+        Dropdown-Rerun-Mechanik, die bereits separat in
+        TestSprachdropdownEndToEnd geprueft ist. Zwei Runs kurz
+        hintereinander (Dropdown+Rerun mitten im Skript) bringen AppTests
+        interne Widget-Serialisierung sonst durcheinander (reines
+        Testframework-Artefakt, siehe dortige Erklaerung)."""
+        from streamlit.testing.v1 import AppTest
+
+        import texte
+
+        monkeypatch.setenv("TEA_SPRACHE", code)
+        texte.lade_texte.cache_clear()
+        at = AppTest.from_file(
+            str(Path(__file__).parent.parent / "streamlit_app.py"),
+            default_timeout=300,
+        )
+        at.run()
+        assert not at.exception
+        at.sidebar.radio[0].set_value(nav_code)
+        at.run()
+        assert not at.exception, at.exception
+        texte_ = " ".join(m.value for m in at.markdown if m.value)
+        texte_ += " ".join(s.value for s in at.subheader if s.value)
+        if at.expander:
+            texte_ += " ".join(e.label or "" for e in at.expander)
+        assert erwartet in texte_, f"'{erwartet}' nicht gefunden für {code}/{nav_code}"
+
+    def test_sidebar_uebersetzt(self):
+        from streamlit.testing.v1 import AppTest
+
+        at = AppTest.from_file(
+            str(Path(__file__).parent.parent / "streamlit_app.py"),
+            default_timeout=300,
+        )
+        at.run()
+        assert not at.exception
+        dropdown = [s for s in at.selectbox if s.key == "sprachauswahl_dropdown"][0]
+        dropdown.set_value("en")
+        at.run()
+        assert not at.exception
+        labels = [e.label for e in at.sidebar.expander]
+        assert any("Save / restore projects" in (lbl or "") for lbl in labels)
+        assert any("Save / restore global assumptions" in (lbl or "") for lbl in labels)

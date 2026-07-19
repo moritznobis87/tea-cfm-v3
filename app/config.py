@@ -24,15 +24,20 @@ FAVICON_PATH = ASSETS_DIR / "favicon.png"
 
 APP_TITLE = "TEA PV-Projektbewertung"
 
-#: Deutschsprachige Monatsnamen (Index 0 = Januar).
-MONATE = [
-    "Januar", "Februar", "März", "April", "Mai", "Juni",
-    "Juli", "August", "September", "Oktober", "November", "Dezember",
-]
-MONATE_KURZ = [
-    "Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
-    "Jul", "Aug", "Sep", "Okt", "Nov", "Dez",
-]
+def monate() -> list[str]:
+    """Sprachabhaengige Monatsnamen (Index 0 = Januar) - als Funktion statt
+    Modulkonstante, damit sie zur Laufzeit die aktuell gewaehlte Sprache
+    (Dropdown) widerspiegeln, nicht die Importzeit-Sprache."""
+    from texte import txt
+
+    return [txt(f"oberflaeche.monat_{i:02d}") for i in range(1, 13)]
+
+
+def monate_kurz() -> list[str]:
+    """Sprachabhaengige kurze Monatsnamen (Index 0 = Jan)."""
+    from texte import txt
+
+    return [txt(f"oberflaeche.monat_kurz_{i:02d}") for i in range(1, 13)]
 
 #: Session-State-Schluessel (zentral, um Tippfehler-Bugs auszuschliessen).
 STATE_SELECTED_PROJECT = "selected_project"

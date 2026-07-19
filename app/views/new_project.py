@@ -16,11 +16,7 @@ from texte import txt
 
 def render_new_project() -> None:
     st.subheader(txt("oberflaeche.neues_projekt_anlegen_titel"))
-    st.caption(
-        "Nur projektspezifische Angaben. Preiskurven, Standardbetriebskosten, "
-        "Kreditlaufzeit und Steuerlogik werden automatisch aus den Globalen "
-        "Annahmen übernommen."
-    )
+    st.caption(txt("oberflaeche.neues_projekt_hilfe"))
 
     project = render_project_form(existing=None, form_key="neues_projekt")
     if project is None:

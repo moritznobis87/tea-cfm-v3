@@ -28,34 +28,31 @@ _XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
 def render_import_export() -> None:
-    with st.sidebar.expander("Projekte sichern / wiederherstellen"):
-        st.caption(
-            "Als Excel-Datei herunterladen und ins Repo committen, um "
-            "Projekte dauerhaft zu sichern - oder zuvor gesicherte Projekte "
-            "wieder hochladen (eine Zeile pro Projekt)."
-        )
+    with st.sidebar.expander(txt("oberflaeche.sidebar_projekte_titel")):
+        st.caption(txt("oberflaeche.sidebar_projekte_beschreibung"))
 
-        st.markdown("**Herunterladen**")
+        st.markdown(txt("oberflaeche.sidebar_herunterladen_titel"))
         projects_dict = services.list_project_files()
         if projects_dict:
             alle_projekte = [load_project_yaml(p) for p in projects_dict.values()]
             st.download_button(
-                "Alle Projekte als Excel",
+                txt("oberflaeche.sidebar_alle_projekte_excel"),
                 data=projects_to_excel(alle_projekte),
                 file_name="projekte.xlsx",
                 mime=_XLSX_MIME,
                 width="stretch",
             )
         else:
-            st.caption("Keine Projekte vorhanden.")
+            st.caption(txt("oberflaeche.sidebar_keine_projekte"))
 
-        st.markdown("**Hochladen**")
+        st.markdown(txt("oberflaeche.sidebar_hochladen_titel"))
         uploaded_projekte = st.file_uploader(
-            "Excel-Datei (.xlsx, eine Zeile pro Projekt)",
+            txt("oberflaeche.sidebar_projekte_upload_label"),
             type=["xlsx"], key="project_upload",
         )
         if uploaded_projekte and st.button(
-            "Hochgeladene Projekte speichern", type="primary", width="stretch"
+            txt("oberflaeche.sidebar_hochgeladene_projekte_speichern"),
+            type="primary", width="stretch",
         ):
             try:
                 importierte = excel_to_projects(uploaded_projekte.getvalue())
@@ -66,27 +63,26 @@ def render_import_export() -> None:
             except Exception as exc:
                 st.error(txt("oberflaeche.sidebar_excel_fehler", fehler=exc))
 
-    with st.sidebar.expander("Globale Annahmen sichern / wiederherstellen"):
-        st.caption(
-            "Als Excel-Datei (3 Tabellenblätter: Preiskurven, Betriebskosten, "
-            "Einstellungen) - bequemer zu bearbeiten als die YAML-Datei direkt."
-        )
+    with st.sidebar.expander(txt("oberflaeche.sidebar_annahmen_titel")):
+        st.caption(txt("oberflaeche.sidebar_annahmen_beschreibung"))
 
-        st.markdown("**Herunterladen**")
+        st.markdown(txt("oberflaeche.sidebar_herunterladen_titel"))
         st.download_button(
-            "Globale Annahmen als Excel",
+            txt("oberflaeche.sidebar_annahmen_excel"),
             data=global_assumptions_to_excel(services.get_global_assumptions()),
             file_name="globale_annahmen.xlsx",
             mime=_XLSX_MIME,
             width="stretch",
         )
 
-        st.markdown("**Hochladen**")
+        st.markdown(txt("oberflaeche.sidebar_hochladen_titel"))
         uploaded_ga = st.file_uploader(
-            "Excel-Datei (.xlsx)", type=["xlsx"], key="global_assumptions_upload",
+            txt("oberflaeche.sidebar_annahmen_upload_label"), type=["xlsx"],
+            key="global_assumptions_upload",
         )
         if uploaded_ga and st.button(
-            "Hochgeladene Excel-Datei übernehmen", type="primary", width="stretch"
+            txt("oberflaeche.sidebar_annahmen_uebernehmen"),
+            type="primary", width="stretch",
         ):
             try:
                 neue_ga = excel_to_global_assumptions(uploaded_ga.getvalue())

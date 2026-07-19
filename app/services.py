@@ -418,9 +418,13 @@ def _auktions_paket_fuer_bericht() -> dict | None:
             return f"{v:.2f}".replace(".", ",")
 
         maxes = " → ".join(_de(a.zuschlag_max_ct) for a in wett)
-        formel = (f"Stützstellen Grenzzuschlag: {maxes} ct ⇒ Prognose "
-                  f"{_de(prognose.grenzzuschlag_zentral_ct)} ct; Ø-Prognose "
-                  f"{_de(prognose.mittel_prognose_ct)} ct.")
+        from texte import txt
+
+        formel = txt(
+            "bericht.auktion_formel_zeile", maxes=maxes,
+            grenzzuschlag=_de(prognose.grenzzuschlag_zentral_ct),
+            mittel=_de(prognose.mittel_prognose_ct),
+        )
         return {"df": df, "prognose": prognose, "modell": modell,
                 "formel_zeile": formel}
     except Exception:

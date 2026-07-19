@@ -27,85 +27,50 @@ from texte import txt
 
 def render_assumptions() -> None:
     st.subheader(txt("oberflaeche.nav_globale_annahmen"))
-    st.caption(
-        "Gelten für alle Projekte, sofern nicht projektspezifisch überschrieben. "
-        "Änderungen wirken sich erst nach „Speichern“ auf alle Projekte aus."
-    )
+    st.caption(txt("oberflaeche.annahmen_hinweis"))
 
     ga = services.get_global_assumptions()
 
     # --- Marktpreisszenarien -------------------------------------------------
     with st.expander(txt("oberflaeche.annahmen_marktpreisszenarien_titel"), expanded=True):
-        st.caption(
-            "Kurven sind nach echtem Kalenderjahr indiziert. Je Projekt wird "
-            "eines dieser Szenarien ausgewählt; das Kalenderjahr, ab dem die "
-            "Kurve verwendet wird, ergibt sich aus dem Inbetriebnahmejahr des "
-            "jeweiligen Projekts."
-        )
+        st.caption(txt("oberflaeche.annahmen_szenarien_hinweis"))
 
-        st.markdown("**Inflationierung der Marktwerte**")
-        st.caption(
-            "Marktpreisstudien (Aurora/Enervis) liefern typischerweise reale "
-            "Werte auf Preisbasis des Erscheinungsjahres, keine bereits "
-            "inflationierten Nominalwerte. Für die Cashflow-Rechnung wird "
-            "deshalb ein Inflationsaufschlag ab dem Basisjahr angewendet. Der "
-            "EAG-Zuschlagswert ist davon nicht betroffen (bleibt gesetzlich "
-            "nominal fix während der Förderdauer)."
-        )
+        st.markdown(txt("oberflaeche.annahmen_inflation_marktwerte_titel"))
+        st.caption(txt("oberflaeche.annahmen_inflation_marktwerte_hinweis"))
         col_infl1, col_infl2, col_infl3 = st.columns(3)
         marktpreis_inflation = col_infl1.number_input(
-            "Inflation Marktwerte (%/Jahr)", min_value=0.0,
+            txt("oberflaeche.annahmen_inflation_marktwerte_label"), min_value=0.0,
             value=ga.marktpreis_inflation_pct_pa * 100, step=0.1,
         )
         marktpreis_basisjahr = col_infl2.number_input(
-            "Basisjahr der Kurven", min_value=2000, max_value=2100,
-            value=ga.marktpreis_inflation_basisjahr, step=1,
-            help="Preisbasis-Jahr der Marktpreisstudie - ab diesem Jahr wird "
-                 "die Inflation aufgeschlagen.",
+            txt("oberflaeche.annahmen_basisjahr_label"), min_value=2000,
+            max_value=2100, value=ga.marktpreis_inflation_basisjahr, step=1,
+            help=txt("oberflaeche.annahmen_basisjahr_hilfe"),
         )
         kosten_inflation = col_infl3.number_input(
-            "Kosteninflation (%/Jahr)", min_value=0.0,
+            txt("oberflaeche.annahmen_kosteninflation_label"), min_value=0.0,
             value=ga.kosten_inflation_pct_pa * 100, step=0.1,
-            help="Wirkt auf ALLE Kostenpositionen ohne eigene Preislogik: "
-                 "Pacht, Gemeindeabgabe und Direktvermarktungskosten "
-                 "(absoluter Modus) eskalieren damit ab dem 2. "
-                 "Betriebsjahr (Eingaben = Preisstand bei Inbetriebnahme). "
-                 "Die Standard-OPEX-Positionen tragen ihre eigene, unten "
-                 "einstellbare Indexierung (Vorbelegung ebenfalls 2 %/Jahr "
-                 "ab Jahr 1); Direktvermarktung im Relativ-Modus folgt "
-                 "bereits dem nominalen Marktwert.",
+            help=txt("oberflaeche.annahmen_kosteninflation_hilfe"),
         )
 
-        st.markdown("**Gewichtung negativer Stunden**")
-        st.caption(
-            "In Stunden negativer Strompreise entfällt gesetzlich die "
-            "Marktprämie. 100 % = volle Wirkung wie in den Preiskurven "
-            "hinterlegt. Niedrigere Werte blenden den Effekt teilweise oder "
-            "ganz aus, z.B. für Vergleichsrechnungen ohne diesen Abschlag."
-        )
+        st.markdown(txt("oberflaeche.annahmen_negative_stunden_gewichtung_titel"))
+        st.caption(txt("oberflaeche.annahmen_negative_stunden_gewichtung_hinweis"))
         negative_stunden_gewichtung = st.slider(
-            "Gewichtung (%)", min_value=0, max_value=100,
+            txt("oberflaeche.annahmen_gewichtung_label"), min_value=0, max_value=100,
             value=int(round(ga.negative_stunden_gewichtung_pct * 100)), step=5,
         )
 
-        st.markdown("**Regel für den Prämienentfall bei negativen Preisen**")
-        st.caption(
-            "Die Zeitreihen der Szenarien geben die Erzeugungsmenge an, die "
-            "in Zeiten negativer Preise anfällt - getrennt nach 6h-Regel "
-            "(Prämie entfällt erst ab mindestens 6 Stunden am Stück "
-            "negativer Preise) und 1h-Regel (bereits ab 1 Stunde am Stück). "
-            "Standard in Österreich ist die 6h-Regel, in Deutschland die "
-            "1h-Regel."
-        )
+        st.markdown(txt("oberflaeche.annahmen_praemienentfall_titel"))
+        st.caption(txt("oberflaeche.annahmen_praemienentfall_hinweis"))
         regel_labels = {
             NegativeStundenRegel.SECHS_STUNDEN.value: (
-                "6-Stunden-Regel (Österreich, Standard)"
+                txt("oberflaeche.annahmen_regel_6h")
             ),
-            NegativeStundenRegel.EINE_STUNDE.value: "1-Stunden-Regel (Deutschland)",
+            NegativeStundenRegel.EINE_STUNDE.value: txt("oberflaeche.annahmen_regel_1h"),
         }
         regel_optionen = [r.value for r in NegativeStundenRegel]
         negative_stunden_regel = st.radio(
-            "Regel für negative Preise",
+            txt("oberflaeche.annahmen_regel_label"),
             regel_optionen,
             format_func=lambda v: regel_labels[v],
             index=regel_optionen.index(ga.negative_stunden_regel.value),
@@ -113,28 +78,23 @@ def render_assumptions() -> None:
             label_visibility="collapsed",
         )
 
-        st.markdown("**Verhalten in Stunden negativer Preise**")
+        st.markdown(txt("oberflaeche.annahmen_verhalten_negativ_titel"))
         neg_modus_labels = {
             NegativeStundenModus.ABREGELUNG.value: (
-                "Erlöse entfallen vollständig – Anlage wird abgeregelt"
+                txt("oberflaeche.annahmen_modus_abregelung")
             ),
             NegativeStundenModus.MARKTWERT.value: (
-                "Rückfall auf Jahresmarktwert – keine Marktprämie, "
-                "Anlage speist weiter ein"
+                txt("oberflaeche.annahmen_modus_marktwert")
             ),
         }
         neg_modus_optionen = [m.value for m in NegativeStundenModus]
         negative_stunden_modus = st.radio(
-            "Negativstunden-Modus",
+            txt("oberflaeche.annahmen_negativstunden_modus_label"),
             neg_modus_optionen,
             format_func=lambda v: neg_modus_labels[v],
             index=neg_modus_optionen.index(ga.negative_stunden_modus.value),
             label_visibility="collapsed",
-            help="Abregelung: Für den Anteil negativer Stunden entfallen die "
-                 "Erlöse komplett. Rückfall auf Jahresmarktwert: Die Anlage "
-                 "speist weiter ein und erhält den Marktwert, nur die "
-                 "Marktprämie entfällt. Nach der Förderdauer wirkt der "
-                 "Unterschied nur noch im Abregelungs-Modus.",
+            help=txt("oberflaeche.annahmen_negativstunden_modus_hilfe"),
         )
 
         edited_szenarien: dict[str, pd.DataFrame] = {}
@@ -178,22 +138,35 @@ def render_assumptions() -> None:
                             ],
                         }
                     )
-                    st.caption(
-                        "Erzeugungsmenge neg. Stunden: Anteil der "
-                        "PV-Jahreserzeugung, der in Zeiten negativer Preise "
-                        "anfällt - je Regel (6h/1h) eine eigene Zeitreihe. "
-                        "Angewendet wird die oben gewählte Regel."
-                    )
+                    st.caption(txt("oberflaeche.annahmen_erzeugung_negativ_hinweis"))
                     edited_szenarien[szenario.name] = st.data_editor(
                         kurven_df, width="stretch", hide_index=True,
                         num_rows="dynamic", key=f"kurven_editor_{szenario.name}",
+                        column_config={
+                            "Kalenderjahr": st.column_config.NumberColumn(
+                                txt("oberflaeche.annahmen_col_kalenderjahr"),
+                                format="%d",
+                            ),
+                            "Marktwert Solar (ct/kWh)": st.column_config.NumberColumn(
+                                txt("oberflaeche.annahmen_col_marktwert_solar"),
+                            ),
+                            "Erzeugungsmenge neg. Stunden 6h (%)":
+                                st.column_config.NumberColumn(
+                                    txt("oberflaeche.annahmen_col_neg6h"),
+                                ),
+                            "Erzeugungsmenge neg. Stunden 1h (%)":
+                                st.column_config.NumberColumn(
+                                    txt("oberflaeche.annahmen_col_neg1h"),
+                                ),
+                        },
                     )
 
         st.divider()
-        st.markdown("**Neues Szenario anlegen**")
+        st.markdown(txt("oberflaeche.annahmen_neues_szenario_titel"))
         neuer_szenario_name = st.text_input(
-            "Name des neuen Szenarios", key="neues_szenario_name",
-            placeholder="z.B. Enervis 2026",
+            txt("oberflaeche.annahmen_neues_szenario_label"),
+            key="neues_szenario_name",
+            placeholder=txt("oberflaeche.annahmen_neues_szenario_platzhalter"),
         )
         if st.button(txt("oberflaeche.annahmen_szenario_hinzufuegen")) and neuer_szenario_name.strip():
             if neuer_szenario_name in ga.szenario_namen:
@@ -221,102 +194,102 @@ def render_assumptions() -> None:
         edited_opex = st.data_editor(
             opex_df, width="stretch", hide_index=True, num_rows="dynamic",
             key="opex_editor",
+            column_config={
+                "Position": st.column_config.TextColumn(
+                    txt("oberflaeche.annahmen_col_position"),
+                ),
+                "EUR/kWp/Jahr": st.column_config.NumberColumn(
+                    txt("oberflaeche.annahmen_col_eur_kwp_jahr"),
+                ),
+                "Index %/Jahr": st.column_config.NumberColumn(
+                    txt("oberflaeche.annahmen_col_index_pct"),
+                ),
+                "Indexierung ab Jahr": st.column_config.NumberColumn(
+                    txt("oberflaeche.annahmen_col_index_ab_jahr"), format="%d",
+                ),
+            },
         )
         gemeindeabgabe = st.number_input(
-            "Gemeindeabgabe – Vorschlagswert für neue Projekte (€/MWh)",
+            txt("oberflaeche.annahmen_gemeindeabgabe_label"),
             min_value=0.0, value=ga.gemeindeabgabe_eur_kwh * 1000, step=0.5,
-            help="Produktionsbasierte Abgabe an die Standortgemeinde. Dient nur "
-                 "als Vorbelegung beim Anlegen eines neuen Projekts - die "
-                 "tatsächlich angewendete Abgabe wird pro Projekt festgelegt "
-                 "(im Projektformular unter 'Wirtschaftliche Parameter'), da "
-                 "sie je nach Gemeinde unterschiedlich sein kann.",
+            help=txt("oberflaeche.annahmen_gemeindeabgabe_hilfe"),
         )
-        st.markdown("**Direktvermarktungskosten**")
+        st.markdown(txt("oberflaeche.annahmen_direktvermarktung_titel"))
+        dv_modus_absolut = txt("oberflaeche.annahmen_dv_modus_absolut")
+        dv_modus_relativ = txt("oberflaeche.annahmen_dv_modus_relativ")
         dv_modus_label = st.radio(
-            "Bemessung der Direktvermarktungskosten",
-            ["Absoluter Betrag (€/MWh)", "Relativ zum Marktwert (%)"],
+            txt("oberflaeche.annahmen_dv_modus_label"),
+            [dv_modus_absolut, dv_modus_relativ],
             index=0
             if ga.direktvermarktung_modus == DirektvermarktungsModus.ABSOLUT
             else 1,
             horizontal=True,
-            help="Absolut: fester Betrag je erzeugter MWh (projektspezifisch, "
-                 "z.B. 1 €/MWh). Relativ: Anteil am nominalen Jahresmarktwert "
-                 "(gilt für alle Projekte, z.B. 10 % vom Marktwert) - die "
-                 "Kosten atmen dann mit dem Preisniveau.",
+            help=txt("oberflaeche.annahmen_dv_modus_hilfe"),
         )
-        dv_relativ = dv_modus_label.startswith("Relativ")
+        dv_relativ = dv_modus_label == dv_modus_relativ
         col_dv1, col_dv2 = st.columns(2)
         direktvermarktungskosten = col_dv1.number_input(
-            "Vorschlagswert für neue Projekte (€/MWh)",
+            txt("oberflaeche.annahmen_dv_vorschlagswert_label"),
             min_value=0.0, value=ga.direktvermarktungskosten_eur_kwh * 1000,
             step=0.1,
             disabled=dv_relativ,
-            help="Kosten für Bilanzkreis, Prognose, Marktzugang - üblicherweise "
-                 "ca. 1 €/MWh. Dient nur als Vorbelegung; tatsächlich "
-                 "angewendet wird der projektspezifische Wert. Im Modus "
-                 "'Relativ zum Marktwert' ohne Wirkung.",
+            help=txt("oberflaeche.annahmen_dv_vorschlagswert_hilfe"),
         )
         dv_pct_marktwert = col_dv2.number_input(
-            "Anteil am Marktwert (%)",
+            txt("oberflaeche.annahmen_dv_anteil_marktwert_label"),
             min_value=0.0, max_value=100.0,
             value=ga.direktvermarktung_pct_marktwert * 100, step=0.5,
             disabled=not dv_relativ,
-            help="Direktvermarktungskosten = erzeugte kWh × nominaler "
-                 "Jahresmarktwert × dieser Anteil. Gilt für alle Projekte; "
-                 "die projektspezifischen €/MWh-Werte sind dann ohne Wirkung.",
+            help=txt("oberflaeche.annahmen_dv_anteil_marktwert_hilfe"),
         )
 
     # --- Technische Standardannahmen -------------------------------------------
     with st.expander(txt("oberflaeche.annahmen_technische_standardannahmen_titel"), expanded=True):
-        st.caption("Gelten für die Produktionsberechnung aller Projekte.")
+        st.caption(txt("oberflaeche.annahmen_technisch_hinweis"))
         col_deg, col_sich = st.columns(2)
         degradation = col_deg.number_input(
-            "Degradation (%/Jahr)", min_value=0.0,
+            txt("oberflaeche.annahmen_degradation_label"), min_value=0.0,
             value=ga.degradation_pct_pa * 100, step=0.05,
-            help="Jährliche Leistungsminderung der Module.",
+            help=txt("oberflaeche.annahmen_degradation_hilfe"),
         )
         sicherheitsabschlag = col_sich.number_input(
-            "Sicherheitsabschlag Produktion (%)", min_value=0.0, max_value=100.0,
+            txt("oberflaeche.annahmen_sicherheitsabschlag_label"),
+            min_value=0.0, max_value=100.0,
             value=ga.sicherheitsabschlag_pct * 100, step=0.5,
-            help="Pauschaler Abschlag auf die berechnete Produktion (z.B. für "
-                 "Verschattung, Verschmutzung, Ausfallzeiten).",
+            help=txt("oberflaeche.annahmen_sicherheitsabschlag_hilfe"),
         )
 
     # --- Foerderung, Finanzierung ----------------------------------------------
     with st.expander(txt("oberflaeche.annahmen_foerderung_finanzierung_titel"), expanded=True):
         col1, col2, col3 = st.columns(3)
         eag_foerderdauer = col1.number_input(
-            "EAG-Förderdauer (Jahre)", min_value=1, value=ga.eag_foerderdauer_jahre
+            txt("oberflaeche.annahmen_eag_foerderdauer_label"), min_value=1, value=ga.eag_foerderdauer_jahre
         )
         betriebsdauer = col2.number_input(
-            "Betrachtungsdauer (Jahre)", min_value=1, value=ga.betriebsdauer_jahre
+            txt("oberflaeche.annahmen_betrachtungsdauer_label"), min_value=1, value=ga.betriebsdauer_jahre
         )
         kreditlaufzeit = col3.number_input(
-            "Kreditlaufzeit (Jahre)", min_value=1, value=ga.kreditlaufzeit_jahre
+            txt("oberflaeche.annahmen_kreditlaufzeit_label"), min_value=1, value=ga.kreditlaufzeit_jahre
         )
         tilgungsart = st.selectbox(
-            "Tilgungsart", [art.value for art in TilgungsArt],
+            txt("oberflaeche.annahmen_tilgungsart_label"), [art.value for art in TilgungsArt],
             index=0 if ga.tilgungsart == TilgungsArt.ANNUITAET else 1,
         )
         tilgungsfreies_anlaufjahr = st.toggle(
-            "Tilgungsfreies Anlaufjahr",
+            txt("oberflaeche.annahmen_tilgungsfreies_anlaufjahr_label"),
             value=ga.tilgungsfreies_anlaufjahr,
-            help="Im ersten Betriebsjahr werden nur Zinsen gezahlt, die "
-                 "Tilgung beginnt in Jahr 2. Die Anzahl der Tilgungsraten "
-                 "bleibt gleich (der Schuldendienst verlängert sich um ein "
-                 "Jahr); dadurch fällt auch im zweiten Jahr der Zins noch "
-                 "auf die volle Kreditsumme an.",
+            help=txt("oberflaeche.annahmen_tilgungsfreies_anlaufjahr_hilfe"),
         )
 
     # --- Steuern ---------------------------------------------------------------
     with st.expander(txt("oberflaeche.annahmen_steuern_titel"), expanded=False):
         tax_modus_optionen = [modus.value for modus in TaxModus]
         tax_modus_labels = {
-            "pauschal_auf_ebt": "Pauschal auf EBT (vereinfacht, keine AfA)",
-            "afa_koerperschaftsteuer": "Körperschaftsteuer mit AfA (realistischer)",
+            "pauschal_auf_ebt": txt("oberflaeche.annahmen_steuermodus_pauschal"),
+            "afa_koerperschaftsteuer": txt("oberflaeche.annahmen_steuermodus_afa"),
         }
         tax_modus = st.radio(
-            "Steuermodus",
+            txt("oberflaeche.annahmen_steuermodus_label"),
             tax_modus_optionen,
             format_func=lambda v: tax_modus_labels[v],
             index=tax_modus_optionen.index(ga.tax_modus.value),
@@ -325,38 +298,32 @@ def render_assumptions() -> None:
 
         col4, col5 = st.columns(2)
         steuersatz = col4.number_input(
-            "Steuersatz (%)", min_value=0.0, value=ga.steuersatz_pct * 100, step=0.5,
-            help="Österreich (KöSt): 23 % (Stand 2026).",
+            txt("oberflaeche.annahmen_steuersatz_label"), min_value=0.0,
+            value=ga.steuersatz_pct * 100, step=0.5,
+            help=txt("oberflaeche.annahmen_steuersatz_hilfe"),
         )
         verlustvortrag_grenze = col5.number_input(
-            "Verlustvortrag-Verrechnungsgrenze (%)", min_value=0.0, max_value=100.0,
+            txt("oberflaeche.annahmen_verlustvortrag_label"),
+            min_value=0.0, max_value=100.0,
             value=ga.verlustvortrag_verrechnungsgrenze_pct * 100, step=5.0,
-            help="Maximaler Anteil des Gewinns eines Jahres, der mit "
-                 "vorgetragenen Verlusten verrechnet werden darf. Österreich "
-                 "(KStG): 75 % - mindestens 25 % des Gewinns bleiben also "
-                 "immer steuerpflichtig, auch bei hohem Verlustvortrag. Gilt "
-                 "unabhängig vom Steuermodus.",
+            help=txt("oberflaeche.annahmen_verlustvortrag_hilfe"),
         )
 
         if tax_modus == TaxModus.AFA_KOERPERSCHAFTSTEUER.value:
             col6, col7 = st.columns(2)
             afa_nutzungsdauer = col6.number_input(
-                "AfA-Nutzungsdauer (Jahre)", min_value=1,
+                txt("oberflaeche.annahmen_afa_nutzungsdauer_label"), min_value=1,
                 value=ga.afa_nutzungsdauer_jahre or 20,
-                help="Lineare Abschreibungsdauer der Investitionskosten. Für "
-                     "PV-Anlagen in Österreich üblich: 20 Jahre.",
+                help=txt("oberflaeche.annahmen_afa_nutzungsdauer_hilfe"),
             )
             freibetrag = col7.number_input(
-                "Freibetrag (€/Jahr)", min_value=0.0,
+                txt("oberflaeche.annahmen_freibetrag_label"), min_value=0.0,
                 value=ga.freibetrag_eur, step=100.0,
             )
         else:
             afa_nutzungsdauer = ga.afa_nutzungsdauer_jahre
             freibetrag = ga.freibetrag_eur
-            st.caption(
-                "AfA und Freibetrag werden im Pauschalmodus nicht "
-                "angewendet. Der Verlustvortrag gilt trotzdem."
-            )
+            st.caption(txt("oberflaeche.annahmen_afa_pauschal_hinweis"))
 
     # --- Speichern ---------------------------------------------------------------
     if st.button(txt("oberflaeche.btn_speichern"), type="primary"):

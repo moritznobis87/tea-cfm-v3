@@ -1,5 +1,43 @@
 # Changelog
 
+## v4.12 – Vollständige Übersetzung: alle verbliebenen Texte erfasst (2026-07)
+
+- Gründliche Neuvermessung der gesamten App ergab 226 weitere
+  unübersetzte deutsche Textstellen, die frühere Extraktionsrunden
+  übersehen hatten – darunter **komplett unangetastete Dateien** wie
+  `app/components/sidebar.py` (Projekte/Globale Annahmen sichern &
+  wiederherstellen, wie vom Nutzer gemeldet) sowie große Teile von
+  `assumptions.py`, `auktion.py`, `project_detail.py`, `project_form.py`
+  und `report.py` (PDF-Kapitel 1–7 und Annex A/B, zuvor nur Kapitel 8
+  vollständig ausgelagert).
+- Alle 226 Fundstellen extrahiert und verdrahtet: Sidebar-Expander,
+  Datei-Upload-Labels, sämtliche Eingabefeld-Labels und Hilfetexte in
+  den Globalen Annahmen (Marktpreisszenarien, Negativstunden-Regeln,
+  Steuerlogik), die komplette Ausschreibungsseite (inkl. der
+  LaTeX-eingebetteten Prognosemethodik-Texte), das gesamte
+  Projekt-Dashboard (KPI-Labels, Tab-Namen, alle Diagrammbeschriftungen
+  und -captions, Break-even-Assistent, Monte-Carlo-Steuerung,
+  Szenarienvergleich, Annahmen-Zusammenfassung) sowie der PDF-Bericht
+  bis auf die letzte Tabellenüberschrift.
+- Editor-Spaltenüberschriften (Marktpreiskurven, Standardbetriebskosten)
+  über `st.column_config` übersetzt, ohne die internen
+  DataFrame-Spaltennamen zu ändern, die an anderer Stelle als
+  Dictionary-Schlüssel gelesen werden – vermeidet Bruch der
+  Speicherlogik.
+- Monatsnamen (`MONATE`/`MONATE_KURZ` in `app/config.py`) von
+  statischen deutschen Konstanten auf sprachabhängige Funktionen
+  (`monate()`/`monate_kurz()`) umgestellt, die zur Laufzeit die
+  aktuell gewählte Sprache widerspiegeln.
+- Alle neuen Schlüssel vollständig in Englisch, Französisch und
+  Spanisch übersetzt. **Endstand: 696 Schlüssel je Sprache** (382
+  `oberflaeche.yaml`, 72 `diagramme.yaml`, 175 `bericht.yaml`, 67
+  `excel.yaml`) – exakt identische Schlüssel und Platzhalter über alle
+  vier Sprachen, automatisiert geprüft. Ein vollständiger Scan der
+  gesamten `app/`-Schicht bestätigt: keine verbleibenden
+  unübersetzten deutschen Literalstrings.
+- 6 neue Tests (Seiten-Übersetzung von Formular/Ausschreibung/
+  Annahmen/Sidebar in mehreren Sprachen); Suite: 163.
+
 ## v4.11 – Sprach-Dropdown: kompaktes Flagge+Kürzel-Format (2026-07)
 
 - Das Sprach-Dropdown zeigt jetzt Flagge + Länderkürzel statt des vollen

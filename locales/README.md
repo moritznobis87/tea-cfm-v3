@@ -32,16 +32,17 @@ in `engine/io_ergebnis_excel.py`.
 ## Sprachumschaltung in der App
 
 Oben rechts in der Kopfzeile sitzt ein Dropdown mit Flagge und
-Sprachname (🇦🇹 Deutsch · 🇬🇧 English · 🇫🇷 Français · 🇪🇸 Español). Die
-Auswahl landet in `st.session_state["tea_sprache"]`
-(`texte.SESSION_KEY`) und wirkt ab dem nächsten Rerun in der gesamten
-App: Navigation, sämtliche Buttons und Abschnittstitel des
-Projekt-Dashboards, Diagramme sowie neu erzeugte PDF- und
-Excel-Exporte. Alle vier Sprachen sind vollständig gepflegt – 95
-Schlüssel in `oberflaeche.yaml`, 58 in `diagramme.yaml`, 43 in
-`bericht.yaml`, 67 in `excel.yaml`, macht 263 Texte je Sprache, jeder
-davon in allen vier Sprachen mit identischen Schlüsseln und
-Platzhaltern (per Test abgesichert, siehe `tests/test_texte.py`).
+Länderkürzel (🇦🇹 DE · 🇬🇧 EN · 🇫🇷 FR · 🇪🇸 ES). Die Auswahl landet in
+`st.session_state["tea_sprache"]` (`texte.SESSION_KEY`) und wirkt ab
+dem nächsten Rerun in der **gesamten** App: Navigation, Sidebar
+(Sichern/Wiederherstellen), sämtliche Formulare, das komplette
+Projekt-Dashboard, die Ausschreibungsseite, Globale Annahmen,
+Diagramme sowie neu erzeugte PDF- und Excel-Exporte. Alle vier
+Sprachen sind vollständig gepflegt – 696 Schlüssel je Sprache (382 UI-
+Texte, 72 Diagrammtexte, 175 Berichtstexte inkl. der kompletten
+PDF-Fließtexte aller Kapitel, 67 Excel-Beschriftungen), mit exakt
+identischen Schlüsseln und Platzhaltern über alle vier Sprachen (per
+Test bei jedem Lauf abgesichert, siehe `tests/test_texte.py`).
 
 Außerhalb der laufenden App (Tests, Skripte, direkte Engine-Aufrufe
 ohne Streamlit-Session) greift stattdessen die Umgebungsvariable

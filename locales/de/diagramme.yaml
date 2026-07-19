@@ -73,3 +73,17 @@ serie_arbeitspunkt: "Arbeitspunkt"
 
 serie_gemeindeabgabe: "Gemeindeabgabe"
 serie_direktvermarktung: "Direktvermarktung"
+
+# --- Weitere Diagrammtexte -----------------------------------------------------
+serie_umsatzerloese: "Umsatzerlöse"
+serie_kreditaufnahme: "Kreditaufnahme"
+serie_operativer_cf: "Operativer CF"
+serie_investition: "Investition"
+serie_equity_cashflow: "Equity-Cashflow"
+serie_zinsen_waterfall: "Zinsen"
+serie_foerderende: "Förderende"
+serie_steuern: "Steuern"
+annotation_eag_zuschlagswert_fix: "EAG-Zuschlagswert (nominal fix)"
+achse_jahr_kurz: "Jahr"
+achse_kumulierter_cf: "Kumulierter Equity-Cashflow (€)"
+achse_irr_kurz: "EK-Rendite"
